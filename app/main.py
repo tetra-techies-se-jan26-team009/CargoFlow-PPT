@@ -11,4 +11,4 @@ app.include_router(user_routes.router)
 
 @app.get("/")
 def health():
-    return {"status": "API working"}
+    return {"status": "API working"} #status
