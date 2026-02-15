@@ -29,31 +29,16 @@ const features = [
 
 export function Feature() {
     return (
-        <section className="relative bg-white py-16 sm:py-20 lg:py-24 overflow-hidden">
-            {/* GRID BACKGROUND */}
-            <div
-                className="absolute inset-0 z-0"
-                style={{
-                    backgroundImage: `
-            linear-gradient(to right, #e2e8f0 1px, transparent 1px),
-            linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)
-          `,
-                    backgroundSize: "24px 24px",
-                    WebkitMaskImage:
-                                "radial-gradient(ellipse 60% 60% at 50% 0%, #000 60%, transparent 100%)",
-                            maskImage:
-                                "radial-gradient(ellipse 60% 60% at 50% 0%, #000 60%, transparent 100%)",
-                }}
-            />
-
+        <section className="relative overflow-hidden mb-4">
+            
             {/* CONTENT */}
             <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
                 {/* Section header */}
                 <div className="mx-0 max-w-2xl text-left">
-                    <p className="text-sm font-semibold text-indigo-600">
+                    <p className="text-sm font-semibold text-primary">
                         We Provide
                     </p>
-                    <h2 className="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+                    <h2 className="mt-2 text-4xl font-bold tracking-tight text-black sm:text-5xl">
                         Everything to Ship
                     </h2>
                 </div>
@@ -63,13 +48,13 @@ export function Feature() {
                     {features.map((feature) => (
                         <div
                             key={feature.name}
-                            className="relative rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+                            className="relative rounded-2xl border border-gray-600:shadow-lg/6 bg-background p-8 shadow-sm"
                         >
-                            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600">
-                                <feature.icon className="h-6 w-6 text-white" />
+                            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
+                                <feature.icon className="h-6 w-6 text-accent" />
                             </div>
 
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-black">
                                 {feature.name}
                             </h3>
                             <p className="mt-3 text-gray-600">

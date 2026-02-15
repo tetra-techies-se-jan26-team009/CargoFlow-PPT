@@ -1,6 +1,7 @@
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from "@headlessui/react";
 import { Dialog,DialogPanel,Disclosure,DisclosureButton,DisclosurePanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
 import {ChevronDownIcon, ChevronUpIcon} from "@heroicons/react/20/solid";
 
 export function PopOver({ label, items }) {
@@ -19,7 +20,7 @@ export function PopOver({ label, items }) {
                         }}
                         className="relative"
                     >
-                        <PopoverButton className="relative flex items-center gap-x-1 text-lg/6 font-semibold text-white focus:outline-none">
+                        <PopoverButton className="relative flex items-center gap-x-1 text-lg/6 font-semibold text-black focus:outline-none">
                             <span>{label}</span>
 
                             {/* UNDERLINE */}
@@ -53,13 +54,13 @@ export function PopOver({ label, items }) {
                                             />
                                         </div> */}
                                         <div className="flex-auto">
-                                            <a
-                                                href={item.href}
+                                            <Link
+                                                to={item.to}
                                                 className="block font-semibold text-gray-900"
                                             >
                                                 {item.name}
                                                 <span className="absolute inset-0" />
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 ))}
@@ -105,14 +106,14 @@ export function DialogBox({ open, onClose, sections = [] }) {
                   {/* Section Items */}
                   <DisclosurePanel className="mt-2 space-y-1 pl-4">
                     {section.items.map((item) => (
-                      <a
+                      <Link
                         key={item.name}
-                        href={item.href}
+                        to={item.to}
                         className="block rounded-md px-2 py-1 text-gray-700 hover:bg-gray-100"
                         onClick={onClose}
                       >
                         {item.name}
-                      </a>
+                      </Link>
                     ))}
                   </DisclosurePanel>
                 </>
@@ -144,16 +145,16 @@ export function LoginPopOver({ items }) {
             {/* LOGIN BUTTON */}
             <PopoverButton
               className="relative flex items-center gap-x-2 rounded-md
-                         bg-white px-4 py-2 text-sm font-semibold
+                         bg-primary px-4 py-2 text-sm font-semibold
                          text-black shadow-sm focus:outline-none"
             >
-              <span className="text-md font-bold font-serif">Ship Now</span>
+              <span className="text-md text-accent text-bold font-serif">Ship Now</span>
 
               {/* ARROW */}
               {open ? (
-                <ChevronUpIcon className="size-4 transition-transform" />
+                <ChevronUpIcon className="size-4  text-accent transition-transform" />
               ) : (
-                <ChevronDownIcon className="size-4 transition-transform" />
+                <ChevronDownIcon className="size-4 text-accent transition-transform" />
               )}
             </PopoverButton>
 
@@ -168,14 +169,14 @@ export function LoginPopOver({ items }) {
             >
               <div className="py-2">
                 {items.map((item) => (
-                  <a
+                  <Link
                     key={item.name}
-                    href={item.href}
+                    to={item.to}
                     className="block px-4 py-2 text-sm font-medium
                                text-gray-800 hover:bg-gray-50"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </PopoverPanel>

@@ -12,27 +12,27 @@
 export const SERVICES = [
   {
     name: "Analytics",
-    href: "#",
+    to: "#",
     // icon: ChartPieIcon,
   },
   {
     name: "Engagement",
-    href: "#",
+    to: "#",
     // icon: CursorArrowRaysIcon,
   },
   {
     name: "Security",
-    href: "#",
+    to: "#",
     // icon: FingerPrintIcon,
   },
   {
     name: "Integrations",
-    href: "#",
+    to: "#",
     // icon: SquaresPlusIcon,
   },
   {
     name: "Automations",
-    href: "#",
+    to: "#",
     // icon: ArrowPathIcon,
   },
 ];
@@ -41,38 +41,38 @@ export const SERVICES = [
 export const SOLUTIONS = [
   {
     name: "E-commerce",
-    href: "#",
+    to: "#",
   },
   {
     name: "Logistics",
-    href: "#",
+    to: "#",
   },
 ];
 
 export const PARTNER = [
   {
     name: "Affiliates",
-    href: "#",
+    to: "#",
   },
   {
     name: "Resellers",
-    href: "#",
+    to: "#",
   },
 ];
 
 export const COMPANY = [
   {
     name: "About Us",
-    href: "#",
+    to: "/about_us",
   },
   {
     name: "Careers",
-    href: "#",
+    to: "#",
   },
 ];
 
 export const LOGIN_OPTIONS = [
-  { name: "Business Shipments", href: "/login/business" },
-  { name: "National Delivery", href: "/login/national" },
-  { name: "City Courier", href: "/login/city" },
+  { name: "Business Shipments", to: "/login" },
+  { name: "National Delivery", to: "/login" },
+  { name: "City Courier", to: "/login" },
 ];
