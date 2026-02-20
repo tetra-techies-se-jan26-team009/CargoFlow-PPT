@@ -2,7 +2,7 @@
 
 export function MainHeroSection() {
   return (
-    <div className="bg-background">
+    <div className="">
       <div className="relative isolate px-6 pt-14 lg:px-8">
         <div className="mx-auto max-w-2xl pt-16 pb-16 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-10">
           <div className="text-center">

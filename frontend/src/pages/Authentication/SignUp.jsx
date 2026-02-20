@@ -127,7 +127,7 @@ const SignupForm = () => {
                         </label>
                     </div>
                 </div>
-                <div>
+                {/* <div>
                     <p className="text-gray-600" style={{ fontSize: 11 }}>
                         People who use our service may have uploaded your contact information to
                         Facebook.
@@ -141,9 +141,9 @@ const SignupForm = () => {
                         <a href className="hover:text-blue-900 font-medium hover:underline">Cookies Policy</a>. You may receive SMS notifications from us and can opt out at any
                         time.
                     </p>
-                </div>
+                </div> */}
                 <div className="text-center">
-                    <button className="text-white font-bold px-16 py-1 rounded-md" style={{ backgroundColor: '#00A400', fontSize: 18 }}>
+                    <button className="text-accent px-16 py-1 bg-primary rounded-md" style={{ fontSize: 18 }}>
                         Sign Up
                     </button>
                 </div>
