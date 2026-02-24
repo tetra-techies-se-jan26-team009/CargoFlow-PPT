@@ -32,7 +32,7 @@ def create_shipment(data: ShipmentCreate,
 def get_shipments(db: Session = Depends(get_db), 
                   current_user = Depends(get_current_user)):
 
-    if current_user.role in [UserRole.ADMIN, UserRole.MANAGER]:
+    if current_user.role == UserRole.ADMIN:
         return db.query(Shipment).all()
 
     if current_user.role == UserRole.BUSINESS_CLIENT:

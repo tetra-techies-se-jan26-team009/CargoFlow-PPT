@@ -6,7 +6,6 @@ from .database import Base
 
 class UserRole(enum.Enum):
     ADMIN = "ADMIN"
-    MANAGER = "MANAGER"
     DELIVERY_AGENT = "DELIVERY_AGENT"
     BUSINESS_CLIENT = "BUSINESS_CLIENT"
 
