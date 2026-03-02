@@ -5,9 +5,9 @@ from ..models import User, UserRole
 from ..schemas import UserRegister, UserLogin
 from ..auth import hash_password, verify_password, create_access_token
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
-@router.post("/register")
+@router.post("/register", status_code=201)
 def register_user(data: UserRegister, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
@@ -24,7 +24,7 @@ def register_user(data: UserRegister, db: Session = Depends(get_db)):
     db.refresh(user)
     return {"message": "User registered successfully"}
 
-@router.post("/login")
+@router.post("/login", status_code=200)
 def login_user(data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
 
@@ -32,4 +32,4 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token({"sub": user.email, "role": user.role.value})
-    return {"access_token": token, "role": user.role}
+    return {"access_token": token, "role": user.role.value}

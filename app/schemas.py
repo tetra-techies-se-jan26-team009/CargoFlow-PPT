@@ -14,6 +14,7 @@ class DeliveryAgentCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    phone: str
 
 class ShipmentCreate(BaseModel):
     sender_name: str
