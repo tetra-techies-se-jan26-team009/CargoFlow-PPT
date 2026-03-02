@@ -16,6 +16,7 @@ def register_user(data: UserRegister, db: Session = Depends(get_db)):
     role = UserRole.BUSINESS_CLIENT
     user = User(name=data.name,
                 email=data.email,
+                phone=data.phone,
                 password_hash=hash_password(data.password),
                 role=role)
     db.add(user)

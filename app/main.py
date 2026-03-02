@@ -3,6 +3,9 @@ from .database import Base, engine, SessionLocal
 from .models import User, UserRole
 from .routes import user_routes, auth_routes, admin_routes
 from .auth import hash_password
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 app = FastAPI()
 
@@ -19,8 +22,9 @@ def startup():
 
     if not admin:
         new_admin = User(name="Admin",
-                         email="admin@logistics.com",
-                         password_hash=hash_password("admin@123"),
+                         email=os.getenv("ADMIN_EMAIL"),
+                         password_hash=hash_password(os.getenv("ADMIN_PASSWORD")),
+                         phone=os.getenv("ADMIN_PHONE"),
                          role=UserRole.ADMIN,
                          is_active=True)
         db.add(new_admin)
