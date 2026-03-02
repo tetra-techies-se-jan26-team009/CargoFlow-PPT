@@ -36,13 +36,9 @@ def get_shipments(db: Session = Depends(get_db),
         return db.query(Shipment).all()
 
     if current_user.role == UserRole.BUSINESS_CLIENT:
-        return db.query(Shipment).filter(
-            Shipment.client_id == current_user.id
-        ).all()
+        return db.query(Shipment).filter(Shipment.client_id == current_user.id).all()
 
     if current_user.role == UserRole.DELIVERY_AGENT:
-        return db.query(Shipment).filter(
-            Shipment.delivery_agent_id == current_user.id
-        ).all()
+        return db.query(Shipment).filter(Shipment.delivery_agent_id == current_user.id).all()
 
     return []

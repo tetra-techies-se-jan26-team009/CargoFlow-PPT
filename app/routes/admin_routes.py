@@ -25,7 +25,7 @@ def add_delivery_agent(data: DeliveryAgentCreate,
     db.refresh(user)
     return {"message": "Delivery agent added successfully"}
 
-@router.get("/get-delivery-agent", status_code=200)
+@router.get("/get-delivery-agents", status_code=200)
 def get_delivery_agent(db: Session = Depends(get_db), 
                        current_user = Depends(require_role(UserRole.ADMIN))):
     
@@ -42,3 +42,18 @@ def get_delivery_agent(db: Session = Depends(get_db),
         }
         for agent in agents
     ]
+
+@router.patch("/delivery-agent/{agent_id}/status", status_code=200)
+def block_unblock_delivery_agent(agent_id: int,
+                                 db: Session = Depends(get_db),
+                                 current_user = Depends(require_role(UserRole.ADMIN))):
+    
+    agent = db.query(User).filter(User.id == agent_id, User.role == UserRole.DELIVERY_AGENT).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Delivery agent not found")
+    else:
+        agent.is_active = not agent.is_active
+        db.commit()
+        db.refresh(agent)
+
+    return {"message": f"Agent {agent.name} unblocked" if agent.is_active else f"Agent {agent.name} blocked"}
