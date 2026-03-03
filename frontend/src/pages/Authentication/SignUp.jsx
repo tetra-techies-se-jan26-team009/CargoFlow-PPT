@@ -1,161 +1,214 @@
 import React, { useState } from "react";
-import { Auth } from './Auth'
+import { Link, useNavigate } from "react-router-dom";
+import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/24/solid";
+import api from "../../utils/api";
 
+const Field = ({ label, field, type = "text", placeholder, formData, errors, handleChange, handleBlur }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <input
+            type={type}
+            value={formData[field]}
+            onChange={handleChange(field)}
+            onBlur={handleBlur(field)}
+            placeholder={placeholder}
+            className={`w-full border rounded px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 transition
+                ${errors[field]
+                    ? "border-red-500 focus:ring-red-200"
+                    : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+                }`}
+        />
+        {errors[field] && (
+            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {errors[field]}
+            </p>
+        )}
+    </div>
+);
 
-const getDaysInMonth = (month, year) => {
-    return new Date(year, month, 0).getDate();
-};
+const Signup = () => {
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+    const [serverError, setServerError] = useState("");
 
-const generateYears = (start = 1950) => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let y = currentYear; y >= start; y--) years.push(y);
-    return years;
-};
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
+    });
 
-const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-];
+    const stats = [
+        { icon: TruckIcon, value: "99.8%", label: "On-time Delivery" },
+        { icon: InboxIcon, value: "250K+", label: "Shipments Managed" },
+        { icon: PhoneArrowDownLeftIcon, value: "24/7", label: "Support" },
+    ];
 
+    const [errors, setErrors] = useState({});
 
-const SignupForm = () => {
-    const today = new Date();
+    const validate = (field, value) => {
+        switch (field) {
+            case "email":
+                if (!value) return "Email is required";
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address";
+                return "";
+            case "password":
+                if (!value) return "Password is required";
+                if (value.length < 6) return "Password must be at least 6 characters";
+                return "";
+            case "confirmPassword":
+                if (!value) return "Please confirm your password";
+                if (value !== formData.password) return "Passwords do not match";
+                return "";
+            default:
+                if (!value) return "This field is required";
+                return "";
+        }
+    };
 
-    const [year, setYear] = useState(today.getFullYear());
-    const [month, setMonth] = useState(today.getMonth() + 1); // 1-12
-    const [day, setDay] = useState(today.getDate());
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1;
-    const currentDay = today.getDate();
+    const handleChange = (field) => (e) => {
+        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+        setServerError("");
+        if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+    };
 
-    const daysInMonth = getDaysInMonth(month, year);
+    const handleBlur = (field) => () => {
+        const err = validate(field, formData[field]);
+        setErrors((prev) => ({ ...prev, [field]: err }));
+    };
+
+    const handleSubmit = async () => {
+        const newErrors = {};
+        Object.keys(formData).forEach((field) => {
+            const err = validate(field, formData[field]);
+            if (err) newErrors[field] = err;
+        });
+        setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) return;
+
+        setIsLoading(true);
+        setServerError("");
+
+        try {
+            await api.post("/api/auth/register", {
+                name: `${formData.firstName} ${formData.lastName}`.trim(),
+                email: formData.email,
+                phone: formData.phone, 
+                password: formData.password,
+            });
+
+            navigate("/login", { state: { registered: true } });
+
+        } catch (err) {
+            const detail = err.response?.data?.detail;
+            if (detail === "Email already registered") {
+                setErrors((prev) => ({ ...prev, email: "This email is already registered" }));
+            } else {
+                setServerError(detail || "Registration failed. Please try again.");
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
-        <div className="mx-auto max-w-[432px] bg-white rounded-md my-7 shadow-lg drop-shadow-md">
-            <div className="px-4 py-3 flex justify-between">
-                <div>
-                    <h2 className="font-bold" style={{ fontSize: 32 }}>Sign Up</h2>
-                    <p className="text-gray-500" style={{ fontSize: 15 }}>It's quick and easy.</p>
+        <div className="min-h-screen flex font-sans">
+            <div className="flex-1 flex flex-col bg-white">
+                <div className="flex justify-start px-8 pt-6">
+                    <Link to="/" className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to Home
+                    </Link>
                 </div>
-                <div style={{ cursor: 'pointer' }} className="text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+
+                <div className="flex-1 flex items-center justify-center px-8 py-6">
+                    <div className="w-full max-w-sm">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-1">Create Your Account</h2>
+                        <p className="text-sm text-gray-500 mb-5">Fill in your details to get started.</p>
+                        {serverError && (
+                            <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+                                {serverError}
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <Field label="First Name" field="firstName" placeholder="John"
+                                        formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                                </div>
+                                <div className="flex-1">
+                                    <Field label="Last Name" field="lastName" placeholder="Doe"
+                                        formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                                </div>
+                            </div>
+
+                            <Field label="Email Address" field="email" type="email" placeholder="email@business.com"
+                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+
+                            <Field label="Phone Number" field="phone" type="tel" placeholder="+91 98765 43210"
+                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+
+                            <Field label="Password" field="password" type="password" placeholder="Min. 6 characters"
+                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+
+                            <Field label="Confirm Password" field="confirmPassword" type="password" placeholder="Re-enter password"
+                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                            className="mt-5 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm py-2.5 rounded transition"
+                        >
+                            {isLoading ? "Creating Account..." : "CREATE ACCOUNT"}
+                        </button>
+
+                        <p className="mt-4 text-center text-sm text-gray-500">
+                            Already have an account?{" "}
+                            <Link to="/login" className="text-blue-600 font-medium hover:underline">
+                                Log In
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
-            <hr className="bg-gray-600" />
-            <div className="px-4 pt-3 pb-6 space-y-3">
-                <div className="space-x-3 flex">
-                    <input type="text" placeholder="First name" className="flex-1 ring-1 ring-gray-400 rounded-md text-md px-2 py-2 outline-none bg-gray-100 focus:placeholder-gray-500" />
-                    <input type="text" placeholder="Surname" className="flex-1 ring-1 ring-gray-400 rounded-md text-md px-2 py-2 outline-none bg-gray-100 focus:placeholder-gray-500" />
+
+            <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
+                <div className="text-white font-bold text-lg tracking-wide">
+                    <span className="border border-white px-2 pb-1 mr-1 text-sm">Cargo</span>
+                    Flow
                 </div>
                 <div>
-                    <input type="text" placeholder="Mobile number or email address" className="w-full ring-1 ring-gray-400 rounded-md text-md px-2 py-2 outline-none bg-gray-100 focus:placeholder-gray-500" />
-                </div>
-                <div>
-                    <input type="password" placeholder="New password" className="w-full ring-1 ring-gray-400 rounded-md text-md px-2 py-2 outline-none bg-gray-100 focus:placeholder-gray-500" />
-                </div>
-                <div>
-                    <div className="text-gray-500" style={{ fontSize: 12 }}>
-                        Date of birth <a href> (?) </a>
-                    </div>
-                    <div className="mt-1 flex space-x-3">
-
-                        {/* DAY */}
-                        <select
-                            value={day}
-                            onChange={(e) => setDay(Number(e.target.value))}
-                            className="text-md flex-1 px-1 py-1.5 ring-1 ring-gray-400 rounded-md outline-none"
-                        >
-                            {[...Array(daysInMonth)]
-                                .map((_, i) => i + 1)
-                                .filter((d) =>
-                                    year < currentYear ||
-                                    month < currentMonth ||
-                                    d <= currentDay
-                                )
-                                .map((d) => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                        </select>
-
-                        {/* MONTH */}
-                        <select
-                            value={month}
-                            onChange={(e) => setMonth(Number(e.target.value))}
-                            className="text-md flex-1 px-1 py-1.5 ring-1 ring-gray-400 rounded-md outline-none"
-                        >
-                            {months
-                                .map((m, i) => ({ name: m, value: i + 1 }))
-                                .filter((m) => year < currentYear || m.value <= currentMonth)
-                                .map((m) => (
-                                    <option key={m.value} value={m.value}>{m.name}</option>
-                                ))}
-                        </select>
-
-                        {/* YEAR */}
-                        <select
-                            value={year}
-                            onChange={(e) => setYear(Number(e.target.value))}
-                            className="text-md flex-1 px-1 py-1.5 ring-1 ring-gray-400 rounded-md outline-none"
-                        >
-                            {generateYears(1950)
-                                .filter((y) => y <= currentYear)
-                                .map((y) => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                        </select>
-
-                    </div>
-                </div>
-                <div>
-                    <div className="text-gray-500" style={{ fontSize: 12 }}>
-                        Gender <a href> (?) </a>
-                    </div>
-                    <div className="mt-1 flex space-x-3">
-                        <label htmlFor="female" className="flex-1 flex space-x-2 justify-between items-center rounded-md px-2 py-1 border border-gray-400">
-                            <span>Female</span>
-                            <input type="radio" id="female" name="gender" />
-                        </label>
-                        <label htmlFor="male" className="flex-1 flex space-x-2 justify-between items-center rounded-md px-2 py-1 border border-gray-400">
-                            <span>Male</span>
-                            <input type="radio" id="male" name="gender" />
-                        </label>
-                        <label htmlFor="other" className="flex-1 flex space-x-2 justify-between items-center rounded-md px-2 py-1 border border-gray-400">
-                            <span>Custom</span>
-                            <input type="radio" id="other" name="gender" />
-                        </label>
-                    </div>
-                </div>
-                {/* <div>
-                    <p className="text-gray-600" style={{ fontSize: 11 }}>
-                        People who use our service may have uploaded your contact information to
-                        Facebook.
-                        <a href className="hover:text-blue-900 font-medium hover:underline">Learn more</a>.
+                    <h1 className="text-5xl font-bold leading-snug mb-3">
+                        Logistics Partner<br />for SMEs
+                    </h1>
+                    <p className="text-sm text-accent leading-relaxed mb-8">
+                        Trust. Speed. Visibility.<br /> CargoFlow provides reliable shipment management solutions for your growing business.
                     </p>
-                    <p className="text-gray-600 mt-4" style={{ fontSize: 11 }}>
-                        By clicking Sign Up, you agree to our
-                        <a href className="hover:text-blue-900 font-medium hover:underline">Terms</a>,
-                        <a href className="hover:text-blue-900 font-medium hover:underline">Privacy Policy</a>
-                        and
-                        <a href className="hover:text-blue-900 font-medium hover:underline">Cookies Policy</a>. You may receive SMS notifications from us and can opt out at any
-                        time.
-                    </p>
-                </div> */}
-                <div className="text-center">
-                    <button className="text-accent px-16 py-1 bg-primary rounded-md" style={{ fontSize: 18 }}>
-                        Sign Up
-                    </button>
+                    <div className="grid grid-cols-3 gap-3">
+                        {stats.map((s) => (
+                            <div key={s.label} className="bg-accent text-[#0f1c2e] rounded-lg p-3 flex flex-col items-center text-center">
+                                <span className="mb-1"><s.icon className="w-7 h-7" /></span>
+                                <span className="text-base font-bold">{s.value}</span>
+                                <span className="text-[10px] mt-0.5">{s.label}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
+                <div />
             </div>
         </div>
     );
-}
+};
 
-export default function Signup() {
-    return (
-        <Auth>
-            <SignupForm />
-        </Auth>
-    );
-}
+export default Signup;

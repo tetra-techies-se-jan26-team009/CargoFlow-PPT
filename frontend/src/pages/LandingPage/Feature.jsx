@@ -38,9 +38,11 @@ export function Feature() {
                     <p className="text-sm font-semibold text-primary">
                         We Provide
                     </p>
+                    
                     <h2 className="mt-2 text-4xl font-bold tracking-tight text-black sm:text-5xl">
                         Everything to Ship
                     </h2>
+                    
                 </div>
 
                 {/* Cards */}
