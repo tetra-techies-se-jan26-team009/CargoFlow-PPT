@@ -48,7 +48,7 @@ export default function ClientsPage() {
         <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
             <DashboardNavbar />
 
-            <main style={{ flex: 1, overflow: "auto", padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+            <main style={{ flex: 1, overflow: "auto", padding: "24px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
 
                 {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

@@ -339,12 +339,11 @@ export default function AdminDashboard() {
         >
             <DashboardNavbar />
             {/* MAIN */}
-            <AppLayout>
                 <main
                     style={{
                         flex: 1,
                         overflow: "auto",
-                        padding: "24px 28px",
+                        padding: "24px 100px",
                         display: "flex",
                         flexDirection: "column",
                         gap: 20,
@@ -1293,7 +1292,6 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 </main>
-            </AppLayout>
         </div>
     );
 }

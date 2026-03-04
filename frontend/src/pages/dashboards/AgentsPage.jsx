@@ -1,155 +1,514 @@
 import { useState } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
 
-const Icon = ({ d, size=16, stroke="currentColor", fill="none", strokeWidth=1.6 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-    <path d={d}/>
+const Icon = ({
+  d,
+  size = 16,
+  stroke = "currentColor",
+  fill = "none",
+  strokeWidth = 1.6,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={fill}
+    stroke={stroke}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={d} />
   </svg>
 );
 
 const icons = {
-  plus:   "M12 5v14 M5 12h14",
+  plus: "M12 5v14 M5 12h14",
   search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-  phone:  "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.43 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 013.34 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.91 7.91a16 16 0 006.29 6.29l.79-.79a2 2 0 012.1-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
-  mail:   "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
-  truck:  "M1 3h15v13H1z M16 8h4l3 3v5h-7V8z M5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z",
-  edit:   "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+  phone:
+    "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.43 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 013.34 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.91 7.91a16 16 0 006.29 6.29l.79-.79a2 2 0 012.1-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
+  mail: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
+  truck:
+    "M1 3h15v13H1z M16 8h4l3 3v5h-7V8z M5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z",
+  edit: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
 };
 
 const agents = [
-  { id:"AGT-001", name:"Ravi Kumar",  email:"ravi@v1logistics.com",  phone:"+91 98765 43210", status:"Active", deliveries:11, completed:142, rate:"98.2%", zone:"Chennai",   joined:"Jan 2024" },
-  { id:"AGT-002", name:"Priya Nair",  email:"priya@v1logistics.com", phone:"+91 87654 32109", status:"Active", deliveries:9,  completed:198, rate:"100%",  zone:"Kochi",     joined:"Mar 2024" },
-  { id:"AGT-003", name:"Arjun Das",   email:"arjun@v1logistics.com", phone:"+91 76543 21098", status:"Idle",   deliveries:6,  completed:87,  rate:"83.5%", zone:"Hyderabad", joined:"Jun 2024" },
-  { id:"AGT-004", name:"Meena Shah",  email:"meena@v1logistics.com", phone:"+91 65432 10987", status:"Active", deliveries:14, completed:223, rate:"95.7%", zone:"Mumbai",    joined:"Feb 2024" },
-  { id:"AGT-005", name:"Kiran Roy",   email:"kiran@v1logistics.com", phone:"+91 54321 09876", status:"Off",    deliveries:4,  completed:64,  rate:"90.0%", zone:"Kolkata",   joined:"Aug 2024" },
-  { id:"AGT-006", name:"Sneha Gupta", email:"sneha@v1logistics.com", phone:"+91 43210 98765", status:"Active", deliveries:8,  completed:176, rate:"97.1%", zone:"Delhi",     joined:"Apr 2024" },
+  {
+    id: "AGT-001",
+    name: "Ravi Kumar",
+    email: "ravi@v1logistics.com",
+    phone: "+91 98765 43210",
+    status: "Active",
+    deliveries: 11,
+    completed: 142,
+    rate: "98.2%",
+    zone: "Chennai",
+    joined: "Jan 2024",
+  },
+  {
+    id: "AGT-002",
+    name: "Priya Nair",
+    email: "priya@v1logistics.com",
+    phone: "+91 87654 32109",
+    status: "Active",
+    deliveries: 9,
+    completed: 198,
+    rate: "100%",
+    zone: "Kochi",
+    joined: "Mar 2024",
+  },
+  {
+    id: "AGT-003",
+    name: "Arjun Das",
+    email: "arjun@v1logistics.com",
+    phone: "+91 76543 21098",
+    status: "Block",
+    deliveries: 6,
+    completed: 87,
+    rate: "83.5%",
+    zone: "Hyderabad",
+    joined: "Jun 2024",
+  },
+  {
+    id: "AGT-004",
+    name: "Meena Shah",
+    email: "meena@v1logistics.com",
+    phone: "+91 65432 10987",
+    status: "Active",
+    deliveries: 14,
+    completed: 223,
+    rate: "95.7%",
+    zone: "Mumbai",
+    joined: "Feb 2024",
+  },
+  {
+    id: "AGT-005",
+    name: "Kiran Roy",
+    email: "kiran@v1logistics.com",
+    phone: "+91 54321 09876",
+    status: "Off",
+    deliveries: 4,
+    completed: 64,
+    rate: "90.0%",
+    zone: "Kolkata",
+    joined: "Aug 2024",
+  },
+  {
+    id: "AGT-006",
+    name: "Sneha Gupta",
+    email: "sneha@v1logistics.com",
+    phone: "+91 43210 98765",
+    status: "Active",
+    deliveries: 8,
+    completed: 176,
+    rate: "97.1%",
+    zone: "Delhi",
+    joined: "Apr 2024",
+  },
 ];
 
-const statusColor = { Active:"#22C55E", Idle:"#F59E0B", Off:"#9CA3AF" };
-const statusBg    = { Active:"#D1FAE5", Idle:"#FEF3C7", Off:"#F1F5F9" };
-const statusTxt   = { Active:"#065F46", Idle:"#92400E", Off:"#64748B" };
+const statusColor = { Active: "#22C55E", Block: "#FF0000", Off: "#9CA3AF" };
+const statusBg = { Active: "#D1FAE5", Block: "#FAD1D1", Off: "#F1F5F9" };
+const statusTxt = { Active: "#065F46", Idle: "#92400E", Off: "#64748B" };
 
 export default function AgentsPage() {
-  const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("All");
-//   const [viewMode, setViewMode] = useState("grid"); // grid | table
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
 
-  const filtered = agents.filter(a => {
+  const filtered = agents.filter((a) => {
     const matchStatus = filter === "All" || a.status === filter;
-    const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.zone.toLowerCase().includes(search.toLowerCase());
+    const matchSearch =
+      !search ||
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.zone.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100vh", fontFamily:"'DM Sans','Segoe UI',sans-serif", background:"#F1F5F9", color:"#0F172A" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        fontFamily: "'DM Sans','Segoe UI',sans-serif",
+        background: "#F1F5F9",
+        color: "#0F172A",
+      }}
+    >
       <DashboardNavbar />
 
-      <main style={{ flex:1, overflow:"auto", padding:"24px 28px", display:"flex", flexDirection:"column", gap:20 }}>
-
-        {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+      <main
+        style={{
+          flex: 1,
+          overflow: "auto",
+          padding: "24px 100px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <div>
-            <h1 style={{ fontSize:22, fontWeight:800, color:"#0F172A", margin:0, letterSpacing:"-0.5px" }}>Manage Agents</h1>
-            <p style={{ fontSize:12, color:"#94A3B8", margin:"4px 0 0" }}>{agents.length} delivery agents in your network</p>
+            <h1
+              style={{
+                fontSize: 22,
+                fontWeight: 800,
+                color: "#0F172A",
+                margin: 0,
+                letterSpacing: "-0.5px",
+              }}
+            >
+              Manage Agents
+            </h1>
+            <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>
+              {agents.length} delivery agents in your network
+            </p>
           </div>
-          <button style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 18px", border:"none", borderRadius:8, background:"#2563EB", color:"white", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-            <Icon d={icons.plus} size={13} stroke="white"/> Add Agent
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "9px 18px",
+              border: "none",
+              borderRadius: 8,
+              background: "#2563EB",
+              color: "white",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Icon d={icons.plus} size={13} stroke="white" /> Add Agent
           </button>
         </div>
 
-        {/* KPI Summary */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4,1fr)",
+            gap: 12,
+          }}
+        >
           {[
-            { label:"Total Agents",    value:agents.length,                        color:"#2563EB" },
-            { label:"Active Now",      value:agents.filter(a=>a.status==="Active").length, color:"#10B981" },
-            { label:"Idle",            value:agents.filter(a=>a.status==="Idle").length,   color:"#F59E0B" },
-            { label:"Off Duty",        value:agents.filter(a=>a.status==="Off").length,    color:"#9CA3AF" },
-          ].map(k => (
-            <div key={k.label} style={{ background:"white", borderRadius:10, padding:"14px 18px", boxShadow:"0 1px 3px rgba(0,0,0,0.05)", border:"1px solid #F1F5F9" }}>
-              <div style={{ fontSize:28, fontWeight:800, color:k.color, letterSpacing:"-1px" }}>{k.value}</div>
-              <div style={{ fontSize:11, color:"#94A3B8", marginTop:3 }}>{k.label}</div>
+            { label: "Total Agents", value: agents.length, color: "#2563EB" },
+            {
+              label: "Active Now",
+              value: agents.filter((a) => a.status === "Active").length,
+              color: "#10B981",
+            },
+            {
+              label: "Block",
+              value: agents.filter((a) => a.status === "Block").length,
+              color: "#FF0000",
+            },
+            {
+              label: "Off Duty",
+              value: agents.filter((a) => a.status === "Off").length,
+              color: "#9CA3AF",
+            },
+          ].map((k) => (
+            <div
+              key={k.label}
+              style={{
+                background: "white",
+                borderRadius: 10,
+                padding: "14px 18px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                border: "1px solid #F1F5F9",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  color: k.color,
+                  letterSpacing: "-1px",
+                }}
+              >
+                {k.value}
+              </div>
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
+                {k.label}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Filters */}
-        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-          <div style={{ position:"relative", flex:1, maxWidth:280 }}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search agents or zones..."
-              style={{ width:"100%", border:"1px solid #E2E8F0", borderRadius:8, padding:"7px 12px 7px 34px", fontSize:12, color:"#334155", outline:"none", background:"white", boxSizing:"border-box" }}/>
-            <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)" }}>
-              <Icon d={icons.search} size={13} stroke="#94A3B8"/>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ position: "relative", flex: 1, maxWidth: 280 }}>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search agents or zones..."
+              style={{
+                width: "100%",
+                border: "1px solid #E2E8F0",
+                borderRadius: 8,
+                padding: "7px 12px 7px 34px",
+                fontSize: 12,
+                color: "#334155",
+                outline: "none",
+                background: "white",
+                boxSizing: "border-box",
+              }}
+            />
+            <span
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+              }}
+            >
+              <Icon d={icons.search} size={13} stroke="#94A3B8" />
             </span>
           </div>
-          {["All","Active","Idle","Off"].map(f => (
-            <button key={f} onClick={()=>setFilter(f)}
-              style={{ padding:"7px 14px", borderRadius:8, border:"1px solid", borderColor:filter===f?"#2563EB":"#E2E8F0", background:filter===f?"#EFF6FF":"white", color:filter===f?"#2563EB":"#64748B", fontSize:12, fontWeight:filter===f?600:400, cursor:"pointer" }}>
+          {["All", "Active", "Block", "Off"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              style={{
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "1px solid",
+                borderColor: filter === f ? "#2563EB" : "#E2E8F0",
+                background: filter === f ? "#EFF6FF" : "white",
+                color: filter === f ? "#2563EB" : "#64748B",
+                fontSize: 12,
+                fontWeight: filter === f ? 600 : 400,
+                cursor: "pointer",
+              }}
+            >
               {f}
             </button>
           ))}
         </div>
 
-        {/* Agent Grid */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
-          {filtered.map(agent => (
-            <div key={agent.id} style={{ background:"white", borderRadius:12, padding:"20px", boxShadow:"0 1px 3px rgba(0,0,0,0.06)", border:"1px solid #F1F5F9", transition:"all 0.15s" }}
-              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.09)"}
-              onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.06)"}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3,1fr)",
+            gap: 14,
+          }}
+        >
+          {filtered.map((agent) => {
+            const isDisabled =
+              agent.status === "Block" || agent.status === "Off";
 
-              {/* Top row */}
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:14 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:44, height:44, borderRadius:"50%", background:"#EFF6FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:700, color:"#2563EB" }}>
-                    {agent.name[0]}
+            return (
+              <div
+                key={agent.id}
+                style={{
+                  background: "white",
+                  borderRadius: 12,
+                  padding: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                  border: "1px solid #F1F5F9",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.boxShadow =
+                    "0 4px 16px rgba(0,0,0,0.09)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.boxShadow =
+                    "0 1px 3px rgba(0,0,0,0.06)")
+                }
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    marginBottom: 14,
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: "#EFF6FF",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: "#2563EB",
+                      }}
+                    >
+                      {agent.name[0]}
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "#0F172A",
+                        }}
+                      >
+                        {agent.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#94A3B8",
+                          marginTop: 2,
+                        }}
+                      >
+                        {agent.id} · {agent.zone}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize:14, fontWeight:700, color:"#0F172A" }}>{agent.name}</div>
-                    <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{agent.id} · {agent.zone}</div>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "3px 9px",
+                      borderRadius: 20,
+                      background: statusBg[agent.status],
+                      color: statusTxt[agent.status],
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: statusColor[agent.status],
+                        display: "inline-block",
+                      }}
+                    />
+                    {agent.status}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3,1fr)",
+                    gap: 10,
+                    padding: "12px 0",
+                    borderTop: "1px solid #F1F5F9",
+                    borderBottom: "1px solid #F1F5F9",
+                    marginBottom: 14,
+                  }}
+                >
+                  {[
+                    { label: "Today", value: agent.deliveries },
+                    { label: "Total", value: agent.completed },
+                    { label: "Rate", value: agent.rate },
+                  ].map((s) => (
+                    <div key={s.label} style={{ textAlign: "center" }}>
+                      <div
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 800,
+                          color: "#0F172A",
+                        }}
+                      >
+                        {s.value}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "#94A3B8",
+                          marginTop: 2,
+                        }}
+                      >
+                        {s.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 5,
+                    marginBottom: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                      fontSize: 11,
+                      color: "#64748B",
+                    }}
+                  >
+                    <Icon d={icons.mail} size={12} stroke="#94A3B8" />{" "}
+                    {agent.email}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                      fontSize: 11,
+                      color: "#64748B",
+                    }}
+                  >
+                    <Icon d={icons.phone} size={12} stroke="#94A3B8" />{" "}
+                    {agent.phone}
                   </div>
                 </div>
-                <span style={{ fontSize:11, fontWeight:600, padding:"3px 9px", borderRadius:20, background:statusBg[agent.status], color:statusTxt[agent.status], display:"flex", alignItems:"center", gap:5 }}>
-                  <span style={{ width:6, height:6, borderRadius:"50%", background:statusColor[agent.status], display:"inline-block" }}/>
-                  {agent.status}
-                </span>
-              </div>
 
-              {/* Stats */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, padding:"12px 0", borderTop:"1px solid #F1F5F9", borderBottom:"1px solid #F1F5F9", marginBottom:14 }}>
-                {[
-                  { label:"Today",     value:agent.deliveries },
-                  { label:"Total",     value:agent.completed  },
-                  { label:"Rate",      value:agent.rate       },
-                ].map(s=>(
-                  <div key={s.label} style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:16, fontWeight:800, color:"#0F172A" }}>{s.value}</div>
-                    <div style={{ fontSize:10, color:"#94A3B8", marginTop:2 }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    style={{
+                      flex: 1,
+                      padding: "7px",
+                      border: "1px solid #E2E8F0",
+                      borderRadius: 7,
+                      background: "white",
+                      color: "#334155",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    View Profile
+                  </button>
 
-              {/* Contact + Actions */}
-              <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:14 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:7, fontSize:11, color:"#64748B" }}>
-                  <Icon d={icons.mail} size={12} stroke="#94A3B8"/> {agent.email}
+                  <button
+                    disabled={isDisabled}
+                    style={{
+                      flex: 1,
+                      padding: "7px",
+                      border: "none",
+                      borderRadius: 7,
+                      background: "#2563EB",
+                      color: "white",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: isDisabled ? "not-allowed" : "pointer",
+                      opacity: isDisabled ? 0.4 : 1,
+                    }}
+                  >
+                    Assign Task
+                  </button>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap:7, fontSize:11, color:"#64748B" }}>
-                  <Icon d={icons.phone} size={12} stroke="#94A3B8"/> {agent.phone}
-                </div>
               </div>
-
-              {/* Buttons */}
-              <div style={{ display:"flex", gap:8 }}>
-                <button style={{ flex:1, padding:"7px", border:"1px solid #E2E8F0", borderRadius:7, background:"white", color:"#334155", fontSize:11, fontWeight:500, cursor:"pointer" }}>
-                  View Profile
-                </button>
-                <button style={{ flex:1, padding:"7px", border:"none", borderRadius:7, background:"#2563EB", color:"white", fontSize:11, fontWeight:600, cursor:"pointer" }}>
-                  Assign Task
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-
       </main>
     </div>
   );

@@ -221,7 +221,7 @@ export default function ShipmentsPage() {
         style={{
           flex: 1,
           overflow: "auto",
-          padding: "24px 28px",
+          padding: "24px 100px",
           display: "flex",
           flexDirection: "column",
           gap: 20,
