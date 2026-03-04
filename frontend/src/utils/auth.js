@@ -35,4 +35,13 @@ export const getCurrentUser = async () => {
   }
 };
 
+export const updateProfile = async (formData) => {
+  try {
+    const res = await api.patch("/api/auth/me", formData);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.detail || "Failed to update profile");
+  }
+};
+
 export const logoutUser = () => removeToken();
