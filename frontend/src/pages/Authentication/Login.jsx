@@ -55,8 +55,7 @@ const Login = () => {
     <div className="min-h-screen flex font-sans">
       <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
         <div className="text-white font-bold text-lg tracking-wide">
-          <span className="border border-white px-2 mr-1 pb-1 text-sm">Cargo</span>
-          Flow
+          CargoFlow
         </div>
         <div className="mx-24">
           <h1 className="text-5xl font-bold leading-snug mb-3">

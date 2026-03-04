@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { Cog6ToothIcon } from "@heroicons/react/24/solid";
 
 const Icon = ({
     d,
@@ -35,7 +36,7 @@ const navLinks = [
     { label: "Agents", path: "/auth_admin/agents" },
     { label: "Clients", path: "/auth_admin/clients" },
     { label: "Reports", path: "/auth_admin/reports" },
-    { label: "Settings", path: "/auth_admin/settings" },
+    // { label: "Settings", path: "/auth_admin/settings" },
 ];
 
 export default function DashboardNavbar() {
@@ -51,8 +52,8 @@ export default function DashboardNavbar() {
 
     return (
         <nav
+        className="bg-tertiary"
             style={{
-                background: "#0B1F3B",
                 height: 58,
                 display: "flex",
                 alignItems: "center",
@@ -72,11 +73,8 @@ export default function DashboardNavbar() {
                 }}
                 onClick={() => navigate("/auth_admin/dashboard")}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 160 }}>
-                    <div className="text-white font-bold text-lg tracking-wide">
-                        <span className="border border-white px-2 mr-1 pb-1 text-sm">Cargo</span>
-                        Flow
-                    </div>
+                <div className="flex items-center gap-2 text-white font-bold text-lg tracking-wide">
+                    CargoFlow
                 </div>
             </div>
 
@@ -197,6 +195,20 @@ export default function DashboardNavbar() {
                     <span style={{ color: "white", fontSize: 12, fontWeight: 500 }}>
                         {user?.name || "Admin"}
                     </span>
+                </div>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "end",
+                        gap: 1,
+                        minWidth: 1,
+                        cursor: "pointer",
+                    }}
+                    onClick={() => navigate("/auth_admin/settings")}
+                >
+                    <div style={{ display: "flex", alignItems: "end", gap: 1, minWidth: 1 }}>
+                        <Cog6ToothIcon className="size-5 stroke-[rgba(255,255,255,0.6)]" />
+                    </div>
                 </div>
                 <button
                     onClick={handleLogout}
