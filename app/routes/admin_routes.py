@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import User, UserRole
+from ..models import *
 from ..schemas import DeliveryAgentCreate
 from ..auth import require_role, hash_password
 
@@ -25,7 +25,7 @@ def add_delivery_agent(data: DeliveryAgentCreate,
     db.refresh(user)
     return {"message": "Delivery agent added successfully"}
 
-@router.get("/get-delivery-agents", status_code=200)
+@router.get("/delivery-agents", status_code=200)
 def get_delivery_agent(db: Session = Depends(get_db), 
                        current_user = Depends(require_role(UserRole.ADMIN))):
     
@@ -56,4 +56,46 @@ def block_unblock_delivery_agent(agent_id: int,
         db.commit()
         db.refresh(agent)
 
-    return {"message": f"Agent {agent.name} unblocked" if agent.is_active else f"Agent {agent.name} blocked"}
+    return {
+        "agent_id": agent.id,
+        "name": agent.name,
+        "is_active": agent.is_active,
+        "message": "Agent unblocked" if agent.is_active else "Agent blocked"
+        }
+
+@router.get("/delivery-agent/{agent_id}", status_code=200)
+def get_agent(agent_id: int, 
+              db: Session = Depends(get_db), 
+              current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    agent = db.query(User).filter(User.id == agent_id,
+                                  User.role == UserRole.DELIVERY_AGENT).first()
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Delivery agent not found")
+
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "email": agent.email,
+        "phone": agent.phone,
+        "role": agent.role.value,
+        "is_active": agent.is_active,
+        "registered_on": agent.created_at
+    }
+
+@router.get("/businesses", status_code=200)
+def get_businesses(db: Session = Depends(get_db),
+                   current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    businesses = db.query(Business).all()
+
+    return [
+        {
+            "id": business.id,
+            "name": business.name,
+            "type": business.type,
+            "registered_on": business.created_at
+        }
+        for business in businesses
+    ]
