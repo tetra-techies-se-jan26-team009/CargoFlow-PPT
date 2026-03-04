@@ -39,11 +39,11 @@ const Login = () => {
 
       switch (data.role) {
         case "ADMIN":
-          navigate("/auth_admin/dashboard"); break;
+          navigate("/admin/dashboard"); break;
         case "DELIVERY_AGENT":
-          navigate("/auth_agent/dashboard"); break;
+          navigate("/agent/dashboard"); break;
         case "BUSINESS_CLIENT":
-          navigate("/auth_client/dashboard"); break;
+          navigate("/client/dashboard"); break;
         default: navigate("/");
       }
     } catch (err) {

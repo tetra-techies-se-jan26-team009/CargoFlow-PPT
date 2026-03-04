@@ -83,12 +83,12 @@ export default function App() {
       <Route path="/register" element={<Signup />} />
 
       {/* Admin — all flat, each individually protected */}
-      <Route path="/auth_admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/auth_admin/shipments" element={<AdminRoute><ShipmentsPage /></AdminRoute>} />
-      <Route path="/auth_admin/agents"    element={<AdminRoute><AgentsPage /></AdminRoute>} />
-      <Route path="/auth_admin/clients"   element={<AdminRoute><ClientsPage /></AdminRoute>} />
-      <Route path="/auth_admin/reports"   element={<AdminRoute><ReportsPage /></AdminRoute>} />
-      <Route path="/auth_admin/settings"  element={<AdminRoute><SettingsPage /></AdminRoute>} />
+      <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/shipments" element={<AdminRoute><ShipmentsPage /></AdminRoute>} />
+      <Route path="/admin/agents"    element={<AdminRoute><AgentsPage /></AdminRoute>} />
+      <Route path="/admin/clients"   element={<AdminRoute><ClientsPage /></AdminRoute>} />
+      <Route path="/admin/reports"   element={<AdminRoute><ReportsPage /></AdminRoute>} />
+      <Route path="/admin/settings"  element={<AdminRoute><SettingsPage /></AdminRoute>} />
 
       {/* Catch-all */}
       <Route path="/unauthorized" element={<div className="p-8 text-center text-red-500 text-xl">Access Denied</div>} />

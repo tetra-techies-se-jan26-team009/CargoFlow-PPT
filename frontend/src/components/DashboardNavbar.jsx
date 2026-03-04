@@ -31,12 +31,11 @@ const icons = {
 };
 
 const navLinks = [
-    { label: "Dashboard", path: "/auth_admin/dashboard" },
-    { label: "Shipments", path: "/auth_admin/shipments" },
-    { label: "Agents", path: "/auth_admin/agents" },
-    { label: "Clients", path: "/auth_admin/clients" },
-    { label: "Reports", path: "/auth_admin/reports" },
-    // { label: "Settings", path: "/auth_admin/settings" },
+    { label: "Dashboard", path: "/admin/dashboard" },
+    { label: "Shipments", path: "/admin/shipments" },
+    { label: "Agents", path: "/admin/agents" },
+    { label: "Clients", path: "/admin/clients" },
+    { label: "Reports", path: "/admin/reports" },
 ];
 
 export default function DashboardNavbar() {
@@ -204,7 +203,7 @@ export default function DashboardNavbar() {
                         minWidth: 1,
                         cursor: "pointer",
                     }}
-                    onClick={() => navigate("/auth_admin/settings")}
+                    onClick={() => navigate("/admin/settings")}
                 >
                     <div style={{ display: "flex", alignItems: "end", gap: 1, minWidth: 1 }}>
                         <Cog6ToothIcon className="size-5 stroke-[rgba(255,255,255,0.6)]" />

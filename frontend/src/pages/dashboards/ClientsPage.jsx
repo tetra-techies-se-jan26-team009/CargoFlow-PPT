@@ -45,104 +45,107 @@ export default function ClientsPage() {
     });
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
-            <DashboardNavbar />
+        <>
+        <title>Clients | CargoFlow</title>
+            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
+                <DashboardNavbar />
 
-            <main style={{ flex: 1, overflow: "auto", padding: "24px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
+                <main style={{ flex: 1, overflow: "auto", padding: "24px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-                {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div>
-                        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.5px" }}>Manage Clients</h1>
-                        <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>{clients.length} registered business clients</p>
-                    </div>
-                    <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                        <Icon d={icons.plus} size={13} stroke="white" /> Add Client
-                    </button>
-                </div>
-
-                {/* KPIs */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
-                    {[
-                        { label: "Total Clients", value: clients.length, color: "#2563EB" },
-                        { label: "Active", value: clients.filter(c => c.status === "Active").length, color: "#10B981" },
-                        { label: "Overdue", value: clients.filter(c => c.status === "Overdue").length, color: "#EF4444" },
-                        { label: "Total Revenue", value: "₹6.12L", color: "#7C3AED" },
-                    ].map(k => (
-                        <div key={k.label} style={{ background: "white", borderRadius: 10, padding: "14px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #F1F5F9" }}>
-                            <div style={{ fontSize: 26, fontWeight: 800, color: k.color, letterSpacing: "-0.5px" }}>{k.value}</div>
-                            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>{k.label}</div>
+                    {/* Header */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div>
+                            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.5px" }}>Manage Clients</h1>
+                            <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>{clients.length} registered business clients</p>
                         </div>
-                    ))}
-                </div>
-
-                {/* Filters */}
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients, contacts, cities..."
-                            style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "7px 12px 7px 34px", fontSize: 12, color: "#334155", outline: "none", background: "white", boxSizing: "border-box" }} />
-                        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
-                            <Icon d={icons.search} size={13} stroke="#94A3B8" />
-                        </span>
-                    </div>
-                    {["All", "Active", "Overdue", "Inactive"].map(f => (
-                        <button key={f} onClick={() => setFilter(f)}
-                            style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid", borderColor: filter === f ? "#2563EB" : "#E2E8F0", background: filter === f ? "#EFF6FF" : "white", color: filter === f ? "#2563EB" : "#64748B", fontSize: 12, fontWeight: filter === f ? 600 : 400, cursor: "pointer" }}>
-                            {f}
+                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                            <Icon d={icons.plus} size={13} stroke="white" /> Add Client
                         </button>
-                    ))}
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#94A3B8" }}>{filtered.length} clients</span>
-                </div>
+                    </div>
 
-                {/* Table */}
-                <div style={{ background: "white", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead>
-                            <tr style={{ background: "#F8FAFC" }}>
-                                {["Client", "Contact Person", "Email", "Phone", "City", "Shipments", "Revenue", "Status", "Joined", "Actions"].map(h => (
-                                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "#94A3B8", textAlign: "left", borderBottom: "1px solid #F1F5F9", whiteSpace: "nowrap" }}>{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map(c => (
-                                <tr key={c.id} style={{ borderBottom: "1px solid #F8FAFC", cursor: "pointer" }}
-                                    onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
-                                    onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                                    <td style={{ padding: "13px 16px" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                            <div style={{ width: 34, height: 34, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#2563EB", flexShrink: 0 }}>
-                                                {c.name[0]}
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{c.name}</div>
-                                                <div style={{ fontSize: 10, color: "#94A3B8" }}>{c.id}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: "13px 16px", fontSize: 12, color: "#334155" }}>{c.contact}</td>
-                                    <td style={{ padding: "13px 16px", fontSize: 11, color: "#64748B" }}>{c.email}</td>
-                                    <td style={{ padding: "13px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{c.phone}</td>
-                                    <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{c.city}</td>
-                                    <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{c.shipments}</td>
-                                    <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{c.revenue}</td>
-                                    <td style={{ padding: "13px 16px" }}>
-                                        <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: statusMeta[c.status]?.bg, color: statusMeta[c.status]?.color }}>{c.status}</span>
-                                    </td>
-                                    <td style={{ padding: "13px 16px", fontSize: 11, color: "#94A3B8" }}>{c.joined}</td>
-                                    <td style={{ padding: "13px 16px" }}>
-                                        <div style={{ display: "flex", gap: 6 }}>
-                                            <button style={{ padding: "5px 10px", border: "1px solid #E2E8F0", borderRadius: 6, background: "white", color: "#334155", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>View</button>
-                                            <button style={{ padding: "5px 10px", border: "none", borderRadius: 6, background: "#EFF6FF", color: "#2563EB", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Invoice</button>
-                                        </div>
-                                    </td>
+                    {/* KPIs */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+                        {[
+                            { label: "Total Clients", value: clients.length, color: "#2563EB" },
+                            { label: "Active", value: clients.filter(c => c.status === "Active").length, color: "#10B981" },
+                            { label: "Overdue", value: clients.filter(c => c.status === "Overdue").length, color: "#EF4444" },
+                            { label: "Total Revenue", value: "₹6.12L", color: "#7C3AED" },
+                        ].map(k => (
+                            <div key={k.label} style={{ background: "white", borderRadius: 10, padding: "14px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #F1F5F9" }}>
+                                <div style={{ fontSize: 26, fontWeight: 800, color: k.color, letterSpacing: "-0.5px" }}>{k.value}</div>
+                                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>{k.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Filters */}
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
+                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients, contacts, cities..."
+                                style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "7px 12px 7px 34px", fontSize: 12, color: "#334155", outline: "none", background: "white", boxSizing: "border-box" }} />
+                            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
+                                <Icon d={icons.search} size={13} stroke="#94A3B8" />
+                            </span>
+                        </div>
+                        {["All", "Active", "Overdue", "Inactive"].map(f => (
+                            <button key={f} onClick={() => setFilter(f)}
+                                style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid", borderColor: filter === f ? "#2563EB" : "#E2E8F0", background: filter === f ? "#EFF6FF" : "white", color: filter === f ? "#2563EB" : "#64748B", fontSize: 12, fontWeight: filter === f ? 600 : 400, cursor: "pointer" }}>
+                                {f}
+                            </button>
+                        ))}
+                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#94A3B8" }}>{filtered.length} clients</span>
+                    </div>
+
+                    {/* Table */}
+                    <div style={{ background: "white", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", overflow: "hidden" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <thead>
+                                <tr style={{ background: "#F8FAFC" }}>
+                                    {["Client", "Contact Person", "Email", "Phone", "City", "Shipments", "Revenue", "Status", "Joined", "Actions"].map(h => (
+                                        <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "#94A3B8", textAlign: "left", borderBottom: "1px solid #F1F5F9", whiteSpace: "nowrap" }}>{h}</th>
+                                    ))}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {filtered.map(c => (
+                                    <tr key={c.id} style={{ borderBottom: "1px solid #F8FAFC", cursor: "pointer" }}
+                                        onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
+                                        onMouseLeave={e => e.currentTarget.style.background = "white"}>
+                                        <td style={{ padding: "13px 16px" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                <div style={{ width: 34, height: 34, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#2563EB", flexShrink: 0 }}>
+                                                    {c.name[0]}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{c.name}</div>
+                                                    <div style={{ fontSize: 10, color: "#94A3B8" }}>{c.id}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: "13px 16px", fontSize: 12, color: "#334155" }}>{c.contact}</td>
+                                        <td style={{ padding: "13px 16px", fontSize: 11, color: "#64748B" }}>{c.email}</td>
+                                        <td style={{ padding: "13px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{c.phone}</td>
+                                        <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{c.city}</td>
+                                        <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{c.shipments}</td>
+                                        <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{c.revenue}</td>
+                                        <td style={{ padding: "13px 16px" }}>
+                                            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: statusMeta[c.status]?.bg, color: statusMeta[c.status]?.color }}>{c.status}</span>
+                                        </td>
+                                        <td style={{ padding: "13px 16px", fontSize: 11, color: "#94A3B8" }}>{c.joined}</td>
+                                        <td style={{ padding: "13px 16px" }}>
+                                            <div style={{ display: "flex", gap: 6 }}>
+                                                <button style={{ padding: "5px 10px", border: "1px solid #E2E8F0", borderRadius: 6, background: "white", color: "#334155", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>View</button>
+                                                <button style={{ padding: "5px 10px", border: "none", borderRadius: 6, background: "#EFF6FF", color: "#2563EB", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Invoice</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-            </main>
-        </div>
+                </main>
+            </div>
+        </>
     );
 }

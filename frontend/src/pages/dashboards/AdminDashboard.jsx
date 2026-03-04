@@ -1,4 +1,5 @@
-import AppLayout from "../../components/AppLayout";
+import { useState, useEffect } from "react";
+import { getCurrentUser } from "../../utils/auth";
 import DashboardNavbar from "../../components/DashboardNavbar";
 
 const Icon = ({
@@ -325,20 +326,52 @@ const LiveMap = () => (
 );
 
 export default function AdminDashboard() {
+    const [userName, setUserName] = useState("Admin");
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        return "Good Evening";
+    };
+
+    const getFormattedDate = () => {
+        return new Date().toLocaleDateString("en-IN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    };
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const user = await getCurrentUser();
+                if (user?.name) setUserName(user.name);
+            } catch (err) {
+                console.error("Failed to fetch user:", err);
+            }
+        };
+        fetchUser();
+    }, []);
+
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100vh",
-                fontFamily: "'DM Sans','Segoe UI',sans-serif",
-                background: "#F1F5F9",
-                color: "#0F172A",
-                minWidth: 1100,
-            }}
-        >
-            <DashboardNavbar />
-            {/* MAIN */}
+        <>
+            <title>Admin Dashboard | CargoFlow</title>
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: "100vh",
+                    fontFamily: "'DM Sans','Segoe UI',sans-serif",
+                    background: "#F1F5F9",
+                    color: "#0F172A",
+                    minWidth: 1100,
+                }}
+            >
+                <DashboardNavbar />
+                {/* MAIN */}
                 <main
                     style={{
                         flex: 1,
@@ -357,20 +390,13 @@ export default function AdminDashboard() {
                             justifyContent: "space-between",
                         }}
                     >
+                        {/* Welcome Header */}
                         <div>
-                            <h1
-                                style={{
-                                    fontSize: 24,
-                                    fontWeight: 800,
-                                    color: "#0F172A",
-                                    margin: 0,
-                                    letterSpacing: "-0.6px",
-                                }}
-                            >
-                                Good morning, Admin
+                            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.6px" }}>
+                                {getGreeting()}, {userName} 
                             </h1>
                             <p style={{ fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
-                                Logistics command overview — March 3, 2025 · Updated 2 min ago
+                                Logistics command overview — {getFormattedDate()} · Updated just now  {/* ✅ dynamic date */}
                             </p>
                         </div>
                         <div style={{ display: "flex", gap: 10 }}>
@@ -1292,6 +1318,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 </main>
-        </div>
+            </div>
+        </>
     );
 }
