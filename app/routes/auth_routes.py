@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User, UserRole
-from ..schemas import UserRegister, UserLogin
+from ..schemas import UserRegister, UserLogin, UserUpdate
 from ..auth import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
@@ -42,4 +42,36 @@ def get_me(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "phone": current_user.phone,
         "role": current_user.role.value
+    }
+
+@router.patch("/me", status_code=200)
+def update_me(data: UserUpdate, 
+              db: Session = Depends(get_db), 
+              current_user: User = Depends(get_current_user)):
+
+    if data.name is not None:
+        current_user.name = data.name
+
+    if data.email is not None:
+        existing_user = db.query(User).filter(User.email == data.email).first()
+        if existing_user and existing_user.id != current_user.id:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        else:
+            current_user.email = data.email
+
+    if data.phone is not None:
+        current_user.phone = data.phone
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "Profile updated successfully",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "phone": current_user.phone,
+            "role": current_user.role.value
+        }
     }
