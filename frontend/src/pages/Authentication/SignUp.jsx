@@ -118,7 +118,7 @@ const Signup = () => {
 
     return (
         <div className="min-h-screen flex font-sans">
-            <div className="flex-1 flex flex-col bg-white">
+            <div className="flex-1 flex flex-col bg-accent">
                 <div className="flex justify-start px-8 pt-6">
                     <Link to="/" className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -168,7 +168,7 @@ const Signup = () => {
                             type="button"
                             onClick={handleSubmit}
                             disabled={isLoading}
-                            className="mt-5 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm py-2.5 rounded transition"
+                            className="mt-5 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-accent font-semibold text-sm py-2.5 rounded transition"
                         >
                             {isLoading ? "Creating Account..." : "CREATE ACCOUNT"}
                         </button>
@@ -184,7 +184,7 @@ const Signup = () => {
             </div>
 
             <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
-                <div className="text-white font-bold text-lg tracking-wide">
+                <div className="text-accent font-bold text-lg tracking-wide">
                     CargoFlow
                 </div>
                 <div>

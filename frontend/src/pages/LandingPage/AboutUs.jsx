@@ -94,7 +94,7 @@ export default function AboutUs() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-white text-center">
+      <section className="py-20 bg-primary text-accent text-center">
         <h2 className="text-3xl font-semibold">
           Ready to streamline your logistics?
         </h2>

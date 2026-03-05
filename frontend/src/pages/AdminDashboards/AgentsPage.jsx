@@ -37,7 +37,7 @@ const agents = [
     {
         id: "AGT-001",
         name: "Ravi Kumar",
-        email: "ravi@v1logistics.com",
+        email: "ravi@cargoflow.com",
         phone: "+91 98765 43210",
         status: "Active",
         deliveries: 11,
@@ -49,7 +49,7 @@ const agents = [
     {
         id: "AGT-002",
         name: "Priya Nair",
-        email: "priya@v1logistics.com",
+        email: "priya@cargoflow.com",
         phone: "+91 87654 32109",
         status: "Active",
         deliveries: 9,
@@ -61,7 +61,7 @@ const agents = [
     {
         id: "AGT-003",
         name: "Arjun Das",
-        email: "arjun@v1logistics.com",
+        email: "arjun@cargoflow.com",
         phone: "+91 76543 21098",
         status: "Block",
         deliveries: 6,
@@ -73,7 +73,7 @@ const agents = [
     {
         id: "AGT-004",
         name: "Meena Shah",
-        email: "meena@v1logistics.com",
+        email: "meena@cargoflow.com",
         phone: "+91 65432 10987",
         status: "Active",
         deliveries: 14,
@@ -85,7 +85,7 @@ const agents = [
     {
         id: "AGT-005",
         name: "Kiran Roy",
-        email: "kiran@v1logistics.com",
+        email: "kiran@cargoflow.com",
         phone: "+91 54321 09876",
         status: "Off",
         deliveries: 4,
@@ -97,7 +97,7 @@ const agents = [
     {
         id: "AGT-006",
         name: "Sneha Gupta",
-        email: "sneha@v1logistics.com",
+        email: "sneha@cargoflow.com",
         phone: "+91 43210 98765",
         status: "Active",
         deliveries: 8,

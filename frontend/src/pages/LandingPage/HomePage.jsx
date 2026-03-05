@@ -37,8 +37,8 @@ export default function HomePage() {
                 <AppLayout>
                     <Logo />
                 </AppLayout>
+                    <Statistic />
                 <AppLayout>
-                    <Statistic className="" />
                     <Feature className="z-50" />
                 </AppLayout>
             </div >

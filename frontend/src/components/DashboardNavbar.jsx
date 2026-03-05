@@ -70,9 +70,9 @@ export default function DashboardNavbar() {
                     minWidth: 160,
                     cursor: "pointer",
                 }}
-                onClick={() => navigate("/auth_admin/dashboard")}
+                onClick={() => navigate("/admin/dashboard")}
             >
-                <div className="flex items-center gap-2 text-white font-bold text-lg tracking-wide">
+                <div className="flex items-center gap-2 text-accent font-bold text-lg tracking-wide">
                     CargoFlow
                 </div>
             </div>

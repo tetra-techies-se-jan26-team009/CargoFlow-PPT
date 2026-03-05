@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getCurrentUser } from "../../utils/auth";
 import DashboardNavbar from "../../components/DashboardNavbar";
+import { Link } from "react-router-dom";
 
 const Icon = ({
     d,
@@ -393,7 +394,7 @@ export default function AdminDashboard() {
                         {/* Welcome Header */}
                         <div>
                             <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.6px" }}>
-                                {getGreeting()}, {userName} 
+                                {getGreeting()}, {userName}
                             </h1>
                             <p style={{ fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
                                 Logistics command overview — {getFormattedDate()} · Updated just now  {/* ✅ dynamic date */}
@@ -653,7 +654,7 @@ export default function AdminDashboard() {
                                     >
                                         Active Shipments
                                     </h3>
-                                    <span
+                                    <Link to="/admin/shipments"
                                         style={{
                                             fontSize: 11,
                                             color: "#2563EB",
@@ -661,8 +662,9 @@ export default function AdminDashboard() {
                                             fontWeight: 600,
                                         }}
                                     >
+
                                         View all →
-                                    </span>
+                                    </Link>
                                 </div>
                                 <div
                                     style={{ display: "flex", flexDirection: "column", gap: 8 }}
@@ -951,10 +953,10 @@ export default function AdminDashboard() {
                                         color: "#0F172A",
                                     }}
                                 >
-                                    All Shipments
+                                    Today's Shipments
                                 </h3>
                                 <div style={{ display: "flex", gap: 8 }}>
-                                    {["Status", "Date Range", "Agent", "Client"].map((f) => (
+                                    {["Status", "Agent", "Client"].map((f) => (
                                         <select
                                             key={f}
                                             style={{
@@ -1180,7 +1182,9 @@ export default function AdminDashboard() {
                                         fontWeight: 600,
                                     }}
                                 >
+                                    <Link to="/admin/agents">
                                     Manage →
+                                    </Link>
                                 </span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

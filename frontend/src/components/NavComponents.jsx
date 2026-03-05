@@ -37,7 +37,7 @@ export function PopOver({ label, items }) {
                         <PopoverPanel
                             transition
                             className="absolute left-1/2 z-10 mt-3 w-screen max-w-md 
-                  -translate-x-1/2 overflow-hidden rounded-3xl bg-white shadow-lg 
+                  -translate-x-1/2 overflow-hidden rounded-3xl bg-accent shadow-lg 
                   outline outline-1 outline-gray-900/5
                   data-[closed]:translate-y-1 data-[closed]:opacity-0"
                         >

@@ -46,7 +46,7 @@ export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState("profile");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [saveMsg, setSaveMsg] = useState(null); // success | error message
+    const [saveMsg, setSaveMsg] = useState(null); 
 
     const [notifs, setNotifs] = useState({
         email_shipment: true, email_delay: true, email_report: false,
