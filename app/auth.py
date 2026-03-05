@@ -64,9 +64,12 @@ def get_current_user(
 
 
 # ---------- ROLE CHECK ----------
-def require_role(required_role: UserRole):
+def require_role(*required_roles: UserRole):
     def role_checker(current_user: User = Depends(get_current_user)):
-        if current_user.role != required_role:
-            raise HTTPException(status_code=403, detail="Access denied: insufficient role")
+        if current_user.role not in required_roles:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: insufficient role"
+            )
         return current_user
     return role_checker

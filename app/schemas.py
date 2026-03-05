@@ -23,8 +23,20 @@ class DeliveryAgentCreate(BaseModel):
     phone: str
 
 class ShipmentCreate(BaseModel):
-    sender_name: str
+
     receiver_name: str
     receiver_phone: str
-    address: str
-    cod_amount: float
+    receiver_email: EmailStr
+
+    pickup_line1: str
+    pickup_city: str
+    pickup_state: str
+    pickup_pincode: str
+
+    delivery_line1: str
+    delivery_city: str
+    delivery_state: str
+    delivery_pincode: str
+
+    weight: float
+    price: float
