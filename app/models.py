@@ -55,38 +55,18 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     phone = Column(String)
-
+    city = Column(String)
     password_hash = Column(String, nullable=False)
-
     role = Column(Enum(UserRole), default=UserRole.BUSINESS_CLIENT, nullable=False)
-
     is_active = Column(Boolean, default=True, nullable=False)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    business_id = Column(
-        Integer,
-        ForeignKey("businesses.id", ondelete="SET NULL"),
-        nullable=True
-    )
-
-    business = relationship(
-        "Business",
-        foreign_keys=[business_id],
-        back_populates="users"
-    )
-
-    owned_business = relationship(
-        "Business",
-        foreign_keys="Business.owner_id",
-        back_populates="owner",
-        uselist=False
-    )
-
+    business_id = Column(Integer, ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
+    business = relationship("Business", foreign_keys=[business_id], back_populates="users")
+    owned_business = relationship("Business", foreign_keys="Business.owner_id", back_populates="owner", uselist=False)
 
 # -------------------- Address --------------------
 
@@ -94,17 +74,13 @@ class Address(Base):
     __tablename__ = "addresses"
 
     id = Column(Integer, primary_key=True)
-
     line1 = Column(String, nullable=False)
     line2 = Column(String)
-
     city = Column(String, nullable=False)
     state = Column(String, nullable=False)
     pincode = Column(String, nullable=False)
-
     latitude = Column(Float)
     longitude = Column(Float)
-
 
 # -------------------- Shipment --------------------
 
@@ -112,45 +88,21 @@ class Shipment(Base):
     __tablename__ = "shipments"
 
     id = Column(Integer, primary_key=True)
-
     tracking_number = Column(String, unique=True, index=True, nullable=False)
-
-    sender_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
-    )
-
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     receiver_name = Column(String, nullable=False)
     receiver_phone = Column(String, nullable=False)
     receiver_email = Column(String)
 
-    pickup_address_id = Column(
-        Integer,
-        ForeignKey("addresses.id", ondelete="CASCADE"),
-        nullable=False
-    )
-
-    delivery_address_id = Column(
-        Integer,
-        ForeignKey("addresses.id", ondelete="CASCADE"),
-        nullable=False
-    )
+    pickup_address_id = Column(Integer, ForeignKey("addresses.id", ondelete="CASCADE"), nullable=False)
+    delivery_address_id = Column(Integer, ForeignKey("addresses.id", ondelete="CASCADE"), nullable=False)
 
     weight = Column(Float, nullable=False)
     price = Column(Float, nullable=False)
 
-    status = Column(
-        Enum(ShipmentStatus),
-        default=ShipmentStatus.CREATED,
-        nullable=False
-    )
+    status = Column(Enum(ShipmentStatus), default=ShipmentStatus.CREATED, nullable=False)
 
-    assigned_agent_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True
-    )
+    assigned_agent_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     eta_start_time = Column(DateTime)
     eta_end_time = Column(DateTime)

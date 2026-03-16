@@ -3,107 +3,14 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
-from ..schemas import DeliveryAgentCreate, ShipmentCreate
+from ..schemas import DeliveryAgentCreate, ShipmentCreate, UserRegister
 from ..auth import require_role, hash_password
 from datetime import date
 import random
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Routes"])
 
-@router.post("/add_delivery_agent", status_code=201)
-def add_delivery_agent(data: DeliveryAgentCreate,
-                       db: Session = Depends(get_db),
-                       current_user = Depends(require_role(UserRole.ADMIN))):
-    existing_user = db.query(User).filter(User.email == data.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user = User(name=data.name,
-                email=data.email,
-                phone=data.phone,
-                password_hash=hash_password(data.password),
-                role=UserRole.DELIVERY_AGENT)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return {"message": "Delivery agent added successfully"}
-
-@router.get("/delivery_agents", status_code=200)
-def get_delivery_agent(db: Session = Depends(get_db), 
-                       current_user = Depends(require_role(UserRole.ADMIN))):
-    
-    agents = db.query(User).filter(User.role==UserRole.DELIVERY_AGENT).all()
-    return [
-        {
-            "id": agent.id,
-            "name": agent.name,
-            "email": agent.email,
-            "phone": agent.phone,
-            "role": agent.role.value,
-            "is_active": agent.is_active,
-            "registered_on": agent.created_at
-        }
-        for agent in agents
-    ]
-
-@router.patch("/delivery_agent/{agent_id}/status", status_code=200)
-def block_unblock_delivery_agent(agent_id: int,
-                                 db: Session = Depends(get_db),
-                                 current_user = Depends(require_role(UserRole.ADMIN))):
-    
-    agent = db.query(User).filter(User.id == agent_id, User.role == UserRole.DELIVERY_AGENT).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Delivery agent not found")
-    else:
-        agent.is_active = not agent.is_active
-        db.commit()
-        db.refresh(agent)
-
-    return {
-        "agent_id": agent.id,
-        "name": agent.name,
-        "is_active": agent.is_active,
-        "message": "Agent unblocked" if agent.is_active else "Agent blocked"
-        }
-
-@router.get("/delivery_agent/{agent_id}", status_code=200)
-def get_agent(agent_id: int, 
-              db: Session = Depends(get_db), 
-              current_user: User = Depends(require_role(UserRole.ADMIN))):
-    
-    agent = db.query(User).filter(User.id == agent_id,
-                                  User.role == UserRole.DELIVERY_AGENT).first()
-
-    if not agent:
-        raise HTTPException(status_code=404, detail="Delivery agent not found")
-
-    return {
-        "id": agent.id,
-        "name": agent.name,
-        "email": agent.email,
-        "phone": agent.phone,
-        "role": agent.role.value,
-        "is_active": agent.is_active,
-        "registered_on": agent.created_at
-    }
-
-@router.get("/businesses", status_code=200)
-def get_businesses(db: Session = Depends(get_db),
-                   current_user: User = Depends(require_role(UserRole.ADMIN))):
-    
-    businesses = db.query(Business).all()
-
-    return [
-        {
-            "id": business.id,
-            "name": business.name,
-            "type": business.type,
-            "registered_on": business.created_at
-        }
-        for business in businesses
-    ]
-
-@router.get("/admin_dashboard", status_code=200)
+@router.get("/dashboard", status_code=200)
 def admin_dashboard(db: Session = Depends(get_db), 
                     current_user: User = Depends(require_role(UserRole.ADMIN))):
 
@@ -226,3 +133,194 @@ def create_shipment(data: ShipmentCreate,
         "pickup_city": pickup.city,
         "delivery_city": delivery.city
     }
+
+@router.get("/dashboard/shipments", status_code=200)
+def admin_dashboard_shipments(db: Session = Depends(get_db),
+                              current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    now = datetime.utcnow()
+
+    total_shipments = db.query(Shipment).count()
+
+    in_transit = db.query(Shipment).filter(Shipment.status.in_([ShipmentStatus.ASSIGNED,
+                                                                ShipmentStatus.OUT_FOR_DELIVERY])).count()
+
+    delivered = db.query(Shipment).filter(Shipment.status == ShipmentStatus.DELIVERED).count()
+
+    delayed = db.query(Shipment).filter(Shipment.status == ShipmentStatus.FAILED).count()
+
+    pending = db.query(Shipment).filter(Shipment.status == ShipmentStatus.CREATED).count()
+
+    shipments_query = db.query(Shipment).order_by(Shipment.created_at.desc()).all()
+
+
+    shipments = [
+        {
+            "tracking_id": s.tracking_number,
+            "client": s.sender.name if s.sender else None,
+            "agent": s.assigned_agent.name if s.assigned_agent else "Unassigned",
+            "origin": s.pickup_address.city,
+            "destination": s.delivery_address.city,
+            "weight": s.weight,
+            "price": s.price,
+            "status": s.status.value,
+            "eta": s.eta_end_time,
+            "risk": (
+                "High"
+                if s.eta_end_time and s.eta_end_time < now and s.status != ShipmentStatus.DELIVERED
+                else "Medium"
+                if s.status in [ShipmentStatus.ASSIGNED, ShipmentStatus.OUT_FOR_DELIVERY]
+                else "Low"
+            )
+        }
+        for s in shipments_query
+    ]
+
+    return {
+        "total": total_shipments,
+        "in_transit": in_transit,
+        "delivered": delivered,
+        "delayed": delayed,
+        "pending": pending,
+        "shipments": shipments
+    }
+
+@router.get("/dashboard/agents", status_code=200)
+def admin_dashboard_agents(db: Session = Depends(get_db),
+                              current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    agents = db.query(User).filter(User.role == UserRole.DELIVERY_AGENT).order_by(User.id).all()
+
+    total_agents = len(agents)
+    active_now = sum(1 for a in agents if a.is_active)
+    blocked = sum(1 for a in agents if not a.is_active)
+
+    today = date.today()
+
+    agent_list = []
+
+    for agent in agents:
+        total_deliveries = db.query(Shipment).filter(Shipment.assigned_agent_id == agent.id,
+                                                     Shipment.status == ShipmentStatus.DELIVERED).count()
+
+        today_deliveries = db.query(Shipment).filter(Shipment.assigned_agent_id == agent.id,
+                                                     Shipment.status == ShipmentStatus.DELIVERED,
+                                                     func.date(Shipment.updated_at) == today).count()
+        
+        agent_list.append({
+            "agent_id": f"AGT-{agent.id:03}",
+            "name": agent.name,
+            "city": agent.city,
+            "status": "Active" if agent.is_active else "Block",
+            "today_deliveries": today_deliveries,
+            "total_deliveries": total_deliveries,
+            "email": agent.email,
+            "phone": agent.phone
+        })
+
+    return {
+        "total_agents": total_agents,
+        "active_now": active_now,
+        "blocked": blocked,
+        "agents": agent_list
+    }
+
+@router.post("/delivery_agents", status_code=201)
+def add_delivery_agent(data: DeliveryAgentCreate,
+                       db: Session = Depends(get_db),
+                       current_user = Depends(require_role(UserRole.ADMIN))):
+    existing_user = db.query(User).filter(User.email == data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    user = User(name=data.name,
+                email=data.email,
+                phone=data.phone,
+                city=data.city,
+                password_hash=hash_password(data.password),
+                role=UserRole.DELIVERY_AGENT)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"message": "Delivery agent added successfully"}
+
+@router.patch("/delivery_agents/{agent_id}/status", status_code=200)
+def block_unblock_delivery_agent(agent_id: int,
+                                 db: Session = Depends(get_db),
+                                 current_user = Depends(require_role(UserRole.ADMIN))):
+    
+    agent = db.query(User).filter(User.id == agent_id, User.role == UserRole.DELIVERY_AGENT).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Delivery agent not found")
+    else:
+        agent.is_active = not agent.is_active
+        db.commit()
+        db.refresh(agent)
+
+    return {
+        "agent_id": agent.id,
+        "name": agent.name,
+        "is_active": agent.is_active,
+        "message": "Agent unblocked" if agent.is_active else "Agent blocked"
+        }
+
+@router.get("/dashboard/clients", status_code=200)
+def admin_dashboard_clients(db: Session = Depends(get_db),
+                            current_user: User = Depends(require_role(UserRole.ADMIN))):
+
+    clients = db.query(User).filter(User.role == UserRole.BUSINESS_CLIENT).all()
+    active = sum(1 for c in clients if c.is_active)
+    overdue = db.query(User).join(Shipment, Shipment.sender_id == User.id).filter(User.role == UserRole.BUSINESS_CLIENT,
+                                                                                  Shipment.status == ShipmentStatus.FAILED).distinct().count()
+    total_revenue = db.query(func.sum(Shipment.price)).join(User, Shipment.sender_id == User.id).filter(User.role == UserRole.BUSINESS_CLIENT).scalar() or 0
+
+    client_list = []
+
+    for client in clients:
+
+        shipments_count = db.query(Shipment).filter(Shipment.sender_id == client.id).count()
+        revenue = db.query(func.sum(Shipment.price)).filter(Shipment.sender_id == client.id).scalar() or 0
+
+        client_list.append({
+            "client_id": f"CLT-{client.id:03}",
+            "business": client.business.name if client.business else None,
+            "contact_person": client.name,
+            "email": client.email,
+            "phone": client.phone,
+            "city": client.city,
+            "shipments": shipments_count,
+            "revenue": revenue,
+            "status": "Active" if client.is_active else "Inactive",
+            "joined": client.created_at
+        })
+
+    return {
+        "total_clients": len(clients),
+        "active": active,
+        "overdue": overdue,
+        "total_revenue": total_revenue,
+        "clients": client_list
+    }
+
+@router.post("/business_clients", status_code=201)
+def add_business_client(data: UserRegister,
+                        db: Session = Depends(get_db),
+                        current_user: User = Depends(require_role(UserRole.ADMIN))):
+
+    existing_user = db.query(User).filter(User.email == data.email).first()
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    client = User(name=data.name,
+                  email=data.email,
+                  phone=data.phone,
+                  city=data.city,
+                  password_hash=hash_password(data.password),
+                  role=UserRole.BUSINESS_CLIENT)
+
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+
+    return {"message": "Business client added successfully"}

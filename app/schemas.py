@@ -6,6 +6,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     phone: str
+    city: str
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -21,6 +22,7 @@ class DeliveryAgentCreate(BaseModel):
     email: EmailStr
     password: str
     phone: str
+    city: str
 
 class ShipmentCreate(BaseModel):
 
