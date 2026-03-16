@@ -1,5 +1,8 @@
 import { useState } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
+import { monthlyData, recentReports } from "../../utils/tempData";
+import { ReportModal } from "../../components/ui/Modals/ReportModal";
+
 
 const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -16,31 +19,24 @@ const icons = {
     truck: "M1 3h15v13H1z M16 8h4l3 3v5h-7V8z M5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z",
 };
 
-const monthlyData = [
-    { month: "Oct", shipments: 62, delivered: 58, delayed: 4, revenue: 186000 },
-    { month: "Nov", shipments: 71, delivered: 67, delayed: 4, revenue: 213000 },
-    { month: "Dec", shipments: 88, delivered: 82, delayed: 6, revenue: 264000 },
-    { month: "Jan", shipments: 74, delivered: 71, delayed: 3, revenue: 222000 },
-    { month: "Feb", shipments: 81, delivered: 79, delayed: 2, revenue: 243000 },
-    { month: "Mar", shipments: 92, delivered: 88, delayed: 4, revenue: 276000 },
-];
+
 
 const maxShipments = Math.max(...monthlyData.map(d => d.shipments));
 const maxRevenue = Math.max(...monthlyData.map(d => d.revenue));
 
-const recentReports = [
-    { name: "February 2025 Summary", type: "Monthly", date: "Mar 1, 2025", size: "2.4 MB" },
-    { name: "Q4 2024 Performance Report", type: "Quarterly", date: "Jan 5, 2025", size: "5.1 MB" },
-    { name: "January 2025 Summary", type: "Monthly", date: "Feb 1, 2025", size: "2.1 MB" },
-    { name: "Agent Performance – Feb", type: "Agent", date: "Mar 1, 2025", size: "1.8 MB" },
-    { name: "Client Revenue – Q4", type: "Client", date: "Jan 10, 2025", size: "3.2 MB" },
-];
+
 
 const typeBg = { Monthly: "#DBEAFE", Quarterly: "#EDE9FE", Agent: "#D1FAE5", Client: "#FEF3C7" };
 const typeTxt = { Monthly: "#1D4ED8", Quarterly: "#6D28D9", Agent: "#065F46", Client: "#92400E" };
 
 export default function ReportsPage() {
     const [range, setRange] = useState("6M");
+    const [modal, setModal] = useState(null);
+    const [setModalData] = useState(null);
+
+    const openModal = (key, data = null) => { setModal(key); setModalData(data); };
+    const closeModal = () => { setModal(null); setModalData(null); };
+
 
     const totals = monthlyData.reduce((acc, m) => ({
         shipments: acc.shipments + m.shipments,
@@ -51,7 +47,10 @@ export default function ReportsPage() {
 
     return (
         <>
-        <title>Reports | CargoFlow</title>
+            <title>Reports | CargoFlow</title>
+            {modal === "report" && (
+                <ReportModal shipments={monthlyData} onClose={closeModal} />
+            )}
             <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
                 <DashboardNavbar />
 
@@ -70,7 +69,7 @@ export default function ReportsPage() {
                                     {r}
                                 </button>
                             ))}
-                            <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                            <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }}onClick={()=>openModal("report")}>
                                 <Icon d={icons.download} size={13} stroke="white" /> Export PDF
                             </button>
                         </div>

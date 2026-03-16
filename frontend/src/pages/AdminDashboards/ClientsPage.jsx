@@ -1,5 +1,9 @@
 import { useState } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
+import { clients } from "../../utils/tempData";
+import { AddClientModal } from "../../components/ui/Modals/AddClientModal";
+
+
 
 const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -17,16 +21,7 @@ const icons = {
     invoice: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M12 18v-6 M9 15h6",
 };
 
-const clients = [
-    { id: "CLT-001", name: "Apex Traders", contact: "Ramesh Kumar", email: "ramesh@apextraders.com", phone: "+91 98100 11223", city: "Chennai", shipments: 28, revenue: "₹84,000", status: "Active", joined: "Jan 2024" },
-    { id: "CLT-002", name: "BlueStar Exports", contact: "Priya Singh", email: "priya@bluestar.com", phone: "+91 87200 22334", city: "Delhi", shipments: 42, revenue: "₹1,26,000", status: "Active", joined: "Feb 2024" },
-    { id: "CLT-003", name: "Metro Supplies", contact: "Ankit Sharma", email: "ankit@metrosupplies.com", phone: "+91 76300 33445", city: "Hyderabad", shipments: 15, revenue: "₹48,000", status: "Overdue", joined: "Mar 2024" },
-    { id: "CLT-004", name: "Sunrise Co.", contact: "Neha Patel", email: "neha@sunriseco.com", phone: "+91 65400 44556", city: "Mumbai", shipments: 9, revenue: "₹27,000", status: "Active", joined: "Apr 2024" },
-    { id: "CLT-005", name: "Northern Goods", contact: "Vikram Roy", email: "vikram@northerngoods.com", phone: "+91 54500 55667", city: "Kolkata", shipments: 31, revenue: "₹93,000", status: "Active", joined: "May 2024" },
-    { id: "CLT-006", name: "South Freight", contact: "Deepa Nair", email: "deepa@southfreight.com", phone: "+91 43600 66778", city: "Bangalore", shipments: 7, revenue: "₹21,000", status: "Inactive", joined: "Jun 2024" },
-    { id: "CLT-007", name: "Coastal Cargo", contact: "Suresh Menon", email: "suresh@coastalcargo.com", phone: "+91 32700 77889", city: "Kochi", shipments: 19, revenue: "₹57,000", status: "Active", joined: "Jul 2024" },
-    { id: "CLT-008", name: "Peak Logistics", contact: "Kavitha Iyer", email: "kavitha@peaklogistics.com", phone: "+91 21800 88990", city: "Pune", shipments: 52, revenue: "₹1,56,000", status: "Active", joined: "Aug 2024" },
-];
+
 
 const statusMeta = {
     Active: { bg: "#D1FAE5", color: "#065F46" },
@@ -37,6 +32,11 @@ const statusMeta = {
 export default function ClientsPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
+    const [modal, setModal] = useState(null);
+    const [setModalData] = useState(null);
+
+    const openModal = (key, data = null) => { setModal(key); setModalData(data); };
+    const closeModal = () => { setModal(null); setModalData(null); };
 
     const filtered = clients.filter(c => {
         const matchStatus = filter === "All" || c.status === filter;
@@ -46,7 +46,12 @@ export default function ClientsPage() {
 
     return (
         <>
-        <title>Clients | CargoFlow</title>
+            <title>Clients | CargoFlow</title>
+            {/* Modal */}
+            {modal === "addClient" && (
+                <AddClientModal onClose={closeModal} />
+            )}
+
             <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
                 <DashboardNavbar />
 
@@ -58,7 +63,7 @@ export default function ClientsPage() {
                             <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.5px" }}>Manage Clients</h1>
                             <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>{clients.length} registered business clients</p>
                         </div>
-                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => openModal("addClient")}>
                             <Icon d={icons.plus} size={13} stroke="white" /> Add Client
                         </button>
                     </div>

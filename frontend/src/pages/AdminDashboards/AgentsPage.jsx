@@ -1,5 +1,7 @@
 import { useState } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
+import { agents } from "../../utils/tempData";
+import { AddAgentModal } from "../../components/ui/Modals/AddAgentModal";
 
 const Icon = ({
     d,
@@ -33,80 +35,7 @@ const icons = {
     edit: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
 };
 
-const agents = [
-    {
-        id: "AGT-001",
-        name: "Ravi Kumar",
-        email: "ravi@cargoflow.com",
-        phone: "+91 98765 43210",
-        status: "Active",
-        deliveries: 11,
-        completed: 142,
-        rate: "98.2%",
-        zone: "Chennai",
-        joined: "Jan 2024",
-    },
-    {
-        id: "AGT-002",
-        name: "Priya Nair",
-        email: "priya@cargoflow.com",
-        phone: "+91 87654 32109",
-        status: "Active",
-        deliveries: 9,
-        completed: 198,
-        rate: "100%",
-        zone: "Kochi",
-        joined: "Mar 2024",
-    },
-    {
-        id: "AGT-003",
-        name: "Arjun Das",
-        email: "arjun@cargoflow.com",
-        phone: "+91 76543 21098",
-        status: "Block",
-        deliveries: 6,
-        completed: 87,
-        rate: "83.5%",
-        zone: "Hyderabad",
-        joined: "Jun 2024",
-    },
-    {
-        id: "AGT-004",
-        name: "Meena Shah",
-        email: "meena@cargoflow.com",
-        phone: "+91 65432 10987",
-        status: "Active",
-        deliveries: 14,
-        completed: 223,
-        rate: "95.7%",
-        zone: "Mumbai",
-        joined: "Feb 2024",
-    },
-    {
-        id: "AGT-005",
-        name: "Kiran Roy",
-        email: "kiran@cargoflow.com",
-        phone: "+91 54321 09876",
-        status: "Off",
-        deliveries: 4,
-        completed: 64,
-        rate: "90.0%",
-        zone: "Kolkata",
-        joined: "Aug 2024",
-    },
-    {
-        id: "AGT-006",
-        name: "Sneha Gupta",
-        email: "sneha@cargoflow.com",
-        phone: "+91 43210 98765",
-        status: "Active",
-        deliveries: 8,
-        completed: 176,
-        rate: "97.1%",
-        zone: "Delhi",
-        joined: "Apr 2024",
-    },
-];
+
 
 const statusColor = { Active: "#22C55E", Block: "#FF0000", Off: "#9CA3AF" };
 const statusBg = { Active: "#D1FAE5", Block: "#FAD1D1", Off: "#F1F5F9" };
@@ -115,8 +44,18 @@ const statusTxt = { Active: "#065F46", Idle: "#92400E", Off: "#64748B" };
 export default function AgentsPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
+    const [modal, setModal] = useState(null);
+    const [setModalData] = useState(null);
+    const [agentList, setAgentList] = useState(agents);
 
-    const filtered = agents.filter((a) => {
+    const openModal = (key, data = null) => { setModal(key); setModalData(data); };
+    const closeModal = () => { setModal(null); setModalData(null); };
+
+    const addAgent = (newAgent) => {
+        setAgentList((prev) => [...prev, newAgent]);
+    };
+
+    const filtered = agentList.filter((a) => {
         const matchStatus = filter === "All" || a.status === filter;
         const matchSearch =
             !search ||
@@ -127,7 +66,11 @@ export default function AgentsPage() {
 
     return (
         <>
-        <title>Agents | CargoFlow</title>
+            <title>Agents | CargoFlow</title>
+            {/* Modals */}
+            {modal === "addAgent" && (
+                <AddAgentModal onClose={closeModal} onAdd={(s) => { addAgent(s); closeModal(); }} />
+            )}
             <div
                 style={{
                     display: "flex",
@@ -187,6 +130,8 @@ export default function AgentsPage() {
                                 fontWeight: 600,
                                 cursor: "pointer",
                             }}
+                            onClick={() => openModal("addAgent")}
+
                         >
                             <Icon d={icons.plus} size={13} stroke="white" /> Add Agent
                         </button>

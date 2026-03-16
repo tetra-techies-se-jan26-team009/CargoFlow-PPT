@@ -1,5 +1,8 @@
 import { useState } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
+import { BASE_SHIPMENTS } from "../../utils/tempData";
+import AddShipmentModal from "../../components/ui/Modals/AddShipments";
+import { ExportModal } from "../../components/ui/Modals/ExportModal";
 
 const Icon = ({
     d,
@@ -33,129 +36,6 @@ const icons = {
         "M1 3h15v13H1z M16 8h4l3 3v5h-7V8z M5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z",
 };
 
-const allShipments = [
-    {
-        id: "V1-20250301",
-        client: "Apex Traders",
-        agent: "Ravi Kumar",
-        origin: "Chennai",
-        dest: "Mumbai",
-        status: "In Transit",
-        eta: "Today 6PM",
-        risk: "Low",
-        weight: "24kg",
-        price: "₹1,200",
-    },
-    {
-        id: "V1-20250302",
-        client: "BlueStar Exports",
-        agent: "Priya Nair",
-        origin: "Delhi",
-        dest: "Bangalore",
-        status: "Delivered",
-        eta: "Completed",
-        risk: "Low",
-        weight: "12kg",
-        price: "₹800",
-    },
-    {
-        id: "V1-20250303",
-        client: "Metro Supplies",
-        agent: "Arjun Das",
-        origin: "Hyderabad",
-        dest: "Chennai",
-        status: "Delayed",
-        eta: "Tomorrow 2PM",
-        risk: "High",
-        weight: "48kg",
-        price: "₹3,200",
-    },
-    {
-        id: "V1-20250304",
-        client: "Sunrise Co.",
-        agent: "Meena Shah",
-        origin: "Mumbai",
-        dest: "Pune",
-        status: "Pending",
-        eta: "Mar 5, 10AM",
-        risk: "Medium",
-        weight: "8kg",
-        price: "₹500",
-    },
-    {
-        id: "V1-20250305",
-        client: "Northern Goods",
-        agent: "Kiran Roy",
-        origin: "Kolkata",
-        dest: "Delhi",
-        status: "In Transit",
-        eta: "Mar 4, 8PM",
-        risk: "Low",
-        weight: "32kg",
-        price: "₹2,100",
-    },
-    {
-        id: "V1-20250306",
-        client: "South Freight",
-        agent: "Ravi Kumar",
-        origin: "Bangalore",
-        dest: "Hyderabad",
-        status: "In Transit",
-        eta: "Today 9PM",
-        risk: "Medium",
-        weight: "18kg",
-        price: "₹1,100",
-    },
-    {
-        id: "V1-20250307",
-        client: "Coastal Cargo",
-        agent: "Priya Nair",
-        origin: "Kochi",
-        dest: "Chennai",
-        status: "Delivered",
-        eta: "Completed",
-        risk: "Low",
-        weight: "22kg",
-        price: "₹1,400",
-    },
-    {
-        id: "V1-20250308",
-        client: "Peak Logistics",
-        agent: "Arjun Das",
-        origin: "Mumbai",
-        dest: "Delhi",
-        status: "In Transit",
-        eta: "Mar 5, 3PM",
-        risk: "Low",
-        weight: "56kg",
-        price: "₹4,200",
-    },
-    {
-        id: "V1-20250309",
-        client: "Vertex Traders",
-        agent: "Meena Shah",
-        origin: "Delhi",
-        dest: "Kolkata",
-        status: "Pending",
-        eta: "Mar 6, 11AM",
-        risk: "Medium",
-        weight: "14kg",
-        price: "₹900",
-    },
-    {
-        id: "V1-20250310",
-        client: "Apex Traders",
-        agent: "Kiran Roy",
-        origin: "Chennai",
-        dest: "Hyderabad",
-        status: "Delayed",
-        eta: "Mar 5, 5PM",
-        risk: "High",
-        weight: "38kg",
-        price: "₹2,800",
-    },
-];
-
 const statusMeta = {
     "In Transit": { bg: "#DBEAFE", color: "#1D4ED8" },
     Delivered: { bg: "#D1FAE5", color: "#065F46" },
@@ -176,8 +56,19 @@ export default function ShipmentsPage() {
     const [riskFilter, setRiskFilter] = useState("All");
     const [searchQ, setSearchQ] = useState("");
     const [page, setPage] = useState(1);
+    const [modal, setModal] = useState(null);
+    const [setModalData] = useState(null);
+    const [shipments, setShipments] = useState(BASE_SHIPMENTS);
 
-    const filtered = allShipments.filter((s) => {
+    const addShipment = (shipment) => {
+        setShipments((prev) => [shipment, ...prev]);
+    };
+
+    const openModal = (key, data = null) => { setModal(key); setModalData(data); };
+    const closeModal = () => { setModal(null); setModalData(null); };
+
+
+    const filtered = shipments.filter((s) => {
         const matchStatus = statusFilter === "All" || s.status === statusFilter;
         const matchRisk = riskFilter === "All" || s.risk === riskFilter;
         const matchSearch =
@@ -196,17 +87,24 @@ export default function ShipmentsPage() {
 
     // Summary counts
     const counts = {
-        All: allShipments.length,
+        All: BASE_SHIPMENTS.length,
         "In Transit": 0,
         Delivered: 0,
         Delayed: 0,
         Pending: 0,
     };
-    allShipments.forEach((s) => counts[s.status]++);
+    BASE_SHIPMENTS.forEach((s) => counts[s.status]++);
 
     return (
         <>
             <title>Shipments | CargoFlow</title>
+            {/* Modals */}
+            {modal === "addShipment" && (
+                <AddShipmentModal onClose={closeModal} onAdd={(s) => { addShipment(s); closeModal(); }} />
+            )}
+            {modal === "export" && (
+                <ExportModal shipments={filtered} onClose={closeModal} />
+            )}
             <div
                 style={{
                     display: "flex",
@@ -268,6 +166,7 @@ export default function ShipmentsPage() {
                                     fontWeight: 500,
                                     cursor: "pointer",
                                 }}
+                                onClick={() => openModal("export")}
                             >
                                 <Icon d={icons.download} size={13} stroke="#475569" /> Export CSV
                             </button>
@@ -285,6 +184,7 @@ export default function ShipmentsPage() {
                                     fontWeight: 600,
                                     cursor: "pointer",
                                 }}
+                                onClick={() => openModal("addShipment")}
                             >
                                 <Icon d={icons.plus} size={13} stroke="white" /> New Shipment
                             </button>
