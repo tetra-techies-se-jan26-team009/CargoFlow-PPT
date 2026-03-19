@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function ScannerModal({ onClose, onScan }) {
-  const [phase,       setPhase]       = useState('scanning'); // scanning | scanned | manual
+  const [phase,       setPhase]       = useState('scanning');
   const [scannedCode, setScannedCode] = useState('');
   const [manualCode,  setManualCode]  = useState('');
   const [manualErr,   setManualErr]   = useState('');
@@ -105,7 +105,7 @@ export default function ScannerModal({ onClose, onScan }) {
                           <CheckCircle className="w-12 h-12 text-white" />
                         </div>
                         <p className="text-white font-bold text-lg">Scanned Successfully!</p>
-                        <p className="text-sm text-gray-300 mt-2 font-mono bg-black/30 rounded-lg px-4 py-2 mt-3">
+                        <p className="text-sm text-gray-300 font-mono bg-black/30 rounded-lg px-4 py-2 mt-3">
                           {scannedCode}
                         </p>
                       </motion.div>
