@@ -201,12 +201,6 @@ export const BASE_RISK_ALERTS = [
     { icon: "📦", label: "3 clients with overdue invoices", border: "#FECACA", type: "danger" },
 ];
 
-export const statusMeta = {
-    "In Transit": { bg: "#DBEAFE", color: "#1D4ED8" },
-    Delivered: { bg: "#D1FAE5", color: "#065F46" },
-    Delayed: { bg: "#FEE2E2", color: "#991B1B" },
-    Pending: { bg: "#FEF3C7", color: "#92400E" },
-};
 
 export const clients = [
     { id: "CLT-001", name: "Apex Traders", contact: "Ramesh Kumar", email: "ramesh@apextraders.com", phone: "+91 98100 11223", city: "Chennai", shipments: 28, revenue: "₹84,000", status: "Active", joined: "Jan 2024" },
@@ -234,4 +228,41 @@ export const recentReports = [
     { name: "January 2025 Summary", type: "Monthly", date: "Feb 1, 2025", size: "2.1 MB" },
     { name: "Agent Performance – Feb", type: "Agent", date: "Mar 1, 2025", size: "1.8 MB" },
     { name: "Client Revenue – Q4", type: "Client", date: "Jan 10, 2025", size: "3.2 MB" },
+];
+
+
+
+// ── Static Data ───────────────────────────────────────────────────────────────
+export const shipments = [
+  { id: "V1-20250301", from: "Chennai", to: "Mumbai", status: "In Transit", eta: "Today 6PM", progress: 72, agent: "Ravi Kumar" },
+  { id: "V1-20250289", from: "Delhi", to: "Bangalore", status: "Delivered", eta: "Completed", progress: 100, agent: "Priya Nair" },
+  { id: "V1-20250276", from: "Mumbai", to: "Pune", status: "Pending", eta: "Mar 5, 10AM", progress: 10, agent: "Meena Shah" },
+  { id: "V1-20250261", from: "Kolkata", to: "Delhi", status: "Delivered", eta: "Completed", progress: 100, agent: "Kiran Roy" },
+];
+
+export const invoices = [
+  { id: "INV-0041", date: "Feb 28, 2025", amount: "₹4,200", status: "Due" },
+  { id: "INV-0038", date: "Feb 10, 2025", amount: "₹3,750", status: "Paid" },
+  { id: "INV-0034", date: "Jan 22, 2025", amount: "₹2,900", status: "Paid" },
+];
+
+export const statusMeta = {
+  "In Transit": { bg: "#DBEAFE", color: "#1D4ED8", dot: "#3B82F6" },
+  "Delivered": { bg: "#D1FAE5", color: "#065F46", dot: "#10B981" },
+  "Pending": { bg: "#FEF3C7", color: "#92400E", dot: "#F59E0B" },
+  "Delayed": { bg: "#FEE2E2", color: "#991B1B", dot: "#EF4444" },
+};
+
+export const timelineSteps = [
+  { label: "Order Placed", done: true, time: "Mar 1, 9:00 AM" },
+  { label: "Picked Up", done: true, time: "Mar 1, 2:30 PM" },
+  { label: "In Transit", done: true, time: "Mar 2, 8:00 AM" },
+  { label: "At Delivery Hub", done: false, time: "Expected Today" },
+  { label: "Delivered", done: false, time: "Today by 6PM" },
+];
+
+export const INITIAL_NOTIFS = [
+  { id: 1, icon: "📦", bg: "#DBEAFE", msg: "V1-20250301 is now at Pune junction hub", time: "2 hours ago", unread: true },
+  { id: 2, icon: "✅", bg: "#D1FAE5", msg: "Invoice #INV-0041 is due in 7 days", time: "5 hours ago", unread: true },
+  { id: 3, icon: "⏰", bg: "#FEF3C7", msg: "Pickup scheduled for Mar 5 confirmed", time: "Yesterday", unread: false },
 ];

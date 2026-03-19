@@ -2,10 +2,11 @@ import { Navbar } from '../../components/Navbar'
 import AppLayout from "../../components/AppLayout";
 import { Footer } from '../../components/Footer'
 import { Feature } from './Feature'
-import { Banner } from './Banner'
-import { Logo } from './Logo'
+// import { Logo } from './Logo'
 import { Statistic } from './Statistic'
 import { MainHeroSection } from './MainHeroSection'
+// import { PricingSection } from './PricingSection';
+import { TestimonialSection } from './TestimonialSection';
 
 
 
@@ -13,7 +14,6 @@ export default function HomePage() {
     return (
         <>
             <title>Logistics Application V1</title>
-            <Banner />
             <Navbar />
             <MainHeroSection />
             <div className="min-h-screen w-full relative">
@@ -33,18 +33,11 @@ export default function HomePage() {
 
                 {/* Your Content/Components */}
 
-
-                <AppLayout>
-                    <Logo />
-                </AppLayout>
                     <Statistic />
-                <AppLayout>
-                    <Feature className="z-50" />
-                </AppLayout>
+                    <Feature />
+                    <TestimonialSection />
             </div >
-            <AppLayout>
                 <Footer />
-            </AppLayout>
         </>
     )
 }

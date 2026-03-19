@@ -1,5 +1,6 @@
 import { Package, MapPin, Phone, Navigation, Clock, DollarSign, AlertCircle } from 'lucide-react';
-// import { motion } from 'motion/react';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'motion/react';
 
 export default function DeliveryCard({ delivery, index, onStart, onNavigate, onCall }) {
   const priorityColors = {

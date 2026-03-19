@@ -3,7 +3,7 @@ export default function Modal({ onClose, width = 460, children }) {
     <div
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
-        position: "fixed", inset: 0, zIndex: 400,
+        position: "fixed", inset: 0, zIndex: 9999,
         background: "rgba(15,23,42,0.45)", backdropFilter: "blur(4px)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}

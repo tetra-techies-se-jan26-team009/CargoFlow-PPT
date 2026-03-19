@@ -25,12 +25,6 @@ const Icon = ({
     </svg>
 );
 
-// const icons = {
-//     bell: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
-//     search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-//     logout: "M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4 M16 17l5-5-5-5 M21 12H9",
-// };
-
 const navLinks = [
     { label: "Dashboard", path: "/admin/dashboard" },
     { label: "Shipments", path: "/admin/shipments" },

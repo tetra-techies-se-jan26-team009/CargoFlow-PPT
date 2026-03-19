@@ -1,5 +1,6 @@
 import { Navigation, Phone, MapPin, Clock, Package, AlertCircle, CheckCircle } from 'lucide-react';
-// import { motion } from 'motion/react';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'motion/react';
 
 export default function ActiveDeliveryTracker({ delivery, onComplete }) {
   const progress = 65; // In real app, calculate based on location

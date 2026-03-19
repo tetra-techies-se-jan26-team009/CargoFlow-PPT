@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import ClientNavbar from "../../components/ClientNavbar";
+import { NotifPanel } from "../../components/ui/ClientModals/NotificationPannel";
+import { INITIAL_NOTIFS } from "../../utils/tempData";
 
 const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -51,6 +53,10 @@ function Field({ label, hint, children }) {
 export default function RequestPickup() {
     const [step, setStep] = useState(0);
     const [done, setDone] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
+    const showToast = (msg) => alert(msg);
+    const notifRef = useRef(null);
     const [tid] = useState(() => "V1-" + Math.floor(Math.random() * 90000 + 10000));
     const [f, setF] = useState({
         fromCity: "", fromAddr: "", toCity: "", toAddr: "",
@@ -59,10 +65,30 @@ export default function RequestPickup() {
         date: "", slot: "", priority: "Standard",
     });
     const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+    const navbarProps = {
+        onBellClick: () => setNotifOpen(p => !p),
+        unreadCount: notifs.filter(n => n.unread).length,
+    };
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setNotifOpen(false);
+            }
+        };
+
+        if (notifOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [notifOpen]);
 
     if (done) return (
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F8FAFC", color: "#0F172A" }}>
             <ClientNavbar />
+
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ textAlign: "center", maxWidth: 440 }}>
                     <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg,#D1FAE5,#A7F3D0)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", boxShadow: "0 4px 20px rgba(16,185,129,0.2)" }}>
@@ -88,8 +114,20 @@ export default function RequestPickup() {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F8FAFC", color: "#0F172A" }}>
-            <ClientNavbar />
+            <title>PickUp</title>
+            <ClientNavbar {...navbarProps} />
 
+            {notifOpen && (
+                <div ref={notifRef}>
+                    <NotifPanel
+                        notifs={notifs}
+                        setNotifs={setNotifs}
+                        onTrack={(id) => console.log("Track:", id)}
+                        onClose={() => setNotifOpen(false)}
+                        showToast={showToast}
+                    />
+                </div>
+            )}
             <main style={{ flex: 1, overflow: "auto", padding: "28px 100px" }}>
                 <div style={{ maxWidth: 680, margin: "0 auto" }}>
 

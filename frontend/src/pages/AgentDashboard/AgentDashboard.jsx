@@ -3,33 +3,25 @@ import {
   Package,
   MapPin,
   Navigation,
-  Phone,
   Clock,
   CheckCircle,
-  XCircle,
   Camera,
   Scan,
   DollarSign,
   TrendingUp,
   Star,
   ChevronRight,
-  AlertCircle,
-  Menu,
-  Bell,
-  User,
   Settings,
-  Home,
   List,
   BarChart3,
-  ArrowRight,
-  Upload,
   MessageSquare,
   Route as RouteIcon,
   Zap,
   Award,
   Target
 } from 'lucide-react';
-// import { motion } from 'motion/react';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'motion/react';
 import ActiveDeliveryTracker from './ActiveDeliveryTracker';
 import DeliveryCard from './DeliveryCard';
 import ScannerModal from './ScannerModal';
@@ -140,7 +132,7 @@ const recentDeliveries = [
   },
 ];
 
-export default function AgentDashboard() {
+export function AgentDashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState(null);

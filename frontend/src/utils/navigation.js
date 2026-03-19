@@ -89,7 +89,4 @@ export const LOGIN_OPTIONS = [
   {
     name: "National Delivery", to: "/login", icon: UserIcon
   },
-  {
-    name: "City Courier", to: "/login", icon: UserIcon
-  },
 ];

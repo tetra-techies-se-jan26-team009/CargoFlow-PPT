@@ -1,76 +1,76 @@
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from "@headlessui/react";
-import { Dialog,DialogPanel,Disclosure,DisclosureButton,DisclosurePanel } from "@headlessui/react";
+import { Dialog, DialogPanel, Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-import {ChevronDownIcon, ChevronUpIcon} from "@heroicons/react/20/solid";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 
 export function PopOver({ label, items }) {
-    return (
-        <PopoverGroup>
-            <Popover className="relative">
-                {({ open }) => (
-                    <div
-                        onMouseEnter={(e) => {
-                            const btn = e.currentTarget.querySelector("button");
-                            btn?.click();
-                        }}
-                        onMouseLeave={(e) => {
-                            const btn = e.currentTarget.querySelector("button");
-                            btn?.click();
-                        }}
-                        className="relative"
-                    >
-                        <PopoverButton className="relative flex items-center gap-x-1 text-lg/6 font-semibold text-text focus:outline-none">
-                            <span>{label}</span>
+  return (
+    <PopoverGroup>
+      <Popover className="relative">
+        {({ open }) => (
+          <div
+            onMouseEnter={(e) => {
+              const btn = e.currentTarget.querySelector("button");
+              btn?.click();
+            }}
+            onMouseLeave={(e) => {
+              const btn = e.currentTarget.querySelector("button");
+              btn?.click();
+            }}
+            className="relative"
+          >
+            <PopoverButton className="relative flex items-center gap-x-1 text-lg/6 font-semibold text-text focus:outline-none">
+              <span>{label}</span>
 
-                            {/* UNDERLINE */}
-                            <span
-                                className={`
+              {/* UNDERLINE */}
+              <span
+                className={`
                               absolute left-0 -bottom-1 h-[4px] w-full bg-primary
                               transition-all duration-300
                               ${open ? "opacity-100 scale-x-50" : "opacity-0 scale-x-0"}
                               origin-left
                               `}
-                            />
-                        </PopoverButton>
+              />
+            </PopoverButton>
 
-                        <PopoverPanel
-                            transition
-                            className="absolute left-1/2 z-10 mt-3 w-screen max-w-md 
+            <PopoverPanel
+              transition
+              className="absolute left-1/2 z-10 mt-3 w-screen max-w-md 
                   -translate-x-1/2 overflow-hidden rounded-3xl bg-accent shadow-lg 
                   outline outline-1 outline-gray-900/5
                   data-[closed]:translate-y-1 data-[closed]:opacity-0"
-                        >
-                            <div className="p-4">
-                                {items.map((item) => (
-                                    <div
-                                        key={item.name}
-                                        className="group relative flex items-center gap-x-6 rounded-lg p-4 text-sm/6 hover:bg-gray-50"
-                                    >
-                                        <div className="flex size-11 flex-none items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white">
-                                            <item.icon
-                                                aria-hidden="true"
-                                                className="size-6 text-gray-600 group-hover:text-indigo-600"
-                                            />
-                                        </div>
-                                        <div className="flex-auto">
-                                            <Link
-                                                to={item.to}
-                                                className="block font-semibold text-gray-900"
-                                            >
-                                                {item.name}
-                                                <span className="absolute inset-0" />
-                                            </Link>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </PopoverPanel>
+            >
+              <div className="p-4">
+                {items.map((item) => (
+                  <div
+                    key={item.name}
+                    className="group relative flex items-center gap-x-6 rounded-lg p-4 text-sm/6 hover:bg-gray-50"
+                  >
+                    <div className="flex size-11 flex-none items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white">
+                      <item.icon
+                        aria-hidden="true"
+                        className="size-6 text-gray-600 group-hover:text-indigo-600"
+                      />
                     </div>
-                )}
-            </Popover>
-        </PopoverGroup>
-    );
+                    <div className="flex-auto">
+                      <Link
+                        to={item.to}
+                        className="block font-semibold text-gray-900"
+                      >
+                        {item.name}
+                        <span className="absolute inset-0" />
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </PopoverPanel>
+          </div>
+        )}
+      </Popover>
+    </PopoverGroup>
+  );
 };
 
 export function DialogBox({ open, onClose, sections = [] }) {
@@ -97,9 +97,8 @@ export function DialogBox({ open, onClose, sections = [] }) {
                   <DisclosureButton className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left font-semibold text-gray-900 hover:bg-gray-50">
                     <span>{section.label}</span>
                     <ChevronDownIcon
-                      className={`size-5 transition-transform ${
-                        open ? "rotate-180" : ""
-                      }`}
+                      className={`size-5 transition-transform ${open ? "rotate-180" : ""
+                        }`}
                     />
                   </DisclosureButton>
 
@@ -145,10 +144,10 @@ export function LoginPopOver({ items }) {
             {/* LOGIN BUTTON */}
             <PopoverButton
               className="relative flex items-center gap-x-2 rounded-md
-                         bg-primary px-4 py-2 text-sm font-semibold
+                         bg-primary px-4 py-3 text-sm font-semibold
                          text-black shadow-sm focus:outline-none"
             >
-              <span className="text-md text-accent text-bold font-serif">Ship Now</span>
+              <span className="text-md text-accent text-bold font-serif">Start Shipping Now</span>
 
               {/* ARROW */}
               {open ? (
