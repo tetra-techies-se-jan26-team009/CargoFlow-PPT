@@ -66,19 +66,19 @@ const AgentLogin = () => {
                         </Link>
                     </div>
                     <div className="mx-24">
-                        <h1 className="text-4xl font-bold leading-snug mb-3">
+                        <h1 className="text-3xl font-bold leading-snug mb-3">
                             Delivery Agent Portal - <br /> Access Your Route
                         </h1>
                         <p className="text-md text-accent leading-relaxed mb-8">
                             Trust. Speed. Visibility. <br />
                         </p>
-                        <div className="grid grid-rows-3 gap-3">
+                        <div className="grid grid-col-3 gap-3">
                             {stats.map((s) => (
                                 <div key={s.label} className="text-accent rounded-lg p-3 flex flex-col items-start text-start">
                                     <span className="mb-1">
                                         <s.icon className="w-11 h-11 text-primary" />
                                     </span>
-                                    <span className="text-[20px] font-bold">{s.value}</span>
+                                    <span className="text-[15px] font-bold">{s.value}</span>
                                     <span className="text-[10px] mt-0.5">{s.label}</span>
                                 </div>
                             ))}
@@ -153,13 +153,6 @@ const AgentLogin = () => {
                             >
                                 LOG IN
                             </button>
-
-                            <p className="mt-4 text-center text-sm text-gray-500">
-                                Forgot your Id or Password {"   "}
-                                <Link to="#" className="text-blue-600 font-medium hover:underline">
-                                    Click Here
-                                </Link>
-                            </p>
                         </div>
                     </div>
                     <div className="pb-6 text-center">
