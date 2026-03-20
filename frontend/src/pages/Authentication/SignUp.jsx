@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/24/solid";
 import api from "../../utils/api";
+import { Package } from "lucide-react";
 
 const Field = ({ label, field, type = "text", placeholder, formData, errors, handleChange, handleBlur }) => (
     <div>
@@ -39,6 +40,7 @@ const Signup = () => {
         lastName: "",
         email: "",
         phone: "",
+        city:"",
         password: "",
         confirmPassword: "",
     });
@@ -98,7 +100,8 @@ const Signup = () => {
             await api.post("/api/auth/register", {
                 name: `${formData.firstName} ${formData.lastName}`.trim(),
                 email: formData.email,
-                phone: formData.phone, 
+                city: formData.city,
+                phone: formData.phone,
                 password: formData.password,
             });
 
@@ -118,7 +121,7 @@ const Signup = () => {
 
     return (
         <div className="min-h-screen flex font-sans">
-            <div className="flex-1 flex flex-col bg-accent">
+            <div className="flex-1 flex flex-col bg-background">
                 <div className="flex justify-start px-8 pt-6">
                     <Link to="/" className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -156,6 +159,9 @@ const Signup = () => {
                             <Field label="Phone Number" field="phone" type="tel" placeholder="+91 98765 43210"
                                 formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
+                            <Field label="City" field="text" type="text" placeholder="New Delhi"
+                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+
                             <Field label="Password" field="password" type="password" placeholder="Min. 6 characters"
                                 formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
@@ -184,9 +190,12 @@ const Signup = () => {
             </div>
 
             <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
-                <div className="text-accent font-bold text-lg tracking-wide">
-                    CargoFlow
-                </div>
+                <Link to="/" className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
+                        <Package className="w-6 h-6 text-accent" />
+                    </div>
+                    <span className="text-xl font-bold text-background">CargoFlow</span>
+                </Link>
                 <div>
                     <h1 className="text-5xl font-bold leading-snug mb-3">
                         Logistics Partner<br />for SMEs

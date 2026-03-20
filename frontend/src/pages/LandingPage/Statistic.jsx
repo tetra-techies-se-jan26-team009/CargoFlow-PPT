@@ -1,70 +1,42 @@
-// import AppLayout from "../../components/AppLayout"
-// const stats = [
-//     { id: 1, name: 'Transactions every 24 hours', value: '44 million' },
-//     { id: 2, name: 'Assets under holding', value: '$119 trillion' },
-//     { id: 3, name: 'New users annually', value: '46,000' },
-// ]
-
-// export function Statistic() {
-//     return (
-//         <div className="bg-tertiary my-14  sm:py-32">
-//             <AppLayout>
-//             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-//                 <h1 className="text-accent text-3xl mx-auto max-w-7xl">Flexibility, Reliability and Scale</h1>
-//                 <h4 className="text-accent text-2xl pb-2 font-bold mx-auto max-w-7xl">The Answer is CargoFlow</h4>
-//                 <hr className="w-52 bg-secondary mb-14 h-2 sm:h-2 " />
-//                 <dl className="grid grid-cols-1 gap-x-8 bg-tertiary gap-y-10 text-center lg:grid-cols-3">
-//                     {stats.map((stat) => (
-//                         <div key={stat.id} className="mx-auto flex max-w-xs flex-col gap-y-4">
-//                             <dt className="text-base/7 text-background/50">{stat.name}</dt>
-//                             <dd className="order-first text-3xl font-semibold tracking-tight text-background sm:text-5xl">
-//                                 {stat.value}
-//                             </dd>
-//                         </div>
-//                     ))}
-//                 </dl>
-//             </div>
-//             </AppLayout>
-//         </div>
-//     )
-// }
-
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight } from 'lucide-react';
+import { TruckIcon, MapPinIcon, CheckCircleIcon, CubeIcon } from "@heroicons/react/24/solid";
 
 const steps = [
   {
     number: '01',
     title: 'Create Your Shipment',
     description:
-      'Enter package details, pickup and delivery addresses through our intuitive dashboard or API.',
-    image: '📦',
+      'Enter package details, pickup and delivery addresses through our intuitive dashboard.',
+    icon: CubeIcon,
   },
   {
     number: '02',
     title: 'We Pick It Up',
     description:
       'Our delivery partner arrives at your location to collect the package with proper documentation.',
-    image: '🚚',
+    icon: TruckIcon,
   },
   {
     number: '03',
     title: 'Track in Real-Time',
     description:
       'Monitor your shipment journey with live GPS tracking and receive instant status updates.',
-    image: '📍',
+    icon: MapPinIcon,
   },
   {
     number: '04',
     title: 'Delivered Successfully',
     description:
       'Your package reaches its destination on time with proof of delivery and customer signature.',
-    image: '✅',
+    icon: CheckCircleIcon,
   },
 ];
 
 export function Statistic() {
+  const navigate = useNavigate()
   return (
     <section className="py-24 bg-white relative overflow-hidden">
       {/* Background Decoration */}
@@ -84,7 +56,7 @@ export function Statistic() {
           </span>
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             Ship in{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-800 to-purple-500 bg-clip-text text-transparent">
               4 Simple Steps
             </span>
           </h2>
@@ -114,7 +86,7 @@ export function Statistic() {
                   {/* Number Badge */}
                   <div className="relative mb-6">
                     <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg relative z-10">
-                      <span className="text-4xl">{step.image}</span>
+                      <step.icon className="w-8 h-8 text-white" />
                     </div>
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-12 h-12 rounded-full bg-white border-4 border-blue-600 flex items-center justify-center font-bold text-blue-600 text-sm">
                       {step.number}
@@ -127,12 +99,6 @@ export function Statistic() {
                   </h3>
                   <p className="text-gray-600 text-center leading-relaxed">{step.description}</p>
 
-                  {/* Arrow for desktop */}
-                  {index < steps.length - 1 && (
-                    <div className="hidden lg:block absolute -right-3 top-32 z-20">
-                      <ArrowRight className="w-6 h-6 text-blue-600" />
-                    </div>
-                  )}
                 </div>
               </motion.div>
             ))}
@@ -147,13 +113,12 @@ export function Statistic() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-16 text-center"
         >
-          <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-2xl shadow-blue-600/30 hover:shadow-blue-600/50 inline-flex items-center gap-2 font-semibold text-lg">
+          <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-2xl shadow-blue-600/30 hover:shadow-blue-600/50 inline-flex items-center gap-2 font-semibold text-lg"
+            onClick={() => navigate('/login')}
+          >
             Get Started Now
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
-          <p className="mt-4 text-sm text-gray-600">
-            No credit card required • Free 14-day trial • Cancel anytime
-          </p>
         </motion.div>
       </div>
     </section>

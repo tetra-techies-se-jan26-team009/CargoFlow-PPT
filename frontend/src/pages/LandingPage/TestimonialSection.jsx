@@ -1,52 +1,3 @@
-// export function Logo() {
-//   return (
-//     <div className=" py-16 sm:pt-32">
-//       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-//         <h2 className="text-center text-lg/8 font-semibold text-gray-900">
-//           Trusted by the India's most innovative teams
-//         </h2>
-//         <div className="mx-auto bg-background mt-10 grid max-w-lg grid-cols-4 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:grid-cols-6 sm:gap-x-10 lg:mx-0 lg:max-w-none lg:grid-cols-5">
-//           <img
-//             alt="Transistor"
-//             src="https://tailwindcss.com/plus-assets/img/logos/158x48/transistor-logo-gray-900.svg"
-//             width={158}
-//             height={48}
-//             className="col-span-2 max-h-12 w-full object-contain lg:col-span-1"
-//           />
-//           <img
-//             alt="Reform"
-//             src="https://tailwindcss.com/plus-assets/img/logos/158x48/reform-logo-gray-900.svg"
-//             width={158}
-//             height={48}
-//             className="col-span-2 max-h-12 w-full object-contain lg:col-span-1"
-//           />
-//           <img
-//             alt="Tuple"
-//             src="https://tailwindcss.com/plus-assets/img/logos/158x48/tuple-logo-gray-900.svg"
-//             width={158}
-//             height={48}
-//             className="col-span-2 max-h-12 w-full object-contain lg:col-span-1"
-//           />
-//           <img
-//             alt="SavvyCal"
-//             src="https://tailwindcss.com/plus-assets/img/logos/158x48/savvycal-logo-gray-900.svg"
-//             width={158}
-//             height={48}
-//             className="col-span-2 max-h-12 w-full object-contain sm:col-start-2 lg:col-span-1"
-//           />
-//           <img
-//             alt="Statamic"
-//             src="https://tailwindcss.com/plus-assets/img/logos/158x48/statamic-logo-gray-900.svg"
-//             width={158}
-//             height={48}
-//             className="col-span-2 col-start-2 max-h-12 w-full object-contain sm:col-start-auto lg:col-span-1"
-//           />
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
-
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'motion/react';
 import { Star, Quote } from 'lucide-react';
@@ -56,7 +7,7 @@ const testimonials = [
     name: 'Rajesh Sharma',
     role: 'CEO, TechVision India',
     company: 'E-commerce',
-    image: '👨‍💼',
+    image: 'https://randomuser.me/api/portraits/men/1.jpg',
     rating: 5,
     text: 'CargoFlow transformed our logistics operations. We reduced delivery times by 40% and customer satisfaction is at an all-time high. The real-time tracking feature is a game-changer!',
     stats: '40% faster delivery',
@@ -65,7 +16,7 @@ const testimonials = [
     name: 'Priya Patel',
     role: 'Operations Manager',
     company: 'Fashion Retail',
-    image: '👩‍💼',
+    image: 'https://randomuser.me/api/portraits/women/1.jpg',
     rating: 5,
     text: "The API integration was seamless, and the analytics dashboard gives us insights we never had before. Their customer support is exceptional - always there when we need them.",
     stats: '10,000+ monthly shipments',
@@ -74,7 +25,7 @@ const testimonials = [
     name: 'Arjun Mehta',
     role: 'Founder, HealthPlus',
     company: 'Healthcare',
-    image: '👨‍⚕️',
+    image: 'https://randomuser.me/api/portraits/men/21.jpg',
     rating: 5,
     text: 'Reliable, fast, and secure. CargoFlow handles our sensitive medical supplies with utmost care. The insurance coverage gives us peace of mind for every shipment.',
     stats: '99.8% on-time rate',
@@ -83,7 +34,7 @@ const testimonials = [
     name: 'Anita Desai',
     role: 'Supply Chain Director',
     company: 'Manufacturing',
-    image: '👩‍💻',
+    image: 'https://randomuser.me/api/portraits/women/21.jpg',
     rating: 5,
     text: 'Best logistics partner we ever had. The international shipping network is extensive, and customs clearance is handled smoothly. Highly recommend for B2B operations!',
     stats: 'Ships to 50+ countries',
@@ -92,7 +43,7 @@ const testimonials = [
     name: 'Vikram Singh',
     role: 'Co-founder, FoodHub',
     company: 'Food Delivery',
-    image: '👨‍🍳',
+    image: 'https://randomuser.me/api/portraits/men/18.jpg',
     rating: 5,
     text: 'Same-day delivery works flawlessly. The route optimization saves us significant costs, and the mobile app makes it easy for our delivery agents to manage orders.',
     stats: '2,000+ daily deliveries',
@@ -101,7 +52,7 @@ const testimonials = [
     name: 'Sneha Reddy',
     role: 'Logistics Head',
     company: 'Jewelry Brand',
-    image: '👩‍💼',
+    image: 'https://randomuser.me/api/portraits/women/91.jpg',
     rating: 5,
     text: 'Security is paramount for us, and CargoFlow delivers. Every package is tracked, insured, and delivered with signature confirmation. Never had a single issue!',
     stats: '₹50Cr+ insured cargo',
@@ -190,10 +141,11 @@ export function TestimonialSection() {
 
               {/* Author */}
               <div className="flex items-center gap-4 pt-6 border-t border-gray-200">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-2xl">
-                  {testimonial.image}
-                </div>
-                <div>
+                <img
+                  src={testimonial.image}
+                  alt={testimonial.name}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
+                />                <div>
                   <div className="font-bold text-gray-900">{testimonial.name}</div>
                   <div className="text-sm text-gray-600">{testimonial.role}</div>
                   <div className="text-xs text-gray-500">{testimonial.company}</div>

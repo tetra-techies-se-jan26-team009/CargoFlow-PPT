@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/24/solid";
 import { loginUser } from "../../utils/auth";
 import { useAuth } from "../../hooks/useAuth";
+import { Package } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -53,12 +54,15 @@ const Login = () => {
 
   return (
     <>
-    <title>CargoFlow</title>
+      <title>CargoFlow</title>
       <div className="min-h-screen flex font-sans">
         <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
-          <div className="text-accent font-bold text-lg tracking-wide">
-            CargoFlow
-          </div>
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
+              <Package className="w-6 h-6 text-accent" />
+            </div>
+            <span className="text-xl font-bold text-background">CargoFlow</span>
+          </Link>
           <div className="mx-24">
             <h1 className="text-5xl font-bold leading-snug mb-3">
               Logistics Partner<br />for SMEs

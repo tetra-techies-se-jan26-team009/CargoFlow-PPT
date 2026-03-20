@@ -66,7 +66,7 @@ const AgentLogin = () => {
                         </Link>
                     </div>
                     <div className="mx-24">
-                        <h1 className="text-5xl font-bold leading-snug mb-3">
+                        <h1 className="text-4xl font-bold leading-snug mb-3">
                             Delivery Agent Portal - <br /> Access Your Route
                         </h1>
                         <p className="text-md text-accent leading-relaxed mb-8">
@@ -78,8 +78,8 @@ const AgentLogin = () => {
                                     <span className="mb-1">
                                         <s.icon className="w-11 h-11 text-primary" />
                                     </span>
-                                    <span className="text-[40px] font-bold">{s.value}</span>
-                                    <span className="text-[20px] mt-0.5">{s.label}</span>
+                                    <span className="text-[20px] font-bold">{s.value}</span>
+                                    <span className="text-[10px] mt-0.5">{s.label}</span>
                                 </div>
                             ))}
                         </div>

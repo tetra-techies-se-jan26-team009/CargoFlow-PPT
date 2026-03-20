@@ -144,10 +144,10 @@ export function LoginPopOver({ items }) {
             {/* LOGIN BUTTON */}
             <PopoverButton
               className="relative flex items-center gap-x-2 rounded-md
-                         bg-primary px-4 py-3 text-sm font-semibold
+                         bg-blue-600 px-4 py-3 text-sm font-semibold
                          text-black shadow-sm focus:outline-none"
             >
-              <span className="text-md text-accent text-bold font-serif">Start Shipping Now</span>
+              <span className="text-md text-accent text-bold">Start Shipment</span>
 
               {/* ARROW */}
               {open ? (
