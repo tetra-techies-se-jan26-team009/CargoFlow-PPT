@@ -17,6 +17,7 @@ def register_user(data: UserRegister, db: Session = Depends(get_db)):
     user = User(name=data.name,
                 email=data.email,
                 phone=data.phone,
+                city=data.city,
                 password_hash=hash_password(data.password),
                 role=role)
     db.add(user)
