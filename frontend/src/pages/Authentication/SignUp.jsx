@@ -159,7 +159,7 @@ const Signup = () => {
                             <Field label="Phone Number" field="phone" type="tel" placeholder="+91 98765 43210"
                                 formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
-                            <Field label="City" field="text" type="text" placeholder="New Delhi"
+                            <Field label="City" field="city" type="text" placeholder="New Delhi"
                                 formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
                             <Field label="Password" field="password" type="password" placeholder="Min. 6 characters"
