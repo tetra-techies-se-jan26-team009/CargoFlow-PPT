@@ -4,7 +4,7 @@ import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/2
 import api from "../../utils/api";
 import { Package } from "lucide-react";
 
-const Field = ({ label, field, type = "text", placeholder, formData, errors, handleChange, handleBlur }) => (
+const Field = ({ label, field, type = "text", placeholder, formData, errors, handleChange, handleBlur, ...rest }) => (
     <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <input
@@ -13,6 +13,7 @@ const Field = ({ label, field, type = "text", placeholder, formData, errors, han
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             placeholder={placeholder}
+            {...rest}
             className={`w-full border rounded px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 transition
                 ${errors[field]
                     ? "border-red-500 focus:ring-red-200"
@@ -121,6 +122,7 @@ const Signup = () => {
 
     return (
         <div className="min-h-screen flex font-sans">
+            <title>Registration | CargoFlow</title>
             <div className="flex-1 flex flex-col bg-background">
                 <div className="flex justify-start px-8 pt-6">
                     <Link to="/" className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
@@ -156,7 +158,7 @@ const Signup = () => {
                             <Field label="Email Address" field="email" type="email" placeholder="email@business.com"
                                 formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
-                            <Field label="Phone Number" field="phone" type="tel" placeholder="+91 98765 43210"
+                            <Field label="Phone Number" field="phone" type="tel" placeholder="+91 98765 43210" maxLength={10}
                                 formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
                             <Field label="City" field="city" type="text" placeholder="New Delhi"
