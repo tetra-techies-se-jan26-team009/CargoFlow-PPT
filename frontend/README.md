@@ -1,16 +1,58 @@
-# React + Vite
+# CargoFlow Frontend – Milestone 2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Installation & Run Instructions
 
-Currently, two official plugins are available:
+### Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+* Node.js (v14 or above)
+* npm (comes with Node.js)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Steps to Run
 
-## Expanding the ESLint configuration
+1. Extract the ZIP file
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+2. Open a terminal in the project folder
+
+3. Install dependencies:
+
+```
+npm install
+```
+
+4. Start the development server:
+
+```
+npm run dev
+```
+
+5. Open your browser and go to:
+
+```
+http://localhost:5173
+```
+
+---
+
+## Demo Login Credentials
+
+Admin
+Email: [admin@test.com](mailto:admin@test.com)
+Password: 1234
+
+Delivery Agent
+Email: [agent@test.com](mailto:agent@test.com)
+Password: 1234
+
+Business Client
+Email: [client@test.com](mailto:client@test.com)
+Password: 1234
+
+---
+
+## Notes
+
+* This is a frontend-only project as per Milestone 2 requirements
+* Backend is not required to run the application
+* Authentication is implemented using mock logic with localStorage
