@@ -1,11 +1,30 @@
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'motion/react';
-import { ArrowRight, Play, CheckCircle, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CheckCircle, Star } from 'lucide-react';
+
+
+import { useEffect } from "react";
+
+
 
 export function MainHeroSection() {
+  useEffect(() => {
+    const shouldScroll = sessionStorage.getItem("scrollToHero");
+
+    if (shouldScroll) {
+      const el = document.getElementById("hero");
+
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: "smooth" });
+        }, 100); // wait for render
+      }
+
+      sessionStorage.removeItem("scrollToHero");
+    }
+  }, []);
   return (
-    <section className="relative pt-32 pb-20 overflow-hidden bg-tertiary">
+    <section id='hero' className="relative pt-32 pb-20 overflow-hidden bg-tertiary">
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
@@ -91,8 +110,8 @@ export function MainHeroSection() {
                     className="w-10 h-10 rounded-full border-2 border-white object-cover"
                   />
                 ))}
-              </div>               
-               <div>
+              </div>
+              <div>
                 <div className="flex items-center gap-1 mb-1">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />

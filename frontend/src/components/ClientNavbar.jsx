@@ -111,7 +111,7 @@ export default function ClientNavbar({
                 }}>
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FBBF24", flexShrink: 0, animation: "blink 1.4s infinite" }} />
                     <span>
-                        ⚠️ Shipment <b>V1-20250276</b> is scheduled for pickup on <b>Mar 5, 10AM</b> — confirm your availability
+                        ⚠️ Shipment <b>V1-20250276</b> is scheduled for pickup on <b>Mar 21, 10AM</b> — confirm your availability
                     </span>
                     {/* <button onClick={()=>openModal(ConfirmPickupModal)} style={{ background: "rgba(255,255,255,.18)", border: "none", color: "white", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline", marginLeft: 4, fontFamily: "inherit" }}>Confirm</button>
                     <button onClick={reschedule} style={{ background: "rgba(255,255,255,.18)", border: "none", color: "white", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline", fontFamily: "inherit" }}>Reschedule</button> */}

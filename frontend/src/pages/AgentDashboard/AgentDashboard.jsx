@@ -298,6 +298,7 @@ export function AgentDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
+      <title>Dashboard</title>
       <AgentNavbar agent={agentData} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -307,7 +308,7 @@ export function AgentDashboard() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-              Welcome back, {agentData.name}! 👋
+              Welcome back, {agentData.name}!
             </h1>
             <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-blue-600" />Bangalore, Karnataka
