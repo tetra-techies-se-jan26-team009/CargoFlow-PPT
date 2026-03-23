@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .database import Base, engine, SessionLocal
 from .models import User, UserRole
-from .routes import user_routes, auth_routes, admin_routes, client_routes
+from .routes import auth_routes, admin_routes, client_routes
 from .auth import hash_password
 from dotenv import load_dotenv
 import os
@@ -9,7 +9,6 @@ load_dotenv()
 
 app = FastAPI()
 
-# app.include_router(user_routes.router)
 app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(client_routes.router)
