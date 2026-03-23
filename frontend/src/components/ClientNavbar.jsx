@@ -86,8 +86,9 @@ export default function ClientNavbar({
     const [search, setSearch] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, logout } = useAuth();
     const [alertVisible, setAlertVisible] = useState(true);
+    const { user, logout } = useAuth();
+    // if (loading) return null;
     const handleSearchKey = (e) => {
         if (e.key === "Enter" && search.trim()) {
             if (onTrackSearch) {

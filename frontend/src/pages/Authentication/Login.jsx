@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/24/solid";
-import { loginUser } from "../../utils/auth";
+import { loginUser, getCurrentUser } from "../../utils/auth";
 import { useAuth } from "../../hooks/useAuth";
 import { Package } from "lucide-react";
 
@@ -36,13 +36,14 @@ const Login = () => {
 
     try {
       const data = await loginUser(email, password);
-      setUser({ email, role: data.role });
+      const userData = await getCurrentUser();
+      setUser(userData);
 
       switch (data.role) {
         case "ADMIN":
           navigate("/admin/dashboard"); break;
         case "DELIVERY_AGENT":
-          navigate("/agent/dashboard"); break;
+          alert("Delivery agents should use the mobile app to log in."); break;
         case "BUSINESS_CLIENT":
           navigate("/dashboard"); break;
         default: navigate("/");
