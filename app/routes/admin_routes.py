@@ -8,7 +8,7 @@ from ..auth import require_role, hash_password
 from datetime import date
 import random
 
-router = APIRouter(prefix="/api/admin", tags=["Admin Routes"])
+router = APIRouter(prefix="/api/v1/admin", tags=["Admin Routes"])
 
 @router.get("/dashboard", status_code=200)
 def admin_dashboard(db: Session = Depends(get_db), 
@@ -80,7 +80,7 @@ def generate_tracking_number(db: Session):
 @router.post("/shipments", status_code=201)
 def create_shipment(data: ShipmentCreate,
                     db: Session = Depends(get_db),
-                    current_user: User = Depends(require_role(UserRole.ADMIN, UserRole.BUSINESS_CLIENT))):
+                    current_user: User = Depends(require_role(UserRole.ADMIN))):
 
     pickup = Address(line1=data.pickup_line1,
                      city=data.pickup_city,

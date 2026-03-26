@@ -3,12 +3,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
-from ..schemas import DeliveryAgentCreate, ShipmentCreate, UserRegister
-from ..auth import require_role, hash_password
-from datetime import date
-import random
+from ..auth import require_role
+from ..schemas import ShipmentCreate
+from .admin_routes import generate_tracking_number
 
-router = APIRouter(prefix="/api/client", tags=["Client Routes"])
+router = APIRouter(prefix="/api/v1/client", tags=["Client Routes"])
 
 @router.get("/dashboard", status_code=200)
 def client_dashboard(db: Session = Depends(get_db),
@@ -130,6 +129,63 @@ def client_dashboard(db: Session = Depends(get_db),
         "active_shipment": active_shipment_data,
         "timeline": timeline,
         "recent_shipments": recent_shipments
+    }
+
+@router.post("/shipments", status_code=201)
+def create_shipment(data: ShipmentCreate,
+                    db: Session = Depends(get_db),
+                    current_user: User = Depends(require_role(UserRole.BUSINESS_CLIENT))):
+
+    pickup = Address(line1=data.pickup_line1,
+                     city=data.pickup_city,
+                     state=data.pickup_state,
+                     pincode=data.pickup_pincode)
+
+    delivery = Address(line1=data.delivery_line1,
+                       city=data.delivery_city,
+                       state=data.delivery_state,
+                       pincode=data.delivery_pincode)
+
+    db.add_all([pickup, delivery])
+    db.flush()
+
+    shipment = Shipment(tracking_number=generate_tracking_number(db),
+                        
+                        sender_id=current_user.id,
+                        
+                        receiver_name=data.receiver_name,
+                        receiver_phone=data.receiver_phone,
+                        receiver_email=data.receiver_email,
+                        
+                        pickup_address_id=pickup.id,
+                        delivery_address_id=delivery.id,
+                        
+                        weight=data.weight,
+                        price=data.price,
+                        
+                        status=ShipmentStatus.CREATED)
+
+    db.add(shipment)
+    db.flush()
+
+    log = ShipmentStatusLog(shipment_id=shipment.id,
+                            status=ShipmentStatus.CREATED,
+                            updated_by=current_user.id,
+                            remarks="Shipment created",
+                            timestamp=datetime.utcnow())
+
+    db.add(log)
+
+    db.commit()
+    db.refresh(shipment)
+
+    return {
+        "tracking_number": shipment.tracking_number,
+        "status": shipment.status.value,
+        "sender": current_user.name,
+        "receiver": shipment.receiver_name,
+        "pickup_city": pickup.city,
+        "delivery_city": delivery.city
     }
 
 @router.get("/track/{tracking_id}", status_code=200)

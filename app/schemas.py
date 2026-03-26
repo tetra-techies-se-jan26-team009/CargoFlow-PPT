@@ -42,3 +42,6 @@ class ShipmentCreate(BaseModel):
 
     weight: float
     price: float
+
+class AIRequest(BaseModel):
+    prompt: str
