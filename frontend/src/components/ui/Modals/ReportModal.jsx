@@ -10,7 +10,7 @@ import Modal , {ModalHeader} from "../Modal"
 export function ReportModal({ onClose, shipments }) {
     const [loading, setLoading] = useState(false);
     const [done, setDone] = useState(false);
-    const gen = () => { setLoading(true); setTimeout(() => { setLoading(false); setDone(true); }, 1800); };
+    const gen = () => { console.warn("Missing backend API for this action"); };
     return (
         <Modal onClose={onClose}>
             <ModalHeader title="Generate Monthly Report" onClose={onClose} />
