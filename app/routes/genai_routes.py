@@ -18,8 +18,7 @@ def ai_assistant(data: AIRequest):
 
 @router.get("/track-explain/{tracking_id}")
 def explain_tracking(tracking_id: str,
-                     db: Session = Depends(get_db),
-                     current_user = Depends(require_role(UserRole.BUSINESS_CLIENT))):
+                     db: Session = Depends(get_db)):
 
     shipment = db.query(Shipment).filter(Shipment.tracking_number == tracking_id).first()
 

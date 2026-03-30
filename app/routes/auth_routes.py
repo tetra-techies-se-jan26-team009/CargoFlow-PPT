@@ -32,6 +32,9 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is blocked")
+
     token = create_access_token({"sub": user.email, "role": user.role.value})
     return {"access_token": token, "role": user.role.value}
 

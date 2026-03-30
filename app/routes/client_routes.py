@@ -55,7 +55,7 @@ def client_dashboard(db: Session = Depends(get_db),
         progress_map = {
             ShipmentStatus.CREATED: 10,
             ShipmentStatus.ASSIGNED: 40,
-            ShipmentStatus.OUT_FOR_DELIVERY: 70,
+            ShipmentStatus.OUT_FOR_DELIVERY: 80,
             ShipmentStatus.DELIVERED: 100
         }
 
@@ -105,7 +105,7 @@ def client_dashboard(db: Session = Depends(get_db),
         progress_map = {
             ShipmentStatus.CREATED: 10,
             ShipmentStatus.ASSIGNED: 40,
-            ShipmentStatus.OUT_FOR_DELIVERY: 70,
+            ShipmentStatus.OUT_FOR_DELIVERY: 80,
             ShipmentStatus.DELIVERED: 100
         }
 
@@ -204,7 +204,7 @@ def track_shipment_public(tracking_id: str,
     progress_map = {
         ShipmentStatus.CREATED: 10,
         ShipmentStatus.ASSIGNED: 40,
-        ShipmentStatus.OUT_FOR_DELIVERY: 70,
+        ShipmentStatus.OUT_FOR_DELIVERY: 80,
         ShipmentStatus.DELIVERED: 100
     }
 
@@ -284,7 +284,7 @@ def client_shipments(db: Session = Depends(get_db),
     progress_map = {
         ShipmentStatus.CREATED: 10,
         ShipmentStatus.ASSIGNED: 40,
-        ShipmentStatus.OUT_FOR_DELIVERY: 70,
+        ShipmentStatus.OUT_FOR_DELIVERY: 80,
         ShipmentStatus.DELIVERED: 100,
         ShipmentStatus.FAILED: 0
     }
