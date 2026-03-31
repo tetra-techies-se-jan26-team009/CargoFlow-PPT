@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
-import { getAgents, updateAgent } from "../../utils/adminAPI";
+import { agents } from "../../utils/tempData";
 import { AddAgentModal } from "../../components/ui/Modals/AddAgentModal";
 
 const Icon = ({
@@ -45,66 +45,14 @@ export default function AgentsPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
     const [modal, setModal] = useState(null);
-    const [modalData, setModalData] = useState(null);
-
-    // Strict State Management Rule
-    const [data, setData] = useState({ total_agents: 0, active_now: 0, blocked: 0 });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [agentList, setAgentList] = useState([]);
+    const [setModalData] = useState(null);
+    const [agentList, setAgentList] = useState(agents);
 
     const openModal = (key, data = null) => { setModal(key); setModalData(data); };
     const closeModal = () => { setModal(null); setModalData(null); };
 
-    useEffect(() => {
-        let isMounted = true;
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const agentsRes = await getAgents();
-                
-                if (!isMounted) return;
-
-                setData({
-                    total_agents: agentsRes?.total_agents || 0,
-                    active_now: agentsRes?.active_now || 0,
-                    blocked: agentsRes?.blocked || 0
-                });
-
-                const mappedAgents = (agentsRes?.agents || []).map(a => ({
-                    ...a,
-                    id: a.agent_id,
-                    zone: a.city,
-                    deliveries: a.today_deliveries || 0,
-                    completed: a.total_deliveries || 0,
-                    rate: "100%", // Placeholder until explicitly defined
-                }));
-                setAgentList(mappedAgents);
-                setError(null);
-            } catch (err) {
-                if (isMounted) {
-                    console.error("Failed to fetch agents:", err);
-                    setError("Failed to load agents data.");
-                }
-            } finally {
-                if (isMounted) setLoading(false);
-            }
-        };
-        fetchData();
-        return () => { isMounted = false; };
-    }, []);
-
     const addAgent = (newAgent) => {
         setAgentList((prev) => [...prev, newAgent]);
-    };
-
-    const handleToggleStatus = async (agentId) => {
-        try {
-            await updateAgent(agentId);
-            window.location.reload(); // Force state consistency
-        } catch (err) {
-            console.error(err);
-        }
     };
 
     const filtered = agentList.filter((a) => {
@@ -115,36 +63,6 @@ export default function AgentsPage() {
             a.zone.toLowerCase().includes(search.toLowerCase());
         return matchStatus && matchSearch;
     });
-
-    if (loading) {
-        return (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
-                <DashboardNavbar />
-                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <div style={{ padding: 24, textAlign: "center", background: "white", borderRadius: 12, border: "1px solid #E2E8F0" }}>
-                        <div style={{ fontSize: 24, marginBottom: 10 }}>⏳</div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>Loading Agents...</div>
-                    </div>
-                </main>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
-                <DashboardNavbar />
-                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <div style={{ padding: 24, background: "#FEF2F2", borderRadius: 12, border: "1px solid #FCA5A5", textAlign: "center", maxWidth: 400 }}>
-                        <div style={{ fontSize: 24, marginBottom: 10 }}>⚠️</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B" }}>Error Loading Data</div>
-                        <div style={{ fontSize: 13, color: "#991B1B", marginTop: 6 }}>{error}</div>
-                        <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: "8px 16px", background: "white", border: "1px solid #FCA5A5", borderRadius: 6, color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Retry</button>
-                    </div>
-                </main>
-            </div>
-        );
-    }
 
     return (
         <>
@@ -195,7 +113,7 @@ export default function AgentsPage() {
                                 Manage Agents
                             </h1>
                             <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>
-                                {data.total_agents} delivery agents in your network
+                                {agents.length} delivery agents in your network
                             </p>
                         </div>
                         <button
@@ -227,20 +145,20 @@ export default function AgentsPage() {
                         }}
                     >
                         {[
-                            { label: "Total Agents", value: data.total_agents, color: "#2563EB" },
+                            { label: "Total Agents", value: agents.length, color: "#2563EB" },
                             {
                                 label: "Active Now",
-                                value: data.active_now,
+                                value: agents.filter((a) => a.status === "Active").length,
                                 color: "#10B981",
                             },
                             {
                                 label: "Block",
-                                value: data.blocked,
+                                value: agents.filter((a) => a.status === "Block").length,
                                 color: "#FF0000",
                             },
                             {
                                 label: "Off Duty",
-                                value: Math.max(0, data.total_agents - data.active_now - data.blocked),
+                                value: agents.filter((a) => a.status === "Off").length,
                                 color: "#9CA3AF",
                             },
                         ].map((k) => (
@@ -512,30 +430,26 @@ export default function AgentsPage() {
                                                 fontWeight: 500,
                                                 cursor: "pointer",
                                             }}
-                                            onClick={() => console.warn("Missing backend API for this action")}
                                         >
                                             View Profile
                                         </button>
 
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleToggleStatus(agent.id.replace("AGT-", ""));
-                                            }}
+                                            disabled={isDisabled}
                                             style={{
                                                 flex: 1,
                                                 padding: "7px",
                                                 border: "none",
                                                 borderRadius: 7,
-                                                background: agent.status === "Block" ? "#10B981" : "#EF4444",
+                                                background: "#2563EB",
                                                 color: "white",
                                                 fontSize: 11,
                                                 fontWeight: 600,
-                                                cursor: "pointer",
-                                                opacity: 1,
+                                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                                opacity: isDisabled ? 0.4 : 1,
                                             }}
                                         >
-                                            {agent.status === "Block" ? "Unblock" : "Block"}
+                                            Assign Task
                                         </button>
                                     </div>
                                 </div>

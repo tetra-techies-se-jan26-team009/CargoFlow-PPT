@@ -1,107 +1,74 @@
 import { useState } from "react";
 import { BTN_PRI,BTN_SEC,LBL,INP } from "../modalStyle";
 import { agents } from "../../../utils/tempData";
-import Modal , {ModalHeader} from "../Modal";
-import { createShipment } from "../../../utils/adminAPI";
+import Modal , {ModalHeader} from "../Modal"
 
 
 export default function AddShipmentModal({ onClose, onAdd }) {
-    const [f, setF] = useState({
-        receiver_name: "", receiver_phone: "", receiver_email: "",
-        pickup_line1: "", pickup_city: "", pickup_state: "", pickup_pincode: "",
-        delivery_line1: "", delivery_city: "", delivery_state: "", delivery_pincode: "",
-        weight: "", price: ""
-    });
+    const [f, setF] = useState({ client: "", agent: "", origin: "", dest: "", status: "Pending", risk: "Low" });
     const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-
-    const submit = async () => {
-        if (!f.receiver_name || !f.pickup_city || !f.delivery_city) {
-            setError("Receiver name, origin city, and dest city are required.");
-            return;
-        }
-        setLoading(true);
-        setError(null);
-        try {
-            await createShipment({
-                ...f,
-                weight: parseFloat(f.weight) || 1.0,
-                price: parseFloat(f.price) || 100.0
-            });
-            setTimeout(() => {
-                onClose();
-                window.location.reload();
-            }, 500);
-        } catch (err) {
-            setError(err.response?.data?.detail || err.message || "Failed to create shipment");
-        } finally {
-            setLoading(false);
-        }
+    const submit = () => {
+        if (!f.client || !f.origin || !f.dest) return;
+        onAdd({ ...f, id: "V1-" + Date.now().toString().slice(-8), eta: "TBD" });
+        onClose();
     };
-
     return (
-        <Modal onClose={onClose} width={700}>
-            <ModalHeader title="Create New Shipment" onClose={onClose} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, maxHeight: "65vh", overflowY: "auto", paddingRight: 8 }}>
-                {error && (
-                    <div style={{ padding: "8px 12px", background: "#FEF2F2", color: "#991B1B", fontSize: 13, borderRadius: 6, border: "1px solid #FCA5A5" }}>
-                        {error}
-                    </div>
-                )}
-                
-                {/* Receiver Info */}
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginTop: 5 }}>Receiver Details</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <Modal onClose={onClose} width={500}>
+            <ModalHeader title="Add New Shipment" onClose={onClose} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                        <span style={LBL}>Name *</span>
-                        <input value={f.receiver_name} onChange={e => set("receiver_name", e.target.value)} style={INP} />
+                        <span style={LBL}>Client Name *</span>
+                        <input value={f.client} onChange={e => set("client", e.target.value)}
+                            placeholder="e.g. Apex Traders" style={INP}
+                            onFocus={e => e.target.style.borderColor = "#93C5FD"}
+                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
                     </div>
                     <div>
-                        <span style={LBL}>Email</span>
-                        <input value={f.receiver_email} type="email" onChange={e => set("receiver_email", e.target.value)} style={INP} />
-                    </div>
-                    <div>
-                        <span style={LBL}>Phone</span>
-                        <input value={f.receiver_phone} onChange={e => set("receiver_phone", e.target.value)} style={INP} />
+                        <span style={LBL}>Assign Agent</span>
+                        <select value={f.agent} onChange={e => set("agent", e.target.value)}
+                            style={{ ...INP, cursor: "pointer" }}>
+                            <option value="">Select agent</option>
+                            {agents.map(a => <option key={a.name}>{a.name}</option>)}
+                        </select>
                     </div>
                 </div>
-
-                {/* Pickup Address */}
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginTop: 10 }}>Pickup Address</div>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12 }}>
-                    <div><span style={LBL}>Line 1</span><input value={f.pickup_line1} onChange={e => set("pickup_line1", e.target.value)} style={INP} /></div>
-                    <div><span style={LBL}>City *</span><input value={f.pickup_city} onChange={e => set("pickup_city", e.target.value)} style={INP} /></div>
-                    <div><span style={LBL}>State</span><input value={f.pickup_state} onChange={e => set("pickup_state", e.target.value)} style={INP} /></div>
-                    <div><span style={LBL}>PIN</span><input value={f.pickup_pincode} onChange={e => set("pickup_pincode", e.target.value)} style={INP} /></div>
-                </div>
-
-                {/* Delivery Address */}
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginTop: 10 }}>Delivery Address</div>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12 }}>
-                    <div><span style={LBL}>Line 1</span><input value={f.delivery_line1} onChange={e => set("delivery_line1", e.target.value)} style={INP} /></div>
-                    <div><span style={LBL}>City *</span><input value={f.delivery_city} onChange={e => set("delivery_city", e.target.value)} style={INP} /></div>
-                    <div><span style={LBL}>State</span><input value={f.delivery_state} onChange={e => set("delivery_state", e.target.value)} style={INP} /></div>
-                    <div><span style={LBL}>PIN</span><input value={f.delivery_pincode} onChange={e => set("delivery_pincode", e.target.value)} style={INP} /></div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                        <span style={LBL}>Weight (kg)</span>
-                        <input type="number" value={f.weight} onChange={e => set("weight", e.target.value)} style={INP} />
+                        <span style={LBL}>Origin *</span>
+                        <input value={f.origin} onChange={e => set("origin", e.target.value)}
+                            placeholder="e.g. Chennai" style={INP}
+                            onFocus={e => e.target.style.borderColor = "#93C5FD"}
+                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
                     </div>
                     <div>
-                        <span style={LBL}>Price (₹)</span>
-                        <input type="number" value={f.price} onChange={e => set("price", e.target.value)} style={INP} />
+                        <span style={LBL}>Destination *</span>
+                        <input value={f.dest} onChange={e => set("dest", e.target.value)}
+                            placeholder="e.g. Mumbai" style={INP}
+                            onFocus={e => e.target.style.borderColor = "#93C5FD"}
+                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
+                    </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                        <span style={LBL}>Status</span>
+                        <select value={f.status} onChange={e => set("status", e.target.value)}
+                            style={{ ...INP, cursor: "pointer" }}>
+                            {["Pending", "In Transit", "Delivered", "Delayed"].map(s => <option key={s}>{s}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <span style={LBL}>Risk</span>
+                        <select value={f.risk} onChange={e => set("risk", e.target.value)}
+                            style={{ ...INP, cursor: "pointer" }}>
+                            {["Low", "Medium", "High"].map(r => <option key={r}>{r}</option>)}
+                        </select>
                     </div>
                 </div>
             </div>
-            
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button onClick={onClose} style={BTN_SEC} disabled={loading}>Cancel</button>
-                <button onClick={submit} style={{...BTN_PRI, opacity: loading ? 0.6 : 1}} disabled={loading}>
-                    {loading ? "Creating..." : "+ Add Shipment"}
-                </button>
+                <button onClick={onClose} style={BTN_SEC}>Cancel</button>
+                <button onClick={submit} style={BTN_PRI}>+ Add Shipment</button>
             </div>
         </Modal>
     );

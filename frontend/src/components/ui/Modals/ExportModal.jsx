@@ -9,31 +9,19 @@ export function ExportModal({ onClose, shipments }) {
     const [fmt, setFmt] = useState("csv");
     const [done, setDone] = useState(false);
     const doExport = () => {
-        try {
-            if (fmt === "csv") {
-                const headers = ["ID", "Client", "Agent", "Origin", "Dest", "Status", "Risk"];
-                const rows = shipments.map(s => [s.id, s.client, s.agent, s.origin, s.dest, s.status, s.risk]);
-                const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
-                const blob = new Blob([csv], { type: "text/csv" });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = "shipments.csv";
-                a.click();
-                URL.revokeObjectURL(a.href);
-            } else if (fmt === "json") {
-                const json = JSON.stringify(shipments, null, 2);
-                const blob = new Blob([json], { type: "application/json" });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = "shipments.json";
-                a.click();
-                URL.revokeObjectURL(a.href);
-            }
-            setDone(true);
-            setTimeout(onClose, 1400);
-        } catch (err) {
-            console.error("Export Failed", err);
+        if (fmt === "csv") {
+            const headers = ["ID", "Client", "Agent", "Origin", "Dest", "Status", "ETA", "Risk"];
+            const rows = shipments.map(s => [s.id, s.client, s.agent, s.origin, s.dest, s.status, s.eta, s.risk]);
+            const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "shipments.csv";
+            a.click();
+            URL.revokeObjectURL(a.href);
         }
+        setDone(true);
+        setTimeout(onClose, 1400);
     };
     return (
         <Modal onClose={onClose} width={380}>

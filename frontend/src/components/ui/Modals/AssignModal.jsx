@@ -11,7 +11,8 @@ export function AssignModal({ shipments, onClose }) {
     const [done, setDone] = useState(false);
     const assign = () => {
         if (!selS || !selA) return;
-        console.warn("Missing backend API for this action");
+        setDone(true);
+        setTimeout(onClose, 1600);
     };
     return (
         <Modal onClose={onClose}>
