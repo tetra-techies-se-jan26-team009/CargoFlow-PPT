@@ -324,3 +324,56 @@ def add_business_client(data: UserRegister,
     db.refresh(client)
 
     return {"message": "Business client added successfully"}
+
+@router.post("/shipments/{shipment_id}/assign/{agent_id}")
+def assign_agent(shipment_id: int,
+                 agent_id: int,
+                 db: Session = Depends(get_db),
+                 current_user: User = Depends(require_role(UserRole.ADMIN))):
+
+    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
+
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+
+    agent = db.query(User).filter(User.id == agent_id,
+                                  User.role == UserRole.DELIVERY_AGENT,
+                                  User.is_active == True).first()
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found or inactive")
+
+
+    shipment.assigned_agent_id = agent.id
+    shipment.status = ShipmentStatus.ASSIGNED
+
+    assignment = ShipmentAssignment(shipment_id=shipment.id,
+                                    agent_id=agent.id,
+                                    assigned_by=current_user.id)
+    db.add(assignment)
+
+    log = ShipmentStatusLog(shipment_id=shipment.id,
+                            status=ShipmentStatus.ASSIGNED,
+                            updated_by=current_user.id,
+                            remarks=f"Assigned to agent {agent.name}")
+    db.add(log)
+    db.commit()
+
+    return {"message": "Agent assigned successfully"}
+
+@router.get("/agents/live-location")
+def get_agents_location(db: Session = Depends(get_db),
+                        current_user: User = Depends(require_role(UserRole.ADMIN))):
+
+    agents = db.query(User).filter(User.role == UserRole.DELIVERY_AGENT, User.is_active == True).all()
+
+    return [
+        {
+            "id": agent.id,
+            "name": agent.name,
+            "lat": agent.current_lat,
+            "lng": agent.current_lng,
+            "last_updated": agent.last_location_update
+        }
+        for agent in agents if agent.current_lat is not None and agent.current_lng is not None
+    ]

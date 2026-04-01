@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
-from ..schemas import ShipmentCreate
+from ..schemas import ShipmentCreate, BusinessCreate
 from .admin_routes import generate_tracking_number
 
 router = APIRouter(prefix="/api/v1/client", tags=["Client Routes"])
@@ -313,4 +313,56 @@ def client_shipments(db: Session = Depends(get_db),
             "delayed": delayed
         },
         "shipments": shipment_list
+    }
+
+@router.post("/business", status_code=201)
+def create_business(data: BusinessCreate,
+                    db: Session = Depends(get_db),
+                    current_user: User = Depends(require_role(UserRole.BUSINESS_CLIENT))):
+
+    if current_user.business or current_user.owned_business:
+        raise HTTPException(status_code=400, detail="User already has a business")
+
+    business = Business(name=data.name,
+                        type=data.type,
+                        owner_id=current_user.id)
+
+    db.add(business)
+    db.flush()
+
+    current_user.business_id = business.id
+
+    db.commit()
+    db.refresh(business)
+
+    return {
+        "message": "Business created successfully",
+        "business_id": business.id,
+        "name": business.name
+    }
+
+@router.put("/business", status_code=200)
+def update_business(data: BusinessCreate,
+                    db: Session = Depends(get_db),
+                    current_user: User = Depends(require_role(UserRole.BUSINESS_CLIENT))):
+
+    business = current_user.owned_business or current_user.business
+
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    if data.name:
+        business.name = data.name
+
+    if data.type:
+        business.type = data.type
+
+    db.commit()
+    db.refresh(business)
+
+    return {
+        "message": "Business updated successfully",
+        "business_id": business.id,
+        "name": business.name,
+        "type": business.type
     }

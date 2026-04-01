@@ -64,6 +64,10 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+    current_lat = Column(Float, nullable=True)
+    current_lng = Column(Float, nullable=True)
+    last_location_update = Column(DateTime, default=datetime.utcnow)
+
     business_id = Column(Integer, ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
     business = relationship("Business", foreign_keys=[business_id], back_populates="users")
     owned_business = relationship("Business", foreign_keys="Business.owner_id", back_populates="owner", uselist=False)

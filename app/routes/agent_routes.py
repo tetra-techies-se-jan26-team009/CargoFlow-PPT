@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
-from ..schemas import ShipmentCreate
-from .admin_routes import generate_tracking_number
+from ..schemas import LocationUpdate
 
 router = APIRouter(prefix="/api/v1/agent", tags=["Agent Routes"])
 
@@ -97,3 +96,32 @@ def agent_dashboard(db: Session = Depends(get_db),
         },
         "active_delivery": active_delivery
     }
+
+@router.post("/update/live-location")
+def update_location(data: LocationUpdate, 
+                    db: Session = Depends(get_db), 
+                    current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
+
+    current_user.current_lat = data.lat
+    current_user.current_lng = data.lng
+    current_user.last_location_update = datetime.utcnow()
+
+    if data.shipment_id:
+        shipment = db.query(Shipment).filter(Shipment.id == data.shipment_id).first()
+
+        if not shipment:
+            raise HTTPException(status_code=404, detail="Shipment not found")
+
+        if shipment.assigned_agent_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not assigned to this shipment")
+
+        tracking = TrackingUpdate(
+            shipment_id=data.shipment_id,
+            agent_id=current_user.id,
+            latitude=data.lat,
+            longitude=data.lng,
+            status=ShipmentStatus.OUT_FOR_DELIVERY)
+        db.add(tracking)
+    db.commit()
+
+    return {"message": "Location updated"}

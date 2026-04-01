@@ -43,5 +43,14 @@ class ShipmentCreate(BaseModel):
     weight: float
     price: float
 
+class LocationUpdate(BaseModel):
+    lat: float
+    lng: float
+    shipment_id: Optional[int] = None
+
+class BusinessCreate(BaseModel):
+    name: str
+    type: str
+
 class AIRequest(BaseModel):
     prompt: str
