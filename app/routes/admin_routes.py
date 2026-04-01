@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
-from ..schemas import DeliveryAgentCreate, ShipmentCreate, UserRegister
+from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister
 from ..auth import require_role, hash_password
 from datetime import date
 import random
@@ -78,9 +78,19 @@ def generate_tracking_number(db: Session):
             return tracking_number
 
 @router.post("/shipments", status_code=201)
-def create_shipment(data: ShipmentCreate,
+def create_shipment(data: AdminShipmentCreate,
                     db: Session = Depends(get_db),
                     current_user: User = Depends(require_role(UserRole.ADMIN))):
+
+    sender = db.query(User).filter(User.id == data.sender_id,
+                                   User.role == UserRole.BUSINESS_CLIENT,
+                                   User.is_active == True).first()
+
+    if not sender:
+        raise HTTPException(status_code=404, detail="Business client not found")
+
+    if not sender.business_id:
+        raise HTTPException(status_code=400, detail="Client has no business")
 
     pickup = Address(line1=data.pickup_line1,
                      city=data.pickup_city,
@@ -97,7 +107,7 @@ def create_shipment(data: ShipmentCreate,
 
     shipment = Shipment(tracking_number=generate_tracking_number(db),
                         
-                        sender_id=current_user.id,
+                        sender_id=data.sender_id,
                         
                         receiver_name=data.receiver_name,
                         receiver_phone=data.receiver_phone,
@@ -117,7 +127,7 @@ def create_shipment(data: ShipmentCreate,
     log = ShipmentStatusLog(shipment_id=shipment.id,
                             status=ShipmentStatus.CREATED,
                             updated_by=current_user.id,
-                            remarks="Shipment created",
+                            remarks=f"Shipment created by admin for {sender.name}",
                             timestamp=datetime.utcnow())
 
     db.add(log)
@@ -128,7 +138,7 @@ def create_shipment(data: ShipmentCreate,
     return {
         "tracking_number": shipment.tracking_number,
         "status": shipment.status.value,
-        "sender": current_user.name,
+        "sender": sender.name,
         "receiver": shipment.receiver_name,
         "pickup_city": pickup.city,
         "delivery_city": delivery.city

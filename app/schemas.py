@@ -24,8 +24,26 @@ class DeliveryAgentCreate(BaseModel):
     phone: str
     city: str
 
-class ShipmentCreate(BaseModel):
+class AdminShipmentCreate(BaseModel):
+    sender_id: int
+    receiver_name: str
+    receiver_phone: str
+    receiver_email: EmailStr
 
+    pickup_line1: str
+    pickup_city: str
+    pickup_state: str
+    pickup_pincode: str
+
+    delivery_line1: str
+    delivery_city: str
+    delivery_state: str
+    delivery_pincode: str
+
+    weight: float
+    price: float
+
+class ClientShipmentCreate(BaseModel):
     receiver_name: str
     receiver_phone: str
     receiver_email: EmailStr
@@ -51,6 +69,3 @@ class LocationUpdate(BaseModel):
 class BusinessCreate(BaseModel):
     name: str
     type: str
-
-class AIRequest(BaseModel):
-    prompt: str

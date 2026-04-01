@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
-from ..schemas import ShipmentCreate, BusinessCreate
+from ..schemas import ClientShipmentCreate, BusinessCreate
 from .admin_routes import generate_tracking_number
 
 router = APIRouter(prefix="/api/v1/client", tags=["Client Routes"])
@@ -132,9 +132,12 @@ def client_dashboard(db: Session = Depends(get_db),
     }
 
 @router.post("/shipments", status_code=201)
-def create_shipment(data: ShipmentCreate,
+def create_shipment(data: ClientShipmentCreate,
                     db: Session = Depends(get_db),
                     current_user: User = Depends(require_role(UserRole.BUSINESS_CLIENT))):
+
+    if not current_user.business_id:
+        raise HTTPException(status_code=400, detail="Please create a business before creating shipment")
 
     pickup = Address(line1=data.pickup_line1,
                      city=data.pickup_city,
