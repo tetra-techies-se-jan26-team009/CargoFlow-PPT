@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
-import { clients } from "../../utils/tempData";
+import { getClients } from "../../utils/adminAPI";
 import { AddClientModal } from "../../components/ui/Modals/AddClientModal";
 
 
@@ -33,16 +33,91 @@ export default function ClientsPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
     const [modal, setModal] = useState(null);
-    const [setModalData] = useState(null);
 
-    const openModal = (key, data = null) => { setModal(key); setModalData(data); };
-    const closeModal = () => { setModal(null); setModalData(null); };
+    // Strict State Management Rule
+    const [data, setData] = useState({ total_clients: 0, active: 0, overdue: 0, total_revenue: 0 });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [clientList, setClientList] = useState([]);
 
-    const filtered = clients.filter(c => {
+    const openModal = (key) => { setModal(key); };
+    const closeModal = () => { setModal(null); };
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const clientsRes = await getClients();
+                
+                if (!isMounted) return;
+
+                setData({
+                    total_clients: clientsRes?.total_clients || 0,
+                    active: clientsRes?.active || 0,
+                    overdue: clientsRes?.overdue || 0,
+                    total_revenue: clientsRes?.total_revenue || 0
+                });
+
+                const mappedClients = (clientsRes?.clients || []).map(c => ({
+                    ...c,
+                    id: c.client_id,
+                    name: c.business  || "Unknown Client",
+                    contact: c.contact_person || "N/A",
+                    shipments: c.shipments || 0,
+                    revenue: typeof c.revenue === 'number' ? `₹${c.revenue}` : c.revenue || "₹0",
+                    joined: c.joined ? new Date(c.joined).toLocaleDateString() : "Unknown"
+                }));
+                setClientList(mappedClients);
+                setError(null);
+            } catch (err) {
+                if (isMounted) {
+                    console.error("Failed to fetch clients:", err);
+                    setError("Failed to load clients data.");
+                }
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+        fetchData();
+        return () => { isMounted = false; };
+    }, []);
+
+    const filtered = clientList.filter(c => {
         const matchStatus = filter === "All" || c.status === filter;
         const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.contact.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase());
         return matchStatus && matchSearch;
     });
+
+    if (loading) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
+                <DashboardNavbar />
+                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ padding: 24, textAlign: "center", background: "white", borderRadius: 12, border: "1px solid #E2E8F0" }}>
+                        <div style={{ fontSize: 24, marginBottom: 10 }}>⏳</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>Loading Clients...</div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
+                <DashboardNavbar />
+                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ padding: 24, background: "#FEF2F2", borderRadius: 12, border: "1px solid #FCA5A5", textAlign: "center", maxWidth: 400 }}>
+                        <div style={{ fontSize: 24, marginBottom: 10 }}>⚠️</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B" }}>Error Loading Data</div>
+                        <div style={{ fontSize: 13, color: "#991B1B", marginTop: 6 }}>{error}</div>
+                        <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: "8px 16px", background: "white", border: "1px solid #FCA5A5", borderRadius: 6, color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Retry</button>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -61,7 +136,7 @@ export default function ClientsPage() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
                             <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.5px" }}>Manage Clients</h1>
-                            <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>{clients.length} registered business clients</p>
+                            <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>{data.total_clients} registered business clients</p>
                         </div>
                         <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => openModal("addClient")}>
                             <Icon d={icons.plus} size={13} stroke="white" /> Add Client
@@ -71,10 +146,10 @@ export default function ClientsPage() {
                     {/* KPIs */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
                         {[
-                            { label: "Total Clients", value: clients.length, color: "#2563EB" },
-                            { label: "Active", value: clients.filter(c => c.status === "Active").length, color: "#10B981" },
-                            { label: "Overdue", value: clients.filter(c => c.status === "Overdue").length, color: "#EF4444" },
-                            { label: "Total Revenue", value: "₹6.12L", color: "#7C3AED" },
+                            { label: "Total Clients", value: data.total_clients, color: "#2563EB" },
+                            { label: "Active", value: data.active, color: "#10B981" },
+                            { label: "Overdue", value: data.overdue, color: "#EF4444" },
+                            { label: "Total Revenue", value: `₹${data.total_revenue.toLocaleString()}`, color: "#7C3AED" },
                         ].map(k => (
                             <div key={k.label} style={{ background: "white", borderRadius: 10, padding: "14px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #F1F5F9" }}>
                                 <div style={{ fontSize: 26, fontWeight: 800, color: k.color, letterSpacing: "-0.5px" }}>{k.value}</div>
@@ -106,7 +181,7 @@ export default function ClientsPage() {
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
                                 <tr style={{ background: "#F8FAFC" }}>
-                                    {["Client", "Contact Person", "Email", "Phone", "City", "Shipments", "Revenue", "Status", "Joined", "Actions"].map(h => (
+                                    {["Company Name", "Contact Person", "Email", "Phone", "City", "Shipments", "Revenue", "Status", "Joined", "Actions"].map(h => (
                                         <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "#94A3B8", textAlign: "left", borderBottom: "1px solid #F1F5F9", whiteSpace: "nowrap" }}>{h}</th>
                                     ))}
                                 </tr>
@@ -139,8 +214,8 @@ export default function ClientsPage() {
                                         <td style={{ padding: "13px 16px", fontSize: 11, color: "#94A3B8" }}>{c.joined}</td>
                                         <td style={{ padding: "13px 16px" }}>
                                             <div style={{ display: "flex", gap: 6 }}>
-                                                <button style={{ padding: "5px 10px", border: "1px solid #E2E8F0", borderRadius: 6, background: "white", color: "#334155", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>View</button>
-                                                <button style={{ padding: "5px 10px", border: "none", borderRadius: 6, background: "#EFF6FF", color: "#2563EB", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Invoice</button>
+                                                <button onClick={() => console.warn("Missing backend API for this action")} style={{ padding: "5px 10px", border: "1px solid #E2E8F0", borderRadius: 6, background: "white", color: "#334155", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>View</button>
+                                                <button onClick={() => console.warn("Missing backend API for this action")} style={{ padding: "5px 10px", border: "none", borderRadius: 6, background: "#EFF6FF", color: "#2563EB", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Invoice</button>
                                             </div>
                                         </td>
                                     </tr>

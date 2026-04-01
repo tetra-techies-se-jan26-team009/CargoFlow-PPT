@@ -6,7 +6,7 @@ import Modal , {ModalHeader} from "../Modal"
 
 
 export function AddClientModal({ onClose }) {
-    const [f, setF] = useState({ name: "", email: "", phone: "", city: "" });
+    const [f, setF] = useState({ name: "", email: "", phone: "", city: "" , password: "" });
     const set = (k, v) => setF(p => ({ ...p, [k]: v }));
     const [done, setDone] = useState(false);
     const submit = () => {

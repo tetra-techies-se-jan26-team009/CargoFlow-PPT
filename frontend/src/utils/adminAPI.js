@@ -4,7 +4,7 @@ import api from "./api";
 // ---Dashboard----------------------------------------------------------------------------
 export const getDashboard = async () => {
     try {
-        const res = await api.get("/api/admin/dashboard");
+        const res = await api.get("/api/v1/admin/dashboard");
         return res.data;
     } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -15,7 +15,7 @@ export const getDashboard = async () => {
 // ---Shipments Data-----------------------------------------------------------------------
 export const getShipments = async () => {
     try {
-        const res = await api.get("/api/admin/dashboard/shipments");
+        const res = await api.get("/api/v1/admin/dashboard/shipments");
         return res.data;
     } catch (error) {
         console.error("Failed to fetch shipments data:", error);
@@ -25,7 +25,7 @@ export const getShipments = async () => {
 
 export const createShipment = async (data) => {
     try {
-        const res = await api.post("/api/admin/shipments", data);
+        const res = await api.post("/api/v1/admin/shipments", data);
         return res.data;
     } catch (error) {
         console.error("Failed to create shipment:", error);
@@ -36,7 +36,7 @@ export const createShipment = async (data) => {
 // ---Agent Data-----------------------------------------------------------------------
 export const getAgents = async () => {
     try {
-        const res = await api.get("/api/admin/dashboard/agents");
+        const res = await api.get("/api/v1/admin/dashboard/agents");
         return res.data;
     } catch (error) {
         console.error("Failed to fetch agents data:", error);
@@ -46,7 +46,7 @@ export const getAgents = async () => {
 
 export const createAgent = async (data) => {
     try {
-        const res = await api.post("/api/admin/delivery_agents", data);
+        const res = await api.post("/api/v1/admin/delivery_agents", data);
         return res.data;
     } catch (error) {
         console.error("Failed to create agent:", error);
@@ -56,7 +56,7 @@ export const createAgent = async (data) => {
 
 export const updateAgent = async (agentId) => {
     try {
-        const res = await api.patch(`/api/admin/delivery_agents/${agentId}/status`);
+        const res = await api.patch(`/api/v1/admin/delivery_agents/${agentId}/status`);
         return res.data;
     } catch (error) {
         console.error("Failed to update agent status:", error);
@@ -67,7 +67,7 @@ export const updateAgent = async (agentId) => {
 // ---Clients Data-----------------------------------------------------------------------
 export const getClients = async () => {
     try {
-        const res = await api.get("/api/admin/dashboard/clients");
+        const res = await api.get("/api/v1/admin/dashboard/clients");
         return res.data;
     } catch (error) {
         console.error("Failed to fetch clients data:", error);
@@ -77,7 +77,7 @@ export const getClients = async () => {
 
 export const createClient = async (data) => {
     try {
-        const res = await api.post("/api/admin/business_clients" , data);
+        const res = await api.post("/api/v1/admin/business_clients" , data);
         return res.data;
     } catch (error) {
         console.error("Failed to create client:", error);

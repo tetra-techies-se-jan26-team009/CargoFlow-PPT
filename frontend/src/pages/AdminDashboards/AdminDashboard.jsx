@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import { getCurrentUser } from "../../utils/auth";
+import { getDashboard, getShipments, getAgents } from "../../utils/adminAPI";
 import DashboardNavbar from "../../components/DashboardNavbar";
 import { Link } from "react-router-dom";
-import { BASE_SHIPMENTS, agents, statusMeta, BASE_RISK_ALERTS } from "../../utils/tempData";
+import { statusMeta, BASE_RISK_ALERTS } from "../../utils/tempData";
 import AddShipmentModal from "../../components/ui/Modals/AddShipments";
 import { AddClientModal } from "../../components/ui/Modals/AddClientModal";
 import { AIInsightsModal } from "../../components/ui/Modals/AIInsightsModal";
 import { AlertModal } from "../../components/ui/Modals/AlertModal";
 import { ExportModal } from "../../components/ui/Modals/ExportModal";
 import { ReportModal } from "../../components/ui/Modals/ReportModal";
-import {ShipmentDetailModal} from "../../components/ui/Modals/ShipmentDetailModal";
-import {AssignModal} from "../../components/ui/Modals/AssignModal"
+import { ShipmentDetailModal } from "../../components/ui/Modals/ShipmentDetailModal";
+import { AssignModal } from "../../components/ui/Modals/AssignModal"
 
 
 
@@ -127,7 +128,22 @@ export default function AdminDashboard() {
     const [userName, setUserName] = useState("Admin");
 
     // ── Shipments state (mutable) ──
-    const [shipments, setShipments] = useState(BASE_SHIPMENTS);
+    // const [shipments, setShipments] = useState(BASE_SHIPMENTS);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // ── Dynamic state ──
+    const [shipments, setShipments] = useState([]);
+    const [agentsList, setAgentsList] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState({
+        active_shipments: 0,
+        delivered_this_month: 0,
+        active_agents: 0,
+        registered_clients: 0,
+        recent_shipments: [],
+        today_shipments: [],
+        open_issues: 0
+    });
 
     // ── Filter state ──
     const [statusFilter, setStatusFilter] = useState("Status");
@@ -142,7 +158,7 @@ export default function AdminDashboard() {
     const [mapRefreshed, setMapRefreshed] = useState(false);
 
     // ── Modal state — one at a time ──
-    const [modal, setModal] = useState(null);   
+    const [modal, setModal] = useState(null);
     const [modalData, setModalData] = useState(null);
 
     const openModal = (key, data = null) => { setModal(key); setModalData(data); };
@@ -159,13 +175,57 @@ export default function AdminDashboard() {
         new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchData = async () => {
             try {
                 const user = await getCurrentUser();
                 if (user?.name) setUserName(user.name);
-            } catch (error) { console.log(error) }
+                const [dashRes, shipRes, agentsRes] = await Promise.all([
+                    getDashboard(),
+                    getShipments(),
+                    getAgents()
+                ]);
+
+                setDashboardStats({
+                    ...(dashRes || {}),
+                    open_issues: (shipRes?.shipments || []).filter(s => ["High", "Medium"].includes(s.risk)).length
+                });
+
+                const mapStatus = (status) => {
+                    if (status === "CREATED") return "Pending";
+                    if (["ASSIGNED", "OUT_FOR_DELIVERY"].includes(status)) return "In Transit";
+                    if (status === "DELIVERED") return "Delivered";
+                    if (["FAILED", "RETURN_TO_ORIGIN"].includes(status)) return "Delayed";
+                    return status;
+                };
+
+                const mappedShipments = (shipRes?.shipments || []).map(s => ({
+                    ...s,
+                    id: s.tracking_id,
+                    dest: s.destination,
+                    agent: s.agent || "Unassigned",
+                    status: mapStatus(s.status)
+                }));
+                setShipments(mappedShipments);
+
+                const mappedAgents = (agentsRes?.agents || []).map(a => ({
+                    ...a,
+                    id: a.agent_id,
+                    zone: a.city,
+                    deliveries: a.today_deliveries || 0,
+                    completed: a.total_deliveries || 0,
+                    rate: "100%", // Placeholder until calculated
+                }));
+                setAgentsList(mappedAgents);
+
+                setError(null);
+            } catch (err) {
+                console.error("Dashboard fetch error:", err);
+                setError("Failed to load dashboard data. Please check your connection.");
+            } finally {
+                setIsLoading(false);
+            }
         };
-        fetchUser();
+        fetchData();
     }, []);
 
     // ── Filtered shipments ──
@@ -191,6 +251,42 @@ export default function AdminDashboard() {
     const addShipment = (newS) => {
         setShipments(prev => [newS, ...prev]);
     };
+
+    if (isLoading) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#F1F5F9", fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
+                <DashboardNavbar />
+                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ padding: 20, background: "white", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #E2E8F0", textAlign: "center", minWidth: 250 }}>
+                        <div style={{ fontSize: 24, marginBottom: 10 }}>⏳</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>Loading Dashboard...</div>
+                        <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>Fetching live metrics and shipments</div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#F1F5F9", fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
+                <DashboardNavbar />
+                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ padding: 24, background: "#FEF2F2", borderRadius: 12, border: "1px solid #FCA5A5", textAlign: "center", maxWidth: 400 }}>
+                        <div style={{ fontSize: 24, marginBottom: 10 }}>⚠️</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B" }}>Dashboard Error</div>
+                        <div style={{ fontSize: 13, color: "#991B1B", marginTop: 6, opacity: 0.9 }}>{error}</div>
+                        <button
+                            onClick={() => window.location.reload()}
+                            style={{ marginTop: 16, padding: "8px 16px", background: "white", border: "1px solid #FCA5A5", borderRadius: 6, color: "#991B1B", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                        >
+                            Retry Connection
+                        </button>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -289,11 +385,11 @@ export default function AdminDashboard() {
                     {/* ── KPI Row ── */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14 }}>
                         {[
-                            { label: "Active Shipments", value: shipments.filter(s => s.status === "In Transit").length, trend: "+12%", icon: icons.truck, up: true },
-                            { label: "Delivered This Month", value: "892", trend: "+8%", icon: icons.check, up: true },
-                            { label: "Active Agents", value: agents.filter(a => a.status === "Active").length, trend: null, icon: icons.agents, up: null },
-                            { label: "Registered Clients", value: "67", trend: "+3", icon: icons.clients, up: true },
-                            { label: "Open Issues", value: shipments.filter(s => s.risk === "High").length, trend: "-2", icon: icons.warning, up: false },
+                            { label: "Active Shipments", value: dashboardStats.active_shipments || 0, trend: "+12%", icon: icons.truck, up: true },
+                            { label: "Delivered This Month", value: dashboardStats.delivered_this_month || 0, trend: "+8%", icon: icons.check, up: true },
+                            { label: "Active Agents", value: dashboardStats.active_agents || 0, trend: null, icon: icons.agents, up: null },
+                            { label: "Registered Clients", value: dashboardStats.registered_clients || 0, trend: "+3", icon: icons.clients, up: true },
+                            { label: "Open Issues", value: dashboardStats.open_issues || 0, trend: "-2", icon: icons.warning, up: false },
                         ].map(kpi => (
                             <div
                                 key={kpi.label}
@@ -598,7 +694,7 @@ export default function AdminDashboard() {
                             </div>
 
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {agents.map(agent => (
+                                {agentsList.map(agent => (
                                     <div
                                         key={agent.name}
                                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "#F8FAFC", borderRadius: 8, transition: "background 0.15s", cursor: "default" }}

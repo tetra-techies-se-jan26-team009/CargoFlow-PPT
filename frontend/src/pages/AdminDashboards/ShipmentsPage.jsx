@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
-import { BASE_SHIPMENTS } from "../../utils/tempData";
+import { getShipments } from "../../utils/adminAPI";
 import AddShipmentModal from "../../components/ui/Modals/AddShipments";
 import { ExportModal } from "../../components/ui/Modals/ExportModal";
 
@@ -57,15 +57,69 @@ export default function ShipmentsPage() {
     const [searchQ, setSearchQ] = useState("");
     const [page, setPage] = useState(1);
     const [modal, setModal] = useState(null);
-    const [setModalData] = useState(null);
-    const [shipments, setShipments] = useState(BASE_SHIPMENTS);
+
+    // Strict State Management Rule
+    const [data, setData] = useState({ total: 0, in_transit: 0, delivered: 0, delayed: 0, pending: 0 });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [shipments, setShipments] = useState([]);
+
 
     const addShipment = (shipment) => {
         setShipments((prev) => [shipment, ...prev]);
     };
 
-    const openModal = (key, data = null) => { setModal(key); setModalData(data); };
-    const closeModal = () => { setModal(null); setModalData(null); };
+    const openModal = (key) => { setModal(key); };
+    const closeModal = () => { setModal(null); };
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const shipRes = await getShipments();
+
+                if (!isMounted) return;
+
+                setData({
+                    total: shipRes?.total || 0,
+                    in_transit: shipRes?.in_transit || 0,
+                    delivered: shipRes?.delivered || 0,
+                    delayed: shipRes?.delayed || 0,
+                    pending: shipRes?.pending || 0
+                });
+
+                const mapStatus = (status) => {
+                    if (status === "CREATED") return "Pending";
+                    if (["ASSIGNED", "OUT_FOR_DELIVERY"].includes(status)) return "In Transit";
+                    if (status === "DELIVERED") return "Delivered";
+                    if (["FAILED", "RETURN_TO_ORIGIN"].includes(status)) return "Delayed";
+                    return status;
+                };
+
+                const mapShipment = (s) => ({
+                    ...s,
+                    id: s.tracking_id,
+                    dest: s.destination,
+                    agent: s.agent || "Unassigned",
+                    status: mapStatus(s.status)
+                });
+
+                const mappedShipments = (shipRes?.shipments || []).map(mapShipment);
+                setShipments(mappedShipments);
+                setError(null);
+            } catch (err) {
+                if (isMounted) {
+                    console.error("Failed to fetch shipments:", err);
+                    setError("Failed to load shipments data.");
+                }
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+        fetchData();
+        return () => { isMounted = false; };
+    }, []);
 
 
     const filtered = shipments.filter((s) => {
@@ -85,15 +139,35 @@ export default function ShipmentsPage() {
         page * ITEMS_PER_PAGE,
     );
 
-    // Summary counts
-    const counts = {
-        All: BASE_SHIPMENTS.length,
-        "In Transit": 0,
-        Delivered: 0,
-        Delayed: 0,
-        Pending: 0,
-    };
-    BASE_SHIPMENTS.forEach((s) => counts[s.status]++);
+    if (loading) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
+                <DashboardNavbar />
+                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ padding: 24, textAlign: "center", background: "white", borderRadius: 12, border: "1px solid #E2E8F0" }}>
+                        <div style={{ fontSize: 24, marginBottom: 10 }}>⏳</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>Loading Shipments...</div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
+                <DashboardNavbar />
+                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ padding: 24, background: "#FEF2F2", borderRadius: 12, border: "1px solid #FCA5A5", textAlign: "center", maxWidth: 400 }}>
+                        <div style={{ fontSize: 24, marginBottom: 10 }}>⚠️</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B" }}>Error Loading Data</div>
+                        <div style={{ fontSize: 13, color: "#991B1B", marginTop: 6 }}>{error}</div>
+                        <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: "8px 16px", background: "white", border: "1px solid #FCA5A5", borderRadius: 6, color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Retry</button>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -202,31 +276,31 @@ export default function ShipmentsPage() {
                         {[
                             {
                                 label: "Total",
-                                value: counts.All,
+                                value: data.total,
                                 color: "#2563EB",
                                 bg: "#EFF6FF",
                             },
                             {
                                 label: "In Transit",
-                                value: counts["In Transit"],
+                                value: data.in_transit,
                                 color: "#1D4ED8",
                                 bg: "#DBEAFE",
                             },
                             {
                                 label: "Delivered",
-                                value: counts.Delivered,
+                                value: data.delivered,
                                 color: "#065F46",
                                 bg: "#D1FAE5",
                             },
                             {
                                 label: "Delayed",
-                                value: counts.Delayed,
+                                value: data.delayed,
                                 color: "#991B1B",
                                 bg: "#FEE2E2",
                             },
                             {
                                 label: "Pending",
-                                value: counts.Pending,
+                                value: data.pending,
                                 color: "#92400E",
                                 bg: "#FEF3C7",
                             },
@@ -410,9 +484,9 @@ export default function ShipmentsPage() {
                                         "Tracking ID",
                                         "Client",
                                         "Agent",
-                                        "Origin",
+                                        "Pickup",
                                         "Destination",
-                                        "Weight",
+                                        "Weight (Kg)",
                                         "Price",
                                         "Status",
                                         "ETA",
@@ -574,6 +648,7 @@ export default function ShipmentsPage() {
                                             <td style={{ padding: "12px 14px" }}>
                                                 <div style={{ display: "flex", gap: 6 }}>
                                                     <button
+                                                        onClick={() => console.warn("Missing backend API for this action")}
                                                         style={{
                                                             border: "1px solid #E2E8F0",
                                                             borderRadius: 6,
@@ -586,6 +661,7 @@ export default function ShipmentsPage() {
                                                         <Icon d={icons.eye} size={13} stroke="#64748B" />
                                                     </button>
                                                     <button
+                                                        onClick={() => console.warn("Missing backend API for this action")}
                                                         style={{
                                                             border: "1px solid #E2E8F0",
                                                             borderRadius: 6,
