@@ -21,14 +21,17 @@ export default function Modal({ onClose, width = 460, children }) {
 
 export function ModalHeader({ title, subtitle, onClose }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-      <div>
-        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0F172A" }}>{title}</h3>
-        {subtitle && <p style={{ margin: "3px 0 0", fontSize: 12, color: "#94A3B8" }}>{subtitle}</p>}
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0F172A" }}>{title}</h3>
+          {subtitle && <p style={{ margin: "3px 0 0", fontSize: 12, color: "#94A3B8" }}>{subtitle}</p>}
+        </div>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+          ✕
+        </button>
       </div>
-      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-        ✕
-      </button>
-    </div>
+      <hr />
+    </>
   );
 }

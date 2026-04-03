@@ -15,6 +15,9 @@ export default {
         accent: '#f4f4f4',
       },
     },
+    fontFamily: {
+        sans: ['Inter', 'sans-serif'],  
+      },
   },
   plugins: [],
 };

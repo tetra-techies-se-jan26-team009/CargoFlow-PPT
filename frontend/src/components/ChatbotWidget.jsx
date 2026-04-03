@@ -255,6 +255,7 @@ function LauncherButton({ isOpen, onClick, hasUnread }) {
         {/* icon */}
       </button>
     </div>
+  
   );
 }
 

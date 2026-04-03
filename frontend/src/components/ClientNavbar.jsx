@@ -86,7 +86,6 @@ export default function ClientNavbar({
     const [search, setSearch] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
-    const [alertVisible, setAlertVisible] = useState(true);
     const { user, logout } = useAuth();
     // if (loading) return null;
     const handleSearchKey = (e) => {
@@ -103,33 +102,14 @@ export default function ClientNavbar({
 
     return (
         <div className="sticky top-0 left-0 w-full z-1100">
-            {/* ── ALERT BAR ───────────────────────────────────────────────────── */}
-            {alertVisible && (
-                <div style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "10px 28px",
-                    background: "linear-gradient(90deg,#1e3a6b,#2563EB)", color: "white",
-                    fontSize: 12.5, fontWeight: 500, top: 0,
-                }}>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FBBF24", flexShrink: 0, animation: "blink 1.4s infinite" }} />
-                    <span>
-                        ⚠️ Shipment <b>V1-20250276</b> is scheduled for pickup on <b>Mar 21, 10AM</b> — confirm your availability
-                    </span>
-                    {/* <button onClick={()=>openModal(ConfirmPickupModal)} style={{ background: "rgba(255,255,255,.18)", border: "none", color: "white", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline", marginLeft: 4, fontFamily: "inherit" }}>Confirm</button>
-                    <button onClick={reschedule} style={{ background: "rgba(255,255,255,.18)", border: "none", color: "white", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline", fontFamily: "inherit" }}>Reschedule</button> */}
-                    <button onClick={() => setAlertVisible(false)} style={{ marginLeft: "auto", background: "rgba(255,255,255,.15)", border: "none", color: "white", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>✕ Dismiss</button>
-                </div>
-            )}
             <nav
-                className="bg-background border-b border-gray-800"
+                className="bg-background border-b border-gray-100"
                 style={{
                     height: 62,
                     display: "flex",
                     alignItems: "center",
                     padding: "0 32px",
                     flexShrink: 0,
-                    zIndex: 100,
-                    boxShadow: "0 2px 20px rgba(11,31,59,0.4)",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
                     fontFamily: "'DM Sans','Segoe UI',sans-serif",
                 }}
             >
