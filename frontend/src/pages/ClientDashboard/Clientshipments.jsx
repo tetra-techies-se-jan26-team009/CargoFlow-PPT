@@ -1,208 +1,217 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ClientNavbar from "../../components/ClientNavbar";
 import { NotifPanel } from "../../components/ui/ClientModals/NotificationPannel";
-import { INITIAL_NOTIFS } from "../../utils/tempData";
-import { useNavigate } from "react-router-dom";
+import {
+    buildClientNotifications,
+    CLIENT_STATUS_META,
+    getClientShipments,
+} from "../../utils/clientAPI";
 
 const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d={d} />
+    </svg>
 );
 
-
 const icons = {
-  search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-  download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
-  plus: "M12 5v14 M5 12h14",
-  eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 15a3 3 0 100-6 3 3 0 000 6z",
-  filter: "M22 3H2l8 9.46V19l4 2v-8.54L22 3",
+    search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+    download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+    plus: "M12 5v14 M5 12h14",
 };
 
-const ALL = [
-  { id: "V1-20250301", from: "Chennai", to: "Mumbai", status: "In Transit", pct: 72, eta: "Today 6PM", agent: "Ravi Kumar", kg: 24, price: 1200, date: "Mar 1, 2025" },
-  { id: "V1-20250289", from: "Delhi", to: "Bangalore", status: "Delivered", pct: 100, eta: "Completed", agent: "Priya Nair", kg: 12, price: 800, date: "Feb 18, 2025" },
-  { id: "V1-20250276", from: "Mumbai", to: "Pune", status: "Pending", pct: 8, eta: "Mar 5, 10AM", agent: "Meena Shah", kg: 8, price: 500, date: "Mar 2, 2025" },
-  { id: "V1-20250261", from: "Kolkata", to: "Delhi", status: "Delivered", pct: 100, eta: "Completed", agent: "Kiran Roy", kg: 32, price: 2100, date: "Feb 10, 2025" },
-  { id: "V1-20250248", from: "Bangalore", to: "Hyderabad", status: "Delivered", pct: 100, eta: "Completed", agent: "Arjun Das", kg: 18, price: 1100, date: "Feb 3, 2025" },
-  { id: "V1-20250235", from: "Chennai", to: "Delhi", status: "Delayed", pct: 45, eta: "Mar 6, 3PM", agent: "Ravi Kumar", kg: 40, price: 3200, date: "Mar 1, 2025" },
-  { id: "V1-20250220", from: "Mumbai", to: "Kolkata", status: "Delivered", pct: 100, eta: "Completed", agent: "Priya Nair", kg: 22, price: 1800, date: "Jan 28, 2025" },
-  { id: "V1-20250208", from: "Delhi", to: "Kochi", status: "Delivered", pct: 100, eta: "Completed", agent: "Meena Shah", kg: 15, price: 2400, date: "Jan 20, 2025" },
-];
+const PER_PAGE = 6;
 
-const statusMeta = {
-  "In Transit": { bg: "#DBEAFE", color: "#1D4ED8", dot: "#3B82F6" },
-  "Delivered": { bg: "#D1FAE5", color: "#065F46", dot: "#10B981" },
-  "Pending": { bg: "#FEF3C7", color: "#92400E", dot: "#F59E0B" },
-  "Delayed": { bg: "#FEE2E2", color: "#991B1B", dot: "#EF4444" },
+const StatusBadge = ({ status }) => {
+    const meta = CLIENT_STATUS_META[status] || CLIENT_STATUS_META.Pending;
+    return <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: meta.bg, color: meta.color }}>{status}</span>;
 };
 
-const PER = 6;
+const exportShipments = (rows) => {
+    const header = ["Tracking ID", "Pickup City", "Delivery City", "Agent", "Weight", "Price", "Status", "Created On"];
+    const csvRows = rows.map((row) => [row.id, row.from, row.to, row.agent, row.kg, row.price, row.status, row.date]);
+    const csv = [header, ...csvRows].map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "client-shipments.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+};
 
 export default function ClientShipments() {
-  const [q, setQ] = useState("");
-  const navigate = useNavigate();
-  const [tab, setTab] = useState("All");
-  const [pg, setPg] = useState(1);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
-  const showToast = (msg) => alert(msg);
+    const navigate = useNavigate();
+    const notifRef = useRef(null);
+    const [q, setQ] = useState("");
+    const [tab, setTab] = useState("All");
+    const [page, setPage] = useState(1);
+    const [shipments, setShipments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [notifs, setNotifs] = useState([]);
 
-  const counts = { All: ALL.length };
-  ["In Transit", "Delivered", "Pending", "Delayed"].forEach(s => { counts[s] = ALL.filter(r => r.status === s).length; });
+    useEffect(() => {
+        let mounted = true;
 
-  const rows = ALL.filter(r => {
-    const ms = tab === "All" || r.status === tab;
-    const mq = !q || r.id.toLowerCase().includes(q.toLowerCase()) || r.from.toLowerCase().includes(q.toLowerCase()) || r.to.toLowerCase().includes(q.toLowerCase());
-    return ms && mq;
-  });
+        const load = async () => {
+            try {
+                setLoading(true);
+                const response = await getClientShipments();
+                if (!mounted) return;
+                const rows = response?.shipments || [];
+                setShipments(rows);
+                setNotifs(buildClientNotifications(rows));
+                setError("");
+            } catch (err) {
+                if (mounted) {
+                    setError(err.response?.data?.detail || "Failed to load shipments data.");
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        };
 
-  const pages = Math.max(1, Math.ceil(rows.length / PER));
-  const slice = rows.slice((pg - 1) * PER, pg * PER);
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
-  const navbarProps = {
-    onBellClick: () => setNotifOpen(p => !p),
-    unreadCount: notifs.filter(n => n.unread).length,
-  };
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (notifRef.current && !notifRef.current.contains(event.target)) {
+                setNotifOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F8FAFC", color: "#0F172A" }}>
-      <title>Shipments</title>
-      <ClientNavbar
-        {...navbarProps}
-      />
-      {notifOpen && (
-        <NotifPanel
-          notifs={notifs}
-          setNotifs={setNotifs}
-          onTrack={(id) => console.log("Track:", id)} // or open modal
-          onClose={() => setNotifOpen(false)}
-          showToast={showToast}
-        />
-      )}
-      <main style={{ flex: 1, overflow: "auto", padding: "28px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
+    const counts = useMemo(() => ({
+        All: shipments.length,
+        "In Transit": shipments.filter((row) => row.status === "In Transit").length,
+        Delivered: shipments.filter((row) => row.status === "Delivered").length,
+        Pending: shipments.filter((row) => row.status === "Pending").length,
+        Delayed: shipments.filter((row) => row.status === "Delayed").length,
+    }), [shipments]);
 
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", margin: "0 0 4px", letterSpacing: "-0.6px" }}>My Shipments</h1>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Complete history of all your orders with V1 Logistics</p>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, background: "white", border: "1px solid #E2E8F0", color: "#334155", fontSize: 12, fontWeight: 500, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-              <Icon d={icons.download} size={13} stroke="#334155" /> Export CSV
-            </button>
-            <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, background: "linear-gradient(135deg,#2563EB,#3B82F6)", border: "none", color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(37,99,235,0.3)" }}
-            onClick={()=> navigate('/pickup')}
-            >
-              
-              <Icon d={icons.plus} size={13} stroke="white" /> Request Pickup
-            </button>
-          </div>
-        </div>
+    const rows = useMemo(() => shipments.filter((row) => {
+        const matchesTab = tab === "All" || row.status === tab;
+        const term = q.trim().toLowerCase();
+        const matchesSearch = !term || [row.id, row.from, row.to, row.agent].some((value) => String(value || "").toLowerCase().includes(term));
+        return matchesTab && matchesSearch;
+    }), [shipments, tab, q]);
 
-        {/* Status summary tabs */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12 }}>
-          {[
-            { k: "All", v: counts.All, color: "#0F172A", bg: "linear-gradient(135deg,#F8FAFC,#F1F5F9)", border: "#E2E8F0" },
-            { k: "In Transit", v: counts["In Transit"], color: "#1D4ED8", bg: "linear-gradient(135deg,#EFF6FF,#DBEAFE)", border: "#BFDBFE" },
-            { k: "Delivered", v: counts.Delivered, color: "#065F46", bg: "linear-gradient(135deg,#F0FDF4,#D1FAE5)", border: "#A7F3D0" },
-            { k: "Pending", v: counts.Pending, color: "#92400E", bg: "linear-gradient(135deg,#FFFBEB,#FEF3C7)", border: "#FDE68A" },
-            { k: "Delayed", v: counts.Delayed, color: "#991B1B", bg: "linear-gradient(135deg,#FFF5F5,#FEE2E2)", border: "#FECACA" },
-          ].map(c => (
-            <button key={c.k} onClick={() => { setTab(c.k); setPg(1); }}
-              style={{ padding: "14px 16px", background: tab === c.k ? c.bg : "white", border: `1.5px solid ${tab === c.k ? c.border : "#E2E8F0"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "all 0.18s", boxShadow: tab === c.k ? "0 2px 10px rgba(0,0,0,0.06)" : "0 1px 4px rgba(0,0,0,0.03)" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: tab === c.k ? c.color : "#0F172A", letterSpacing: "-0.8px", lineHeight: 1 }}>{c.v}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 5, fontWeight: 500 }}>{c.k}</div>
-            </button>
-          ))}
-        </div>
+    const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
+    const slice = rows.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    const unreadCount = notifs.filter((item) => item.unread).length;
 
-        {/* Search */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <div style={{ position: "relative", flex: 1, maxWidth: 320 }}>
-            <input value={q} onChange={e => { setQ(e.target.value); setPg(1); }} placeholder="Search by ID, city or route…"
-              style={{ width: "100%", background: "white", border: "1px solid #E2E8F0", borderRadius: 10, padding: "9px 14px 9px 36px", color: "#334155", fontSize: 12, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(0,0,0,0.03)" }}
-              onFocus={e => e.target.style.borderColor = "#93C5FD"}
-              onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
-            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}>
-              <Icon d={icons.search} size={13} stroke="#94A3B8" />
-            </span>
-          </div>
-          <span style={{ marginLeft: "auto", fontSize: 12, color: "#94A3B8" }}>{rows.length} shipments</span>
-        </div>
-
-        {/* Table */}
-        <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#F8FAFC" }}>
-                {["Tracking ID", "Route", "Agent", "Weight", "Price", "Date", "Progress", "Status", ""].map(h => (
-                  <th key={h} style={{ padding: "11px 16px", fontSize: 11, fontWeight: 600, color: "#94A3B8", textAlign: "left", borderBottom: "1px solid #F1F5F9", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {slice.length === 0
-                ? <tr><td colSpan={9} style={{ padding: 48, textAlign: "center", color: "#94A3B8", fontSize: 13 }}>No shipments match your filters.</td></tr>
-                : slice.map(s => (
-                  <tr key={s.id}
-                    style={{ borderBottom: "1px solid #F8FAFC", cursor: "pointer", transition: "background 0.1s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
-                    onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                    <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{s.id}</td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{s.from}</div>
-                      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>→ {s.to}</div>
-                    </td>
-                    <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{s.agent}</td>
-                    <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{s.kg} kg</td>
-                    <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#0F172A" }}>₹{s.price.toLocaleString()}</td>
-                    <td style={{ padding: "13px 16px", fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>{s.date}</td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ flex: 1, background: "#F1F5F9", borderRadius: 4, height: 5, overflow: "hidden", minWidth: 70 }}>
-                          <div style={{ width: `${s.pct}%`, height: "100%", background: s.pct === 100 ? "#10B981" : "#2563EB", borderRadius: 4 }} />
-                        </div>
-                        <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, minWidth: 28 }}>{s.pct}%</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: statusMeta[s.status]?.bg, color: statusMeta[s.status]?.color }}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <button style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", color: "#334155", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
-                        <Icon d={icons.eye} size={11} stroke="#334155" /> View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          <div style={{ padding: "12px 20px", borderTop: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 12, color: "#94A3B8" }}>
-              Showing {Math.min((pg - 1) * PER + 1, rows.length)}–{Math.min(pg * PER, rows.length)} of {rows.length}
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button onClick={() => setPg(p => Math.max(1, p - 1))} disabled={pg === 1}
-                style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", color: pg === 1 ? "#CBD5E1" : "#334155", fontSize: 12, cursor: pg === 1 ? "not-allowed" : "pointer" }}>‹ Prev</button>
-              {Array.from({ length: pages }, (_, i) => i + 1).map(p => (
-                <button key={p} onClick={() => setPg(p)}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid", borderColor: p === pg ? "#2563EB" : "#E2E8F0", background: p === pg ? "#2563EB" : "white", color: p === pg ? "white" : "#334155", fontSize: 12, cursor: "pointer", fontWeight: p === pg ? 700 : 400 }}>
-                  {p}
-                </button>
-              ))}
-              <button onClick={() => setPg(p => Math.min(pages, p + 1))} disabled={pg === pages}
-                style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", color: pg === pages ? "#CBD5E1" : "#334155", fontSize: 12, cursor: pg === pages ? "not-allowed" : "pointer" }}>Next ›</button>
+    return (
+        <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F8FAFC", color: "#0F172A" }}>
+            <title>Shipments</title>
+            <div ref={notifRef} style={{ position: "relative" }}>
+                <ClientNavbar onBellClick={() => setNotifOpen((value) => !value)} unreadCount={unreadCount} />
+                {notifOpen && (
+                    <NotifPanel notifs={notifs} setNotifs={setNotifs} onTrack={() => {}} onClose={() => setNotifOpen(false)} showToast={() => {}} />
+                )}
             </div>
-          </div>
-        </div>
 
-      </main>
-    </div>
-  );
+            <main style={{ flex: 1, overflow: "auto", padding: "28px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", margin: "0 0 4px", letterSpacing: "-0.6px" }}>My Shipments</h1>
+                        <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Live shipment history synced from the client backend</p>
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                        <button onClick={() => exportShipments(rows)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, background: "white", border: "1px solid #E2E8F0", color: "#334155", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                            <Icon d={icons.download} size={13} stroke="#334155" /> Export CSV
+                        </button>
+                        <button onClick={() => navigate("/pickup")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, background: "linear-gradient(135deg,#2563EB,#3B82F6)", border: "none", color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            <Icon d={icons.plus} size={13} stroke="white" /> Request Pickup
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12 }}>
+                    {[
+                        { key: "All", color: "#0F172A", bg: "#F8FAFC", border: "#E2E8F0" },
+                        { key: "In Transit", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
+                        { key: "Delivered", color: "#065F46", bg: "#F0FDF4", border: "#A7F3D0" },
+                        { key: "Pending", color: "#92400E", bg: "#FFFBEB", border: "#FDE68A" },
+                        { key: "Delayed", color: "#991B1B", bg: "#FFF5F5", border: "#FECACA" },
+                    ].map((card) => (
+                        <button key={card.key} onClick={() => { setTab(card.key); setPage(1); }} style={{ padding: "14px 16px", background: tab === card.key ? card.bg : "white", border: `1.5px solid ${tab === card.key ? card.border : "#E2E8F0"}`, borderRadius: 12, cursor: "pointer", textAlign: "left" }}>
+                            <div style={{ fontSize: 24, fontWeight: 900, color: tab === card.key ? card.color : "#0F172A" }}>{counts[card.key]}</div>
+                            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 5, fontWeight: 500 }}>{card.key}</div>
+                        </button>
+                    ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <div style={{ position: "relative", flex: 1, maxWidth: 320 }}>
+                        <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search by ID, city, or agent..." style={{ width: "100%", background: "white", border: "1px solid #E2E8F0", borderRadius: 10, padding: "9px 14px 9px 36px", color: "#334155", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}>
+                            <Icon d={icons.search} size={13} stroke="#94A3B8" />
+                        </span>
+                    </div>
+                    <span style={{ marginLeft: "auto", fontSize: 12, color: "#94A3B8" }}>{rows.length} shipments</span>
+                </div>
+
+                <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", overflow: "hidden" }}>
+                    {loading ? (
+                        <div style={{ padding: 32, fontSize: 13, color: "#64748B" }}>Loading shipments...</div>
+                    ) : error ? (
+                        <div style={{ padding: 32, fontSize: 13, color: "#991B1B", background: "#FEF2F2" }}>{error}</div>
+                    ) : (
+                        <>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                <thead>
+                                    <tr style={{ background: "#F8FAFC" }}>
+                                        {["Tracking ID", "Route", "Agent", "Weight", "Price", "Date", "Progress", "Status"].map((label) => (
+                                            <th key={label} style={{ padding: "11px 16px", fontSize: 11, fontWeight: 600, color: "#94A3B8", textAlign: "left", borderBottom: "1px solid #F1F5F9" }}>{label}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {slice.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={8} style={{ padding: 48, textAlign: "center", color: "#94A3B8", fontSize: 13 }}>No shipments match your filters.</td>
+                                        </tr>
+                                    ) : slice.map((shipment) => (
+                                        <tr key={shipment.id} style={{ borderBottom: "1px solid #F8FAFC" }}>
+                                            <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{shipment.id}</td>
+                                            <td style={{ padding: "13px 16px" }}>
+                                                <div style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{shipment.from} → {shipment.to}</div>
+                                            </td>
+                                            <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{shipment.agent}</td>
+                                            <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{shipment.kg} kg</td>
+                                            <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{shipment.priceLabel}</td>
+                                            <td style={{ padding: "13px 16px", fontSize: 11, color: "#94A3B8" }}>{shipment.date}</td>
+                                            <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{shipment.progress}%</td>
+                                            <td style={{ padding: "13px 16px" }}><StatusBadge status={shipment.status} /></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            <div style={{ padding: "12px 20px", borderTop: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ fontSize: 12, color: "#94A3B8" }}>Showing {rows.length === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, rows.length)} of {rows.length}</span>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                    <button onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", color: page === 1 ? "#CBD5E1" : "#334155", fontSize: 12, cursor: page === 1 ? "not-allowed" : "pointer" }}>‹ Prev</button>
+                                    {Array.from({ length: pages }, (_, index) => index + 1).map((value) => (
+                                        <button key={value} onClick={() => setPage(value)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid", borderColor: value === page ? "#2563EB" : "#E2E8F0", background: value === page ? "#2563EB" : "white", color: value === page ? "white" : "#334155", fontSize: 12, cursor: "pointer", fontWeight: value === page ? 700 : 400 }}>{value}</button>
+                                    ))}
+                                    <button onClick={() => setPage((value) => Math.min(pages, value + 1))} disabled={page === pages} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", color: page === pages ? "#CBD5E1" : "#334155", fontSize: 12, cursor: page === pages ? "not-allowed" : "pointer" }}>Next ›</button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
 }

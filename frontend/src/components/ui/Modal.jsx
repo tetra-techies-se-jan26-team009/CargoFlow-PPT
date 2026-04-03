@@ -31,7 +31,6 @@ export function ModalHeader({ title, subtitle, onClose }) {
           ✕
         </button>
       </div>
-      <hr />
     </>
   );
 }

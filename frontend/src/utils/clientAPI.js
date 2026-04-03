@@ -1,6 +1,222 @@
-import api from "./api";    
+import api from "./api";
 
-// ---Client Dashboard------------------------------------------------------------------------
+export const CLIENT_STATUS_META = {
+    "In Transit": { bg: "#DBEAFE", color: "#1D4ED8", dot: "#3B82F6" },
+    Delivered: { bg: "#D1FAE5", color: "#065F46", dot: "#10B981" },
+    Pending: { bg: "#FEF3C7", color: "#92400E", dot: "#F59E0B" },
+    Delayed: { bg: "#FEE2E2", color: "#991B1B", dot: "#EF4444" },
+};
+
+const pick = (...values) => values.find((value) => value !== undefined && value !== null && value !== "");
+
+const getNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+export const mapClientShipmentStatus = (status) => {
+    switch (status) {
+        case "CREATED":
+            return "Pending";
+        case "ASSIGNED":
+        case "OUT_FOR_DELIVERY":
+        case "IN_TRANSIT":
+            return "In Transit";
+        case "DELIVERED":
+            return "Delivered";
+        case "FAILED":
+        case "RETURN_TO_ORIGIN":
+        case "CANCELLED":
+            return "Delayed";
+        default:
+            return status || "Pending";
+    }
+};
+
+const formatDateTime = (value, fallback = "Not available") => {
+    if (!value) return fallback;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return parsed.toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+};
+
+const formatDate = (value, fallback = "Not available") => {
+    if (!value) return fallback;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return parsed.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+const formatCurrency = (value) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return "Not set";
+    return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+    }).format(amount);
+};
+
+export const getShipmentProgress = (shipment) => {
+    const explicit = pick(
+        shipment?.progress,
+        shipment?.progress_percentage,
+        shipment?.progressPercent,
+        shipment?.completion_percentage,
+    );
+
+    if (explicit !== undefined) {
+        return Math.max(0, Math.min(100, getNumber(explicit)));
+    }
+
+    switch (mapClientShipmentStatus(shipment?.status)) {
+        case "Delivered":
+            return 100;
+        case "In Transit":
+            return 65;
+        case "Delayed":
+            return 45;
+        default:
+            return 10;
+    }
+};
+
+export const normalizeClientShipment = (shipment = {}) => {
+    const status = mapClientShipmentStatus(shipment.status);
+
+    return {
+        ...shipment,
+        id: pick(shipment.tracking_id, shipment.id, shipment.shipment_id, "N/A"),
+        from: pick(
+            shipment.pickup_city,
+            shipment.origin,
+            shipment.from,
+            shipment.pickup?.city,
+            shipment.pickup_address?.city,
+            "Unknown",
+        ),
+        to: pick(
+            shipment.delivery_city,
+            shipment.destination,
+            shipment.to,
+            shipment.delivery?.city,
+            shipment.delivery_address?.city,
+            "Unknown",
+        ),
+        status,
+        progress: getShipmentProgress(shipment),
+        agent: pick(
+            shipment.agent_name,
+            shipment.agent,
+            shipment.assigned_agent_name,
+            shipment.assigned_agent?.name,
+            "Unassigned",
+        ),
+        eta: formatDateTime(
+            pick(
+                shipment.eta,
+                shipment.estimated_delivery,
+                shipment.estimated_delivery_at,
+                shipment.expected_delivery_date,
+            ),
+        ),
+        kg: getNumber(pick(shipment.weight, shipment.weight_kg), 0),
+        price: getNumber(pick(shipment.price, shipment.amount, shipment.shipping_cost), 0),
+        priceLabel: formatCurrency(pick(shipment.price, shipment.amount, shipment.shipping_cost)),
+        date: formatDate(
+            pick(
+                shipment.created_at,
+                shipment.created_on,
+                shipment.pickup_date,
+                shipment.updated_at,
+            ),
+        ),
+        pickupLine1: pick(shipment.pickup_line1, shipment.pickup_address?.line1, shipment.pickup_address, "Not available"),
+        deliveryLine1: pick(shipment.delivery_line1, shipment.delivery_address?.line1, shipment.delivery_address, "Not available"),
+        receiverName: pick(shipment.receiver_name, shipment.receiver?.name, "Receiver"),
+        receiverPhone: pick(shipment.receiver_phone, shipment.receiver?.phone, "Not available"),
+        receiverEmail: pick(shipment.receiver_email, shipment.receiver?.email, "Not available"),
+    };
+};
+
+export const buildClientNotifications = (shipments = []) =>
+    shipments.slice(0, 3).map((shipment, index) => ({
+        id: shipment.id || index + 1,
+        icon:
+            shipment.status === "Delivered"
+                ? "✅"
+                : shipment.status === "Delayed"
+                  ? "⚠️"
+                  : shipment.status === "Pending"
+                    ? "⏰"
+                    : "📦",
+        bg:
+            shipment.status === "Delivered"
+                ? "#D1FAE5"
+                : shipment.status === "Delayed"
+                  ? "#FEE2E2"
+                  : shipment.status === "Pending"
+                    ? "#FEF3C7"
+                    : "#DBEAFE",
+        msg: `${shipment.id} is ${shipment.status.toLowerCase()} on ${shipment.from} to ${shipment.to}`,
+        time: shipment.date,
+        unread: index === 0,
+    }));
+
+export const deriveClientDashboardStats = (dashboard = {}, shipments = []) => {
+    const activeShipments = getNumber(
+        pick(dashboard.active_shipments, dashboard.activeShipments, dashboard.in_transit),
+        shipments.filter((shipment) => shipment.status === "In Transit").length,
+    );
+
+    const deliveredShipments = getNumber(
+        pick(dashboard.delivered_shipments, dashboard.deliveredShipments, dashboard.delivered),
+        shipments.filter((shipment) => shipment.status === "Delivered").length,
+    );
+
+    const pendingPickups = getNumber(
+        pick(dashboard.pending_pickups, dashboard.pendingPickups, dashboard.pending),
+        shipments.filter((shipment) => shipment.status === "Pending").length,
+    );
+
+    const openInvoices = getNumber(
+        pick(dashboard.open_invoices, dashboard.openInvoices, dashboard.pending_invoices),
+        0,
+    );
+
+    const recentSource = pick(dashboard.recent_shipments, dashboard.recentShipments, shipments) || [];
+    const recentShipments = recentSource.map(normalizeClientShipment).slice(0, 5);
+
+    const activeShipment = normalizeClientShipment(
+        pick(
+            dashboard.active_shipment,
+            dashboard.activeShipment,
+            dashboard.latest_shipment,
+            recentShipments.find((shipment) => shipment.status === "In Transit"),
+            recentShipments[0],
+            {},
+        ),
+    );
+
+    return {
+        activeShipments,
+        deliveredShipments,
+        pendingPickups,
+        openInvoices,
+        activeShipment,
+        recentShipments,
+    };
+};
 
 export const getClientDashboard = async () => {
     try {
@@ -8,28 +224,62 @@ export const getClientDashboard = async () => {
         return res.data;
     } catch (error) {
         console.error("Failed to fetch client dashboard data:", error);
+        throw error;
     }
-}
+};
 
 export const getTrackingInfo = async (trackingNumber) => {
     try {
         const res = await api.get(`/api/v1/client/track/${trackingNumber}`);
-        return res.data;
+        return normalizeClientShipment(res.data?.shipment || res.data);
     } catch (error) {
         console.error("Failed to fetch tracking info:", error);
-    }  
-}
-
-// ---Client Shipments------------------------------------------------------------------------
+        throw error;
+    }
+};
 
 export const getClientShipments = async () => {
-    try {
-        const res = await api.get("/api/v1/client/shipments");
-        return res.data;
-    } catch (error) {
-        console.error("Failed to fetch client shipments:", error);
-    }       
-}
+    const res = await api.get("/api/v1/client/shipments");
+
+    const shipments = res.data.shipments.map((s) => {
+        const [from, to] = (s.route || "").split("→").map(v => v?.trim());
+
+        return {
+            id: s.tracking_id,
+            from: from || "Unknown",
+            to: to || "Unknown",
+            agent: s.agent || "Unassigned",
+
+            kg: parseFloat(s.weight) || 0,
+            price: s.price,
+            priceLabel: `₹${s.price?.toLocaleString()}`,
+
+            date: s.date
+                ? new Date(s.date).toLocaleDateString()
+                : "Not available",
+
+            progress: s.progress || 0,
+            status: formatStatus(s.status),
+        };
+    });
+
+    return {
+        shipments
+    };
+};
+
+
+const formatStatus = (status) => {
+    const map = {
+        CREATED: "Pending",
+        ASSIGNED: "In Transit",
+        OUT_FOR_DELIVERY: "In Transit",
+        DELIVERED: "Delivered",
+        FAILED: "Delayed",
+    };
+
+    return map[status] || status;
+};
 
 export const createShipment = async (data) => {
     try {
@@ -39,24 +289,28 @@ export const createShipment = async (data) => {
         console.error("Failed to create shipment:", error);
         throw error;
     }
-}
+};
 
-export const addBusiness = async (data) => {
+export const createBusiness = async (data) => {
     try {
-        const res = await api.post("/api/v1/client/business" , data);
-        return res.data ; 
+        const res = await api.post("/api/v1/client/business", data);
+        return res.data;
     } catch (error) {
         console.error("Failed to create Business", error);
         throw error;
     }
-}
+};
 
 export const updateBusiness = async (data) => {
     try {
-        const res = await api.put("/api/v1/client/business" , data);
-        return res.data ; 
+        const res = await api.put("/api/v1/client/business", data);
+        return res.data;
     } catch (error) {
         console.error("Failed to update Business", error);
         throw error;
     }
-}
+};
+
+export const hasClientBusiness = (dashboardData) => {
+    return !!dashboardData?.business?.name;
+};
