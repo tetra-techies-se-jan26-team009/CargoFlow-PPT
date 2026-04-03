@@ -6,6 +6,7 @@ from ..models import *
 from ..auth import require_role
 from ..schemas import ClientShipmentCreate, BusinessCreate
 from .admin_routes import generate_tracking_number
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1/client", tags=["Client Routes"])
 
@@ -157,7 +158,7 @@ def create_shipment(data: ClientShipmentCreate,
     if data.weight <= 0 or data.price <= 0:
         raise HTTPException(400, "Invalid weight or price")
 
-    if data.pickup_date and data.pickup_date < datetime.utcnow():
+    if data.pickup_date and data.pickup_date < datetime.now(timezone.utc):
         raise HTTPException(400, "Pickup date cannot be in the past")
 
     pickup = Address(
