@@ -71,3 +71,13 @@ python -m pytest --cov=app --cov-report=term-missing
 | Admin           | Manage shipments, agents, clients  |
 | Delivery Agent  | Deliver shipments, update location |
 | Business Client | Create & track shipments           |
+
+---
+
+## Author
+
+**Ripusudan Kumar Jha**
+
+---
+
+## If you found this helpful, consider giving it a star!
