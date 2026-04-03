@@ -5,7 +5,7 @@ from ..database import get_db
 from ..models import *
 from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister
 from ..auth import require_role, hash_password
-from datetime import date
+from datetime import date, timezone
 import random
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin Routes"])
@@ -95,7 +95,7 @@ def create_shipment(data: AdminShipmentCreate,
     if data.weight <= 0 or data.price <= 0:
         raise HTTPException(400, "Invalid weight or price")
 
-    if data.pickup_date and data.pickup_date < datetime.utcnow():
+    if data.pickup_date and data.pickup_date < datetime.now(timezone.utc):
         raise HTTPException(400, "Pickup date cannot be in the past")
 
     pickup = Address(

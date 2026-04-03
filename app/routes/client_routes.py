@@ -1,3 +1,4 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -157,7 +158,7 @@ def create_shipment(data: ClientShipmentCreate,
     if data.weight <= 0 or data.price <= 0:
         raise HTTPException(400, "Invalid weight or price")
 
-    if data.pickup_date and data.pickup_date < datetime.utcnow():
+    if data.pickup_date and data.pickup_date < datetime.now(timezone.utc):
         raise HTTPException(400, "Pickup date cannot be in the past")
 
     pickup = Address(
