@@ -16,6 +16,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    password: Optional[str] = None
 
 class DeliveryAgentCreate(BaseModel):
     name: str

@@ -23,7 +23,14 @@ def register_user(data: UserRegister, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return {"message": "User registered successfully"}
+    return {
+        "message": "User registered successfully",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "role": user.role.value
+        }
+    }
 
 @router.post("/login", status_code=200)
 def login_user(data: UserLogin, db: Session = Depends(get_db)):
@@ -36,7 +43,11 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Account is blocked")
 
     token = create_access_token({"sub": user.email, "role": user.role.value})
-    return {"access_token": token, "role": user.role.value}
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": user.role.value
+    }
 
 @router.get("/me", status_code=200)
 def get_me(current_user: User = Depends(get_current_user)):
@@ -65,6 +76,9 @@ def update_me(data: UserUpdate,
 
     if data.phone is not None:
         current_user.phone = data.phone
+    
+    if data.password is not None:
+        current_user.password_hash = hash_password(data.password)
 
     db.commit()
     db.refresh(current_user)
