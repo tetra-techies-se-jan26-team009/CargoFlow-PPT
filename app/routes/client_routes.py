@@ -118,8 +118,18 @@ def client_dashboard(db: Session = Depends(get_db),
             "eta": s.eta_end_time
         })
 
+    business = current_user.owned_business or current_user.business
+    business_data = None
+    if business:
+        business_data = {
+            "id": business.id,
+            "name": business.name,
+            "type": business.type,
+            "created_at": business.created_at
+        }
 
     return {
+        "business": business_data,
         "summary": {
             "active_shipments": active_shipments,
             "delivered": delivered,
