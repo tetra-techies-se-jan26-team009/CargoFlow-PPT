@@ -21,6 +21,11 @@ class ShipmentStatus(enum.Enum):
     FAILED = "FAILED"
     RETURN_TO_ORIGIN = "RETURN_TO_ORIGIN"
 
+class PriorityLevel(enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
 
 # -------------------- Business --------------------
 
@@ -79,7 +84,6 @@ class Address(Base):
 
     id = Column(Integer, primary_key=True)
     line1 = Column(String, nullable=False)
-    line2 = Column(String)
     city = Column(String, nullable=False)
     state = Column(String, nullable=False)
     pincode = Column(String, nullable=False)
@@ -119,6 +123,11 @@ class Shipment(Base):
         onupdate=datetime.utcnow,
         nullable=False
     )
+
+    category = Column(String)
+    fragile = Column(Boolean, default=False)
+    pickup_date = Column(DateTime)
+    priority = Column(Enum(PriorityLevel), default=PriorityLevel.MEDIUM)
 
     sender = relationship("User", foreign_keys=[sender_id])
 

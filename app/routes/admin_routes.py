@@ -87,48 +87,64 @@ def create_shipment(data: AdminShipmentCreate,
                                    User.is_active == True).first()
 
     if not sender:
-        raise HTTPException(status_code=404, detail="Business client not found")
+        raise HTTPException(404, "Business client not found")
 
     if not sender.business_id:
-        raise HTTPException(status_code=400, detail="Client has no business")
+        raise HTTPException(400, "Client has no business")
 
-    pickup = Address(line1=data.pickup_line1,
-                     city=data.pickup_city,
-                     state=data.pickup_state,
-                     pincode=data.pickup_pincode)
+    if data.weight <= 0 or data.price <= 0:
+        raise HTTPException(400, "Invalid weight or price")
 
-    delivery = Address(line1=data.delivery_line1,
-                       city=data.delivery_city,
-                       state=data.delivery_state,
-                       pincode=data.delivery_pincode)
+    if data.pickup_date and data.pickup_date < datetime.utcnow():
+        raise HTTPException(400, "Pickup date cannot be in the past")
+
+    pickup = Address(
+        line1=data.pickup_line1,
+        city=data.pickup_city,
+        state=data.pickup_state,
+        pincode=data.pickup_pincode)
+
+    delivery = Address(
+        line1=data.delivery_line1,
+        city=data.delivery_city,
+        state=data.delivery_state,
+        pincode=data.delivery_pincode)
 
     db.add_all([pickup, delivery])
     db.flush()
 
-    shipment = Shipment(tracking_number=generate_tracking_number(db),
-                        
-                        sender_id=data.sender_id,
-                        
-                        receiver_name=data.receiver_name,
-                        receiver_phone=data.receiver_phone,
-                        receiver_email=data.receiver_email,
-                        
-                        pickup_address_id=pickup.id,
-                        delivery_address_id=delivery.id,
-                        
-                        weight=data.weight,
-                        price=data.price,
-                        
-                        status=ShipmentStatus.CREATED)
+    shipment = Shipment(
+        tracking_number=generate_tracking_number(db),
+
+        sender_id=sender.id,
+
+        receiver_name=data.receiver_name,
+        receiver_phone=data.receiver_phone,
+        receiver_email=data.receiver_email,
+
+        pickup_address_id=pickup.id,
+        delivery_address_id=delivery.id,
+
+        weight=data.weight,
+        price=data.price,
+
+        category=data.category,
+        fragile=data.fragile,
+        pickup_date=data.pickup_date,
+        priority=data.priority,
+
+        status=ShipmentStatus.CREATED
+    )
 
     db.add(shipment)
     db.flush()
 
-    log = ShipmentStatusLog(shipment_id=shipment.id,
-                            status=ShipmentStatus.CREATED,
-                            updated_by=current_user.id,
-                            remarks=f"Shipment created by admin for {sender.name}",
-                            timestamp=datetime.utcnow())
+    log = ShipmentStatusLog(
+        shipment_id=shipment.id,
+        status=ShipmentStatus.CREATED,
+        updated_by=current_user.id,
+        remarks=f"Shipment created by admin for {sender.name}",
+        timestamp=datetime.utcnow())
 
     db.add(log)
 
@@ -141,7 +157,9 @@ def create_shipment(data: AdminShipmentCreate,
         "sender": sender.name,
         "receiver": shipment.receiver_name,
         "pickup_city": pickup.city,
-        "delivery_city": delivery.city
+        "delivery_city": delivery.city,
+        "priority": shipment.priority.value,
+        "fragile": shipment.fragile
     }
 
 @router.get("/dashboard/shipments", status_code=200)

@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
+from .models import PriorityLevel
 
 class UserRegister(BaseModel):
     name: str
@@ -44,6 +46,11 @@ class AdminShipmentCreate(BaseModel):
     weight: float
     price: float
 
+    category: Optional[str] = None
+    fragile: Optional[bool] = False
+    pickup_date: Optional[datetime] = None
+    priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
+
 class ClientShipmentCreate(BaseModel):
     receiver_name: str
     receiver_phone: str
@@ -61,6 +68,11 @@ class ClientShipmentCreate(BaseModel):
 
     weight: float
     price: float
+
+    category: Optional[str] = None
+    fragile: Optional[bool] = False
+    pickup_date: Optional[datetime] = None
+    priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
 
 class LocationUpdate(BaseModel):
     lat: float
