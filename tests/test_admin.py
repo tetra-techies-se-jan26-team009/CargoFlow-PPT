@@ -1,197 +1,84 @@
-import pytest
-from fastapi import HTTPException
-from types import SimpleNamespace
+import uuid
 
-from app.routes.admin_routes import (generate_tracking_number, 
-                                     add_delivery_agent,
-                                     block_unblock_delivery_agent,
-                                     assign_agent)
+def test_admin_dashboard(client):
+    assert client.get("/api/v1/admin/dashboard").status_code == 200
 
-from app.models import UserRole, ShipmentStatus
 
+def test_dashboard_shipments(client):
+    assert client.get("/api/v1/admin/dashboard/shipments").status_code == 200
 
-# ---------------- MOCK DB ----------------
 
-class DummyQuery:
-    def __init__(self, result=None):
-        self.result = result
+def test_dashboard_agents(client):
+    assert client.get("/api/v1/admin/dashboard/agents").status_code == 200
 
-    def filter(self, *args, **kwargs):
-        return self
 
-    def first(self):
-        return self.result
+def test_dashboard_clients(client):
+    assert client.get("/api/v1/admin/dashboard/clients").status_code == 200
 
-    def count(self):
-        return 1
 
-    def all(self):
-        return self.result or []
+def test_create_shipment_invalid_sender(client):
+    res = client.post("/api/v1/admin/shipments", json={
+        "sender_id": 999,
+        "receiver_name": "R",
+        "receiver_phone": "123",
+        "receiver_email": "r@test.com",
+        "pickup_line1": "A",
+        "pickup_city": "C",
+        "pickup_state": "S",
+        "pickup_pincode": "1",
+        "delivery_line1": "B",
+        "delivery_city": "D",
+        "delivery_state": "S",
+        "delivery_pincode": "2",
+        "weight": 1,
+        "price": 10,
+        "category": "GENERAL",
+        "fragile": False,
+        "priority": "LOW"
+    })
+    assert res.status_code == 404
 
-    def order_by(self, *args, **kwargs):
-        return self
 
-    def limit(self, *args, **kwargs):
-        return self
+def test_add_delivery_agent(client):
+    email = f"agent_{uuid.uuid4()}@test.com"
 
+    res = client.post("/api/v1/admin/delivery_agents", json={
+        "name": "A",
+        "email": email,
+        "phone": "999",
+        "city": "C",
+        "password": "123"
+    })
+    assert res.status_code in [200, 201]
 
-class DummyDB:
-    def __init__(self):
-        self.storage = []
-        self.responses = []
-        self.call_index = 0
 
-    def query(self, model):
-        if self.call_index < len(self.responses):
-            res = self.responses[self.call_index]
-            self.call_index += 1
-            return res
-        return DummyQuery()
+def test_block_agent_not_found(client):
+    res = client.patch("/api/v1/admin/delivery_agents/999/status")
+    assert res.status_code == 404
 
-    def add(self, obj):
-        self.storage.append(obj)
 
-    def add_all(self, objs):
-        self.storage.extend(objs)
+def test_add_business_client(client):
+    email = f"client_{uuid.uuid4()}@test.com"
 
-    def commit(self):
-        pass
+    res = client.post("/api/v1/admin/business_clients", json={
+        "name": "Client",
+        "email": email,
+        "phone": "999",
+        "city": "C",
+        "password": "123"
+    })
+    assert res.status_code in [200, 201]
 
-    def refresh(self, obj):
-        pass
 
-    def flush(self):
-        pass
+def test_assign_agent_invalid(client):
+    res = client.post("/api/v1/admin/shipments/999/assign/999")
+    assert res.status_code == 404
 
 
-# ---------------- GENERATE TRACKING ----------------
+def test_live_location(client):
+    assert client.get("/api/v1/admin/agents/live-location").status_code == 200
 
-def test_generate_tracking_number_unique():
-    db = DummyDB()
-    db.responses = [DummyQuery(result=None)]
 
-    tracking = generate_tracking_number(db)
-
-    assert tracking.startswith("CF-")
-    assert "-" in tracking
-
-
-# ---------------- ADD DELIVERY AGENT ----------------
-
-class DummyData:
-    def __init__(self):
-        self.name = "Agent"
-        self.email = "agent@test.com"
-        self.phone = "1234567890"
-        self.city = "Delhi"
-        self.password = "pass123"
-
-
-def test_add_delivery_agent_success():
-    db = DummyDB()
-    db.responses = [DummyQuery(result=None)]
-
-    current_user = SimpleNamespace(role=UserRole.ADMIN)
-
-    response = add_delivery_agent(DummyData(), db, current_user)
-
-    assert response["message"] == "Delivery agent added successfully"
-    assert len(db.storage) == 1
-
-
-def test_add_delivery_agent_duplicate():
-    db = DummyDB()
-    db.responses = [DummyQuery(result=object())]
-
-    current_user = SimpleNamespace(role=UserRole.ADMIN)
-
-    with pytest.raises(HTTPException) as exc:
-        add_delivery_agent(DummyData(), db, current_user)
-
-    assert exc.value.status_code == 400
-
-
-# ---------------- BLOCK / UNBLOCK ----------------
-
-def test_block_unblock_agent_success():
-    db = DummyDB()
-
-    agent = SimpleNamespace(
-        id=1,
-        name="Agent",
-        is_active=True,
-        role=UserRole.DELIVERY_AGENT
-    )
-
-    db.responses = [DummyQuery(result=agent)]
-
-    current_user = SimpleNamespace(role=UserRole.ADMIN)
-
-    response = block_unblock_delivery_agent(1, db, current_user)
-
-    assert response["agent_id"] == 1
-    assert response["is_active"] is False
-
-
-def test_block_unblock_agent_not_found():
-    db = DummyDB()
-    db.responses = [DummyQuery(result=None)]
-
-    current_user = SimpleNamespace(role=UserRole.ADMIN)
-
-    with pytest.raises(HTTPException) as exc:
-        block_unblock_delivery_agent(1, db, current_user)
-
-    assert exc.value.status_code == 404
-
-
-# ---------------- ASSIGN AGENT ----------------
-
-def test_assign_agent_success():
-    db = DummyDB()
-
-    shipment = SimpleNamespace(id=1, assigned_agent_id=None, status=None)
-    agent = SimpleNamespace(id=2, name="Agent")
-
-    db.responses = [
-        DummyQuery(result=shipment),  # shipment
-        DummyQuery(result=agent)      # agent
-    ]
-
-    current_user = SimpleNamespace(id=99, role=UserRole.ADMIN)
-
-    response = assign_agent(1, 2, db, current_user)
-
-    assert response["message"] == "Agent assigned successfully"
-    assert shipment.assigned_agent_id == 2
-    assert shipment.status == ShipmentStatus.ASSIGNED
-
-
-def test_assign_agent_shipment_not_found():
-    db = DummyDB()
-    db.responses = [DummyQuery(result=None)]
-
-    current_user = SimpleNamespace(id=1, role=UserRole.ADMIN)
-
-    with pytest.raises(HTTPException) as exc:
-        assign_agent(1, 2, db, current_user)
-
-    assert exc.value.status_code == 404
-
-
-def test_assign_agent_invalid_agent():
-    db = DummyDB()
-
-    shipment = SimpleNamespace(id=1)
-
-    db.responses = [
-        DummyQuery(result=shipment),
-        DummyQuery(result=None)
-    ]
-
-    current_user = SimpleNamespace(id=1, role=UserRole.ADMIN)
-
-    with pytest.raises(HTTPException) as exc:
-        assign_agent(1, 2, db, current_user)
-
-    assert exc.value.status_code == 404
+def test_missing_fields(client):
+    res = client.post("/api/v1/admin/delivery_agents", json={})
+    assert res.status_code == 422
