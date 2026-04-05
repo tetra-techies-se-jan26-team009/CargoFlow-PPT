@@ -5,7 +5,7 @@ from ..database import get_db
 from ..models import *
 from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister
 from ..auth import require_role, hash_password
-from datetime import date, datetime, timezone
+from datetime import date, timezone
 import random
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin Routes"])
