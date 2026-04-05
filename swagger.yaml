@@ -7,11 +7,20 @@ info:
 servers:
   - url: http://localhost:8000
 
+tags:
+  - name: Auth
+  - name: Admin
+  - name: Client
+  - name: Agent
+  - name: Chatbot
+  - name: System
+
 paths:
 
   /health:
     get:
       summary: Health Check
+      tags: [System]
       responses:
         "200":
           description: API working
@@ -22,12 +31,14 @@ paths:
                 properties:
                   status:
                     type: string
+                    example: "ok"
 
   # ---------------- AUTH ----------------
 
   /api/auth/register:
     post:
       summary: Register User
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -45,6 +56,7 @@ paths:
   /api/auth/login:
     post:
       summary: Login User
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -62,6 +74,7 @@ paths:
   /api/auth/me:
     get:
       summary: Get current user
+      tags: [Auth]
       security:
         - bearerAuth: []
       responses:
@@ -70,6 +83,7 @@ paths:
 
     patch:
       summary: Update user profile
+      tags: [Auth]
       security:
         - bearerAuth: []
       requestBody:
@@ -86,6 +100,7 @@ paths:
   /api/v1/admin/dashboard:
     get:
       summary: Admin dashboard
+      tags: [Admin]
       security:
         - bearerAuth: []
       responses:
@@ -95,6 +110,7 @@ paths:
   /api/v1/admin/dashboard/shipments:
     get:
       summary: Admin shipments dashboard
+      tags: [Admin]
       security:
         - bearerAuth: []
       responses:
@@ -104,6 +120,7 @@ paths:
   /api/v1/admin/dashboard/agents:
     get:
       summary: Admin agents dashboard
+      tags: [Admin]
       security:
         - bearerAuth: []
       responses:
@@ -113,6 +130,7 @@ paths:
   /api/v1/admin/dashboard/clients:
     get:
       summary: Admin clients dashboard
+      tags: [Admin]
       security:
         - bearerAuth: []
       responses:
@@ -122,6 +140,7 @@ paths:
   /api/v1/admin/shipments:
     post:
       summary: Create shipment (Admin)
+      tags: [Admin]
       security:
         - bearerAuth: []
       requestBody:
@@ -141,6 +160,7 @@ paths:
   /api/v1/admin/shipments/{shipment_id}/assign/{agent_id}:
     post:
       summary: Assign agent to shipment
+      tags: [Admin]
       security:
         - bearerAuth: []
       parameters:
@@ -163,6 +183,7 @@ paths:
   /api/v1/admin/delivery_agents:
     post:
       summary: Add delivery agent
+      tags: [Admin]
       security:
         - bearerAuth: []
       requestBody:
@@ -180,6 +201,7 @@ paths:
   /api/v1/admin/delivery_agents/{agent_id}/status:
     patch:
       summary: Block or unblock delivery agent
+      tags: [Admin]
       security:
         - bearerAuth: []
       parameters:
@@ -197,6 +219,7 @@ paths:
   /api/v1/admin/business_clients:
     post:
       summary: Add business client
+      tags: [Admin]
       security:
         - bearerAuth: []
       requestBody:
@@ -214,6 +237,7 @@ paths:
   /api/v1/admin/agents/live-location:
     get:
       summary: Get live location of agents
+      tags: [Admin]
       security:
         - bearerAuth: []
       responses:
@@ -225,6 +249,7 @@ paths:
   /api/v1/client/dashboard:
     get:
       summary: Client dashboard
+      tags: [Client]
       security:
         - bearerAuth: []
       responses:
@@ -234,6 +259,7 @@ paths:
   /api/v1/client/shipments:
     get:
       summary: Get client shipments
+      tags: [Client]
       security:
         - bearerAuth: []
       responses:
@@ -242,6 +268,7 @@ paths:
 
     post:
       summary: Create shipment (Client)
+      tags: [Client]
       security:
         - bearerAuth: []
       requestBody:
@@ -259,6 +286,7 @@ paths:
   /api/v1/client/track/{tracking_id}:
     get:
       summary: Track shipment
+      tags: [Client]
       parameters:
         - name: tracking_id
           in: path
@@ -274,6 +302,7 @@ paths:
   /api/v1/client/business:
     post:
       summary: Create business
+      tags: [Client]
       security:
         - bearerAuth: []
       requestBody:
@@ -290,6 +319,7 @@ paths:
 
     put:
       summary: Update business
+      tags: [Client]
       security:
         - bearerAuth: []
       requestBody:
@@ -309,6 +339,7 @@ paths:
   /api/v1/agent/dashboard:
     get:
       summary: Agent dashboard
+      tags: [Agent]
       security:
         - bearerAuth: []
       responses:
@@ -318,6 +349,7 @@ paths:
   /api/v1/agent/update/live-location:
     post:
       summary: Update agent live location
+      tags: [Agent]
       security:
         - bearerAuth: []
       requestBody:
@@ -334,7 +366,49 @@ paths:
         "404":
           description: Shipment not found
 
-# ---------------- COMPONENTS ----------------
+  # ---------------- CHATBOT ----------------
+
+  /chat:
+    post:
+      summary: Ask chatbot a question
+      tags: [Chatbot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        "200":
+          description: Chatbot response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        "400":
+          description: Empty question
+        "503":
+          description: Model loading
+        "500":
+          description: Server error
+
+  /chatbot/health:
+    get:
+      summary: Chatbot health check
+      tags: [System]
+      responses:
+        "200":
+          description: Health status
+
+  /rebuild:
+    post:
+      summary: Rebuild chatbot knowledge base
+      tags: [System]
+      responses:
+        "200":
+          description: Rebuild successful
+        "500":
+          description: Rebuild failed
 
 components:
   securitySchemes:
@@ -416,3 +490,22 @@ components:
       properties:
         name: { type: string }
         type: { type: string }
+
+    ChatRequest:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+        top_k:
+          type: integer
+
+    ChatResponse:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        found_in_kb:
+          type: boolean
