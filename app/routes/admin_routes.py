@@ -184,6 +184,7 @@ def admin_dashboard_shipments(db: Session = Depends(get_db),
 
     shipments = [
         {
+            "id": s.id,
             "tracking_id": s.tracking_number,
             "client": s.sender.name if s.sender else None,
             "agent": s.assigned_agent.name if s.assigned_agent else "Unassigned",
