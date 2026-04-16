@@ -92,3 +92,9 @@ class UpdateDeliveryAgent(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     city: Optional[str] = None
+
+class UpdateClient(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    city: Optional[str] = None

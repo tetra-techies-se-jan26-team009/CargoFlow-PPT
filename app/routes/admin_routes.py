@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
-from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister, UpdateDeliveryAgent
+from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister, UpdateDeliveryAgent, UpdateClient
 from ..auth import require_role, hash_password
 from datetime import date, timezone
 import random
@@ -384,6 +384,61 @@ def add_business_client(data: UserRegister,
     db.refresh(client)
 
     return {"message": "Business client added successfully"}
+
+@router.patch("/business_clients/{client_id}/status")
+def block_unblock_client(client_id: int,
+                         db: Session = Depends(get_db),
+                         current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    client = db.query(User).filter(User.id == client_id,
+                                   User.role == UserRole.BUSINESS_CLIENT).first()
+
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    client.is_active = not client.is_active
+
+    db.commit()
+    db.refresh(client)
+
+    return {
+        "client_id": client.id,
+        "name": client.name,
+        "is_active": client.is_active,
+        "message": "Client unblocked" if client.is_active else "Client blocked"
+    }
+
+@router.patch("/business_clients/{client_id}")
+def update_client(client_id: int,
+                  data: UpdateClient,
+                  db: Session = Depends(get_db),
+                  current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    client = db.query(User).filter(User.id == client_id,
+                                   User.role == UserRole.BUSINESS_CLIENT).first()
+
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    if data.name is not None:
+        client.name = data.name
+
+    if data.email is not None:
+        existing = db.query(User).filter(User.email == data.email).first()
+        if existing and existing.id != client.id:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        client.email = data.email
+
+    if data.phone is not None:
+        client.phone = data.phone
+
+    if data.city is not None:
+        client.city = data.city
+
+    db.commit()
+    db.refresh(client)
+
+    return {"message": "Client updated successfully"}
 
 @router.post("/shipments/{shipment_id}/assign/{agent_id}")
 def assign_agent(shipment_id: int,
