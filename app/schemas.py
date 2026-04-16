@@ -86,3 +86,9 @@ class BusinessCreate(BaseModel):
 class AgentUpdateShipmentStatus(BaseModel):
     status: ShipmentStatus
     remarks: Optional[str] = None
+
+class UpdateDeliveryAgent(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    city: Optional[str] = None

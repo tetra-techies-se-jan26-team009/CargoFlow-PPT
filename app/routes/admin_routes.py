@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
-from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister
+from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister, UpdateDeliveryAgent
 from ..auth import require_role, hash_password
 from datetime import date, timezone
 import random
@@ -291,6 +291,38 @@ def block_unblock_delivery_agent(agent_id: int,
         "is_active": agent.is_active,
         "message": "Agent unblocked" if agent.is_active else "Agent blocked"
         }
+
+@router.patch("/delivery_agents/{agent_id}")
+def update_delivery_agent(agent_id: int,
+                          data: UpdateDeliveryAgent,
+                          db: Session = Depends(get_db),
+                          current_user: User = Depends(require_role(UserRole.ADMIN))):
+    
+    agent = db.query(User).filter(User.id == agent_id,
+                                  User.role == UserRole.DELIVERY_AGENT).first()
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    if data.name:
+        agent.name = data.name
+
+    if data.email:
+        existing = db.query(User).filter(User.email == data.email).first()
+        if existing and existing.id != agent.id:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        agent.email = data.email
+
+    if data.phone:
+        agent.phone = data.phone
+
+    if data.city:
+        agent.city = data.city
+
+    db.commit()
+    db.refresh(agent)
+
+    return {"message": "Agent updated successfully"}
 
 @router.get("/dashboard/clients", status_code=200)
 def admin_dashboard_clients(db: Session = Depends(get_db),
