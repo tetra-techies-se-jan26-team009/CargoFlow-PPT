@@ -1,0 +1,190 @@
+============================================================
+CARGOFLOW LOGISTICS
+AI CHATBOT KNOWLEDGE BASE
+============================================================
+
+------------------------------------------------------------
+[Topic: Company Overview]
+[Intent: about company, cargoflow, what is cargoflow]
+------------------------------------------------------------
+CargoFlow is a modern logistics and delivery service provider offering fast, reliable, and affordable shipping solutions. 
+We support individuals, businesses, and e-commerce sellers with parcel delivery, express shipping, and last-mile logistics.
+
+Our mission is to deliver packages safely, quickly, and transparently.
+
+------------------------------------------------------------
+[Topic: Services Overview]
+[Intent: services, what services do you offer]
+------------------------------------------------------------
+CargoFlow offers multiple delivery services:
+
+1. Standard Delivery
+2. Express Delivery
+3. Same-Day Delivery
+4. International Shipping
+5. Freight Services
+6. E-commerce Fulfillment
+
+------------------------------------------------------------
+[Topic: Standard Delivery]
+[Intent: delivery time, normal shipping, standard delivery]
+------------------------------------------------------------
+Standard delivery usually takes 3–5 business days within the country.
+
+It is best for:
+- Non-urgent parcels
+- Documents
+- Small packages
+
+Maximum weight per parcel: 30 kg
+
+------------------------------------------------------------
+[Topic: Express Delivery]
+[Intent: fast delivery, urgent shipping, express service]
+------------------------------------------------------------
+Express delivery takes 1–2 business days.
+
+It is suitable for urgent and time-sensitive shipments.
+
+------------------------------------------------------------
+[Topic: Same Day Delivery]
+[Intent: same day delivery, fastest delivery]
+------------------------------------------------------------
+CargoFlow offers same-day delivery within selected cities.
+
+Delivery is completed within a few hours after pickup, depending on distance and traffic.
+
+------------------------------------------------------------
+[Topic: International Shipping]
+[Intent: international delivery, global shipping]
+------------------------------------------------------------
+CargoFlow provides international shipping to multiple countries.
+
+Delivery time usually ranges from 7–21 business days depending on the destination.
+
+Customs clearance support is included.
+
+------------------------------------------------------------
+[Topic: Pricing]
+[Intent: cost, charges, price, shipping fee]
+------------------------------------------------------------
+CargoFlow pricing is simple and transparent.
+
+Base pricing:
+- ₹45 per kg for standard delivery
+
+Example:
+- 1 kg = ₹45
+- 5 kg = ₹225
+- 10 kg = ₹450
+
+Additional charges may apply for:
+- Express delivery
+- Same-day delivery
+- International shipping
+- Insurance (optional)
+
+------------------------------------------------------------
+[Topic: Tracking]
+[Intent: track shipment, tracking status, where is my order]
+------------------------------------------------------------
+You can track your shipment using a tracking ID.
+
+Tracking statuses include:
+- Order Received
+- Picked Up
+- In Transit
+- Out for Delivery
+- Delivered
+
+If tracking is not updated, please wait up to 24 hours after pickup.
+
+------------------------------------------------------------
+[Topic: Pickup Service]
+[Intent: pickup, schedule pickup, home pickup]
+------------------------------------------------------------
+CargoFlow offers home pickup service.
+
+You can schedule a pickup by providing:
+- Pickup address
+- Package details
+- Preferred time slot
+
+------------------------------------------------------------
+[Topic: Delivery Issues]
+[Intent: delivery failed, not delivered, missed delivery]
+------------------------------------------------------------
+If delivery fails:
+- The delivery agent will retry
+- Package may be held at a nearby facility
+- You can reschedule delivery
+
+------------------------------------------------------------
+[Topic: Prohibited Items]
+[Intent: restricted items, what cannot be shipped]
+------------------------------------------------------------
+The following items are not allowed:
+- Explosives or flammable materials
+- Weapons or ammunition
+- Illegal drugs
+- Hazardous chemicals
+
+Restricted items may require special approval.
+
+------------------------------------------------------------
+[Topic: Refund and Claims]
+[Intent: refund, damaged shipment, lost package]
+------------------------------------------------------------
+If your shipment is lost or damaged:
+- You can file a claim
+- Provide tracking ID and proof of value
+
+Refunds are processed if CargoFlow is responsible.
+
+------------------------------------------------------------
+[Topic: FAQ - Delivery Time]
+[Intent: how long delivery takes]
+------------------------------------------------------------
+Standard delivery takes 3–5 days.
+Express delivery takes 1–2 days.
+Same-day delivery is completed within hours.
+
+------------------------------------------------------------
+[Topic: FAQ - Address Change]
+[Intent: change address, update delivery address]
+------------------------------------------------------------
+You can change the delivery address before the package is picked up.
+
+After dispatch, changes may cause delays or extra charges.
+
+------------------------------------------------------------
+[Topic: FAQ - Missed Delivery]
+[Intent: not at home, delivery missed]
+------------------------------------------------------------
+If you are not available:
+- Delivery will be attempted again
+- You can reschedule delivery
+
+------------------------------------------------------------
+[Topic: FAQ - Pricing]
+[Intent: how much cost, shipping price]
+------------------------------------------------------------
+Shipping cost is ₹45 per kg for standard delivery.
+
+Final cost depends on:
+- Weight
+- Delivery speed
+- Distance
+
+------------------------------------------------------------
+[Topic: Contact Support]
+[Intent: contact, help, customer support]
+------------------------------------------------------------
+For support, users can contact CargoFlow through:
+- App chat support
+- Email support (if available)
+- Customer service helpline
+
+------------------------------------------------------------
+END OF KNOWLEDGE BASE
+------------------------------------------------------------

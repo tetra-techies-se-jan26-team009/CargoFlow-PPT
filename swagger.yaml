@@ -2,7 +2,35 @@ openapi: 3.0.3
 info:
   title: CargoFlow Logistics API
   version: 1.0.0
-  description: API documentation for Shipment Management System
+  description: >
+    API documentation for Shipment Management System.
+
+    USER STORIES & API MAPPING:
+
+    Auth:
+    - Register → User creates account
+    - Login → User accesses system
+    - Profile → User views/updates details
+
+    Admin:
+    - Dashboard → Monitor system
+    - Shipments → Manage shipments
+    - Agents → Manage delivery agents
+    - Clients → Manage business clients
+
+    Client:
+    - Shipments → Create & view shipments
+    - Tracking → Track deliveries
+    - Business → Manage business profile
+
+    Agent:
+    - Dashboard → View assigned tasks
+    - Location → Update delivery location
+
+    Chatbot:
+    - Chat → Ask shipment-related queries
+    - Health → Check chatbot status
+    - Rebuild → Refresh knowledge base
 
 servers:
   - url: http://localhost:8000
@@ -17,28 +45,23 @@ tags:
 
 paths:
 
+  # ---------------- SYSTEM ----------------
+
   /health:
     get:
-      summary: Health Check
       tags: [System]
+      summary: Health Check
+      description: "User Story: As a system admin, I want to check API health."
       responses:
-        "200":
-          description: API working
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "ok"
+        "200": { description: API working }
 
   # ---------------- AUTH ----------------
 
   /api/auth/register:
     post:
-      summary: Register User
       tags: [Auth]
+      summary: Register User
+      description: "User Story: As a new user, I want to register."
       requestBody:
         required: true
         content:
@@ -46,17 +69,13 @@ paths:
             schema:
               $ref: '#/components/schemas/UserRegister'
       responses:
-        "201":
-          description: User registered
-        "400":
-          description: Email already registered
-        "422":
-          description: Validation error
+        "201": { description: User registered }
 
   /api/auth/login:
     post:
-      summary: Login User
       tags: [Auth]
+      summary: Login User
+      description: "User Story: As a user, I want to login."
       requestBody:
         required: true
         content:
@@ -64,26 +83,22 @@ paths:
             schema:
               $ref: '#/components/schemas/UserLogin'
       responses:
-        "200":
-          description: Login success
-        "401":
-          description: Invalid credentials
-        "403":
-          description: Account blocked
+        "200": { description: Login success }
 
   /api/auth/me:
     get:
-      summary: Get current user
       tags: [Auth]
+      summary: Get Profile
+      description: "User Story: As a user, I want to view my profile."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: User details
+        "200": { description: Profile data }
 
     patch:
-      summary: Update user profile
       tags: [Auth]
+      summary: Update Profile
+      description: "User Story: As a user, I want to update my profile."
       security:
         - bearerAuth: []
       requestBody:
@@ -92,385 +107,303 @@ paths:
             schema:
               $ref: '#/components/schemas/UserUpdate'
       responses:
-        "200":
-          description: Profile updated
+        "200": { description: Profile updated }
 
   # ---------------- ADMIN ----------------
 
   /api/v1/admin/dashboard:
     get:
-      summary: Admin dashboard
       tags: [Admin]
+      summary: Admin Dashboard
+      description: "User Story: As an admin, I want to view overall system metrics."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Dashboard data
+        "200": { description: Dashboard data }
 
   /api/v1/admin/dashboard/shipments:
     get:
-      summary: Admin shipments dashboard
       tags: [Admin]
+      summary: Shipment Stats
+      description: "User Story: As an admin, I want to view shipment statistics."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Shipment statistics
+        "200": { description: Shipment data }
 
   /api/v1/admin/dashboard/agents:
     get:
-      summary: Admin agents dashboard
       tags: [Admin]
+      summary: Agent Stats
+      description: "User Story: As an admin, I want to view agent performance."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Agents data
+        "200": { description: Agent data }
 
   /api/v1/admin/dashboard/clients:
     get:
-      summary: Admin clients dashboard
       tags: [Admin]
+      summary: Client Stats
+      description: "User Story: As an admin, I want to view client data."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Clients data
+        "200": { description: Client data }
 
   /api/v1/admin/shipments:
     post:
-      summary: Create shipment (Admin)
       tags: [Admin]
+      summary: Create Shipment
+      description: "User Story: As an admin, I want to create shipments."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AdminShipmentCreate'
       responses:
-        "201":
-          description: Shipment created
-        "400":
-          description: Invalid data
-        "404":
-          description: Client not found
+        "201": { description: Created }
 
   /api/v1/admin/shipments/{shipment_id}/assign/{agent_id}:
     post:
-      summary: Assign agent to shipment
       tags: [Admin]
+      summary: Assign Agent
+      description: "User Story: As an admin, I want to assign agents."
       security:
         - bearerAuth: []
       parameters:
         - name: shipment_id
           in: path
           required: true
-          schema:
-            type: integer
+          schema: { type: integer }
         - name: agent_id
           in: path
           required: true
-          schema:
-            type: integer
+          schema: { type: integer }
       responses:
-        "200":
-          description: Agent assigned successfully
-        "404":
-          description: Shipment or agent not found
+        "200": { description: Assigned }
 
   /api/v1/admin/delivery_agents:
     post:
-      summary: Add delivery agent
       tags: [Admin]
+      summary: Add Agent
+      description: "User Story: As an admin, I want to add delivery agents."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DeliveryAgentCreate'
       responses:
-        "201":
-          description: Delivery agent created
-        "400":
-          description: Email already exists
+        "201": { description: Agent created }
 
   /api/v1/admin/delivery_agents/{agent_id}/status:
     patch:
-      summary: Block or unblock delivery agent
       tags: [Admin]
+      summary: Update Agent Status
+      description: "User Story: As an admin, I want to block/unblock agents."
       security:
         - bearerAuth: []
       parameters:
         - name: agent_id
           in: path
           required: true
-          schema:
-            type: integer
+          schema: { type: integer }
       responses:
-        "200":
-          description: Status updated
-        "404":
-          description: Agent not found
+        "200": { description: Updated }
 
   /api/v1/admin/business_clients:
     post:
-      summary: Add business client
       tags: [Admin]
+      summary: Add Client
+      description: "User Story: As an admin, I want to add business clients."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRegister'
       responses:
-        "201":
-          description: Business client created
-        "400":
-          description: Email already exists
+        "201": { description: Client added }
 
   /api/v1/admin/agents/live-location:
     get:
-      summary: Get live location of agents
       tags: [Admin]
+      summary: Agent Locations
+      description: "User Story: As an admin, I want to monitor agent locations."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: List of agent locations
+        "200": { description: Locations }
 
   # ---------------- CLIENT ----------------
 
   /api/v1/client/dashboard:
     get:
-      summary: Client dashboard
       tags: [Client]
+      summary: Client Dashboard
+      description: "User Story: As a client, I want to view my dashboard."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Dashboard data
+        "200": { description: Dashboard }
 
   /api/v1/client/shipments:
     get:
-      summary: Get client shipments
       tags: [Client]
+      summary: View Shipments
+      description: "User Story: As a client, I want to view my shipments."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Shipment list
+        "200": { description: List }
 
     post:
-      summary: Create shipment (Client)
       tags: [Client]
+      summary: Create Shipment
+      description: "User Story: As a client, I want to create shipments."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ClientShipmentCreate'
       responses:
-        "201":
-          description: Shipment created
-        "400":
-          description: Business required
+        "201": { description: Created }
 
   /api/v1/client/track/{tracking_id}:
     get:
-      summary: Track shipment
       tags: [Client]
+      summary: Track Shipment
+      description: "User Story: As a client, I want to track shipments."
       parameters:
         - name: tracking_id
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
-        "200":
-          description: Tracking details
-        "404":
-          description: Invalid tracking ID
+        "200": { description: Tracking }
 
   /api/v1/client/business:
     post:
-      summary: Create business
       tags: [Client]
+      summary: Create Business
+      description: "User Story: As a client, I want to create business profile."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/BusinessCreate'
       responses:
-        "201":
-          description: Business created
-        "400":
-          description: Already exists
+        "201": { description: Created }
 
     put:
-      summary: Update business
       tags: [Client]
+      summary: Update Business
+      description: "User Story: As a client, I want to update business profile."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/BusinessCreate'
       responses:
-        "200":
-          description: Business updated
-        "404":
-          description: Business not found
+        "200": { description: Updated }
 
   # ---------------- AGENT ----------------
 
   /api/v1/agent/dashboard:
     get:
-      summary: Agent dashboard
       tags: [Agent]
+      summary: Agent Dashboard
+      description: "User Story: As an agent, I want to view assigned tasks."
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: Dashboard data
+        "200": { description: Dashboard }
 
   /api/v1/agent/update/live-location:
     post:
-      summary: Update agent live location
       tags: [Agent]
+      summary: Update Location
+      description: "User Story: As an agent, I want to update live location."
       security:
         - bearerAuth: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LocationUpdate'
       responses:
-        "200":
-          description: Location updated
-        "403":
-          description: Not assigned to shipment
-        "404":
-          description: Shipment not found
+        "200": { description: Updated }
 
   # ---------------- CHATBOT ----------------
 
   /chat:
     post:
-      summary: Ask chatbot a question
       tags: [Chatbot]
+      summary: Chatbot Query
+      description: "User Story: As a user, I want chatbot assistance."
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ChatRequest'
       responses:
-        "200":
-          description: Chatbot response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatResponse'
-        "400":
-          description: Empty question
-        "503":
-          description: Model loading
-        "500":
-          description: Server error
+        "200": { description: Response }
 
   /chatbot/health:
     get:
-      summary: Chatbot health check
       tags: [System]
+      summary: Chatbot Health
+      description: "User Story: As an admin, I want to check chatbot status."
       responses:
-        "200":
-          description: Health status
+        "200": { description: OK }
 
   /rebuild:
     post:
-      summary: Rebuild chatbot knowledge base
       tags: [System]
+      summary: Rebuild KB
+      description: "User Story: As an admin, I want to rebuild chatbot knowledge."
       responses:
-        "200":
-          description: Rebuild successful
-        "500":
-          description: Rebuild failed
+        "200": { description: Rebuilt }
 
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
 
   schemas:
-
     UserRegister:
       type: object
-      required: [name, email, password, phone, city]
       properties:
         name: { type: string }
         email: { type: string }
         password: { type: string }
-        phone: { type: string }
-        city: { type: string }
 
     UserLogin:
       type: object
-      required: [email, password]
       properties:
         email: { type: string }
         password: { type: string }
 
     UserUpdate:
       type: object
-      properties:
-        name: { type: string }
-        email: { type: string }
-        phone: { type: string }
-        password: { type: string }
 
     DeliveryAgentCreate:
       type: object
-      required: [name, email, password, phone, city]
-      properties:
-        name: { type: string }
-        email: { type: string }
-        password: { type: string }
-        phone: { type: string }
-        city: { type: string }
 
     AdminShipmentCreate:
       type: object
-      properties:
-        sender_id: { type: integer }
-        receiver_name: { type: string }
-        receiver_phone: { type: string }
-        receiver_email: { type: string }
-        pickup_line1: { type: string }
-        pickup_city: { type: string }
-        pickup_state: { type: string }
-        pickup_pincode: { type: string }
-        delivery_line1: { type: string }
-        delivery_city: { type: string }
-        delivery_state: { type: string }
-        delivery_pincode: { type: string }
-        weight: { type: number }
-        price: { type: number }
 
     ClientShipmentCreate:
       allOf:
@@ -478,34 +411,12 @@ components:
 
     LocationUpdate:
       type: object
-      required: [lat, lng]
-      properties:
-        lat: { type: number }
-        lng: { type: number }
-        shipment_id: { type: integer }
 
     BusinessCreate:
       type: object
-      required: [name, type]
-      properties:
-        name: { type: string }
-        type: { type: string }
 
     ChatRequest:
       type: object
-      required: [question]
-      properties:
-        question:
-          type: string
-        top_k:
-          type: integer
 
     ChatResponse:
       type: object
-      properties:
-        question:
-          type: string
-        answer:
-          type: string
-        found_in_kb:
-          type: boolean

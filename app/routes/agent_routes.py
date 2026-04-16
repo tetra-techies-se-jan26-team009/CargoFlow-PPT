@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
-from ..schemas import LocationUpdate
+from ..schemas import LocationUpdate, AgentUpdateShipmentStatus
 
 router = APIRouter(prefix="/api/v1/agent", tags=["Agent Routes"])
 
@@ -96,6 +96,52 @@ def agent_dashboard(db: Session = Depends(get_db),
         },
         "active_delivery": active_delivery
     }
+
+@router.patch("/shipments/{id}/status")
+def update_shipment_status(id: int,
+                  data: AgentUpdateShipmentStatus,
+                  db: Session = Depends(get_db),
+                  current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
+    
+    shipment = db.query(Shipment).filter(Shipment.id == id).first()
+
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    if shipment.assigned_agent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    
+    VALID_TRANSITIONS = {
+        ShipmentStatus.ASSIGNED: [ShipmentStatus.OUT_FOR_DELIVERY],
+        ShipmentStatus.OUT_FOR_DELIVERY: [
+            ShipmentStatus.DELIVERED,
+            ShipmentStatus.FAILED
+        ],
+    }
+    if shipment.status not in VALID_TRANSITIONS or data.status not in VALID_TRANSITIONS[shipment.status]:
+        raise HTTPException(status_code=400, detail="Invalid status transition")
+    
+    shipment.status = data.status
+
+    log = ShipmentStatusLog(
+        shipment_id=shipment.id,
+        status=data.status,
+        updated_by=current_user.id,
+        remarks=data.remarks)
+    db.add(log)
+
+    if current_user.current_lat and current_user.current_lng:
+        tracking = TrackingUpdate(
+            shipment_id=shipment.id,
+            agent_id=current_user.id,
+            latitude=current_user.current_lat,
+            longitude=current_user.current_lng,
+            status=data.status)
+        db.add(tracking)
+
+    db.commit()
+    db.refresh(shipment)
+
+    return {"message": "Shipment Status updated successfully"}
 
 @router.post("/update/live-location")
 def update_location(data: LocationUpdate, 
