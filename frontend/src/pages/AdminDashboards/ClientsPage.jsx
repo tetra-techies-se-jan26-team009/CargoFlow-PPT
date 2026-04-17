@@ -1,222 +1,217 @@
 import { useState, useEffect } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
-import { getClients } from "../../utils/adminAPI";
+import { updateClientProfile, toggleClientStatus, getClients } from "../../utils/adminAPI";
 import { AddClientModal } from "../../components/ui/Modals/AddClientModal";
-
-
-
-const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-        <path d={d} />
-    </svg>
-);
-
-const icons = {
-    plus: "M12 5v14 M5 12h14",
-    search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-    building: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
-    mail: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
-    phone: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.43 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 013.34 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.91 7.91a16 16 0 006.29 6.29l.79-.79a2 2 0 012.1-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
-    truck: "M1 3h15v13H1z M16 8h4l3 3v5h-7V8z M5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z",
-    invoice: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M12 18v-6 M9 15h6",
-};
-
-
-
-const statusMeta = {
-    Active: { bg: "#D1FAE5", color: "#065F46" },
-    Overdue: { bg: "#FEE2E2", color: "#991B1B" },
-    Inactive: { bg: "#F1F5F9", color: "#64748B" },
-};
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/ui/Toast";
+import { SquarePen } from 'lucide-react';
 
 export default function ClientsPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
     const [modal, setModal] = useState(null);
+    const [selectedClient, setSelectedClient] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({});
+    const { toast, showToast, hideToast } = useToast();
 
-    // Strict State Management Rule
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 7;
+
     const [data, setData] = useState({ total_clients: 0, active: 0, overdue: 0, total_revenue: 0 });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [clientList, setClientList] = useState([]);
 
-    const openModal = (key) => { setModal(key); };
-    const closeModal = () => { setModal(null); };
+    const statusMeta = {
+        Active: { bg: "bg-emerald-100", text: "text-emerald-700" },
+        Overdue: { bg: "bg-red-100", text: "text-red-700" },
+        Inactive: { bg: "bg-slate-100", text: "text-slate-500" },
+        Blocked: { bg: "bg-gray-200", text: "text-gray-700" }
+    };
+
+    // Initialize Edit Form when a client is selected
+    const handleViewClient = (client) => {
+        setSelectedClient(client);
+        setEditForm({
+            contact_person: client.contact_person || "",
+            business_name: client.business_name || "",
+            email: client.email || "",
+            phone: client.phone || "",
+            city: client.city || ""
+        });
+        setIsEditing(false);
+        setModal('viewClient');
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const fetchData = async () => {
+        try {
+            const res = await getClients();
+            setData({
+                total_clients: res?.total_clients || 0,
+                active: res?.active || 0,
+                overdue: res?.overdue || 0,
+                total_revenue: res?.total_revenue || 0
+            });
+            setClientList((res?.clients || []).map(c => {
+                const extractedId = parseInt(c.client_id.split("-")[1]);
+
+                return {
+                    ...c,
+                    db_id: extractedId,
+                    display_id: c.client_id,
+                    business_name: c.business || "Unknown Client",
+                    joined_date: c.joined ? new Date(c.joined).toLocaleDateString() : "N/A",
+                    is_active: c.status === "Active"
+                };
+            }));
+        } catch (err) { console.error(err); }
+    };
 
     useEffect(() => {
-        let isMounted = true;
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const clientsRes = await getClients();
-                
-                if (!isMounted) return;
-
-                setData({
-                    total_clients: clientsRes?.total_clients || 0,
-                    active: clientsRes?.active || 0,
-                    overdue: clientsRes?.overdue || 0,
-                    total_revenue: clientsRes?.total_revenue || 0
-                });
-
-                const mappedClients = (clientsRes?.clients || []).map(c => ({
-                    ...c,
-                    id: c.client_id,
-                    name: c.business  || "Unknown Client",
-                    contact: c.contact_person || "N/A",
-                    shipments: c.shipments || 0,
-                    revenue: typeof c.revenue === 'number' ? `₹${c.revenue}` : c.revenue || "₹0",
-                    joined: c.joined ? new Date(c.joined).toLocaleDateString() : "Unknown"
-                }));
-                setClientList(mappedClients);
-                setError(null);
-            } catch (err) {
-                if (isMounted) {
-                    console.error("Failed to fetch clients:", err);
-                    setError("Failed to load clients data.");
-                }
-            } finally {
-                if (isMounted) setLoading(false);
-            }
-        };
         fetchData();
-        return () => { isMounted = false; };
     }, []);
 
     const filtered = clientList.filter(c => {
         const matchStatus = filter === "All" || c.status === filter;
-        const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.contact.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase());
+        const matchSearch = !search || [c.business_name, c.contact_person, c.city].some(v => v?.toLowerCase().includes(search.toLowerCase()));
         return matchStatus && matchSearch;
     });
 
-    if (loading) {
-        return (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
-                <DashboardNavbar />
-                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <div style={{ padding: 24, textAlign: "center", background: "white", borderRadius: 12, border: "1px solid #E2E8F0" }}>
-                        <div style={{ fontSize: 24, marginBottom: 10 }}>⏳</div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>Loading Clients...</div>
-                    </div>
-                </main>
-            </div>
-        );
-    }
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    if (error) {
-        return (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9" }}>
-                <DashboardNavbar />
-                <main style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <div style={{ padding: 24, background: "#FEF2F2", borderRadius: 12, border: "1px solid #FCA5A5", textAlign: "center", maxWidth: 400 }}>
-                        <div style={{ fontSize: 24, marginBottom: 10 }}>⚠️</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B" }}>Error Loading Data</div>
-                        <div style={{ fontSize: 13, color: "#991B1B", marginTop: 6 }}>{error}</div>
-                        <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: "8px 16px", background: "white", border: "1px solid #FCA5A5", borderRadius: 6, color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Retry</button>
-                    </div>
-                </main>
-            </div>
-        );
-    }
+    const handleSaveProfile = async () => {
+        try {
+            setIsUpdating(true);
+            const payload = {
+                name: editForm.contact_person,
+                email: editForm.email,
+                phone: editForm.phone,
+                city: editForm.city
+            };
+            await updateClientProfile(selectedClient.db_id, payload);
+            setSelectedClient(prev => ({ ...prev, ...payload }));
+            await fetchData();
+            setIsEditing(false);
+            showToast("Profile updated successfully!");
+        } catch (err) {
+            console.error(err);
+            showToast("Something went wrong", "error");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+    const handleToggleStatus = async () => {
+        try {
+            setIsUpdating(true);
+            const response = await toggleClientStatus(selectedClient.db_id);
+            setSelectedClient(prev => ({
+                ...prev,
+                is_active: response.is_active
+            }));
+
+            setClientList(prevList =>
+                prevList.map(client =>
+                    client.db_id === selectedClient.db_id
+                        ? { ...client, is_active: response.is_active, status: response.is_active ? "Active" : "Inactive" }
+                        : client
+                )
+            );
+            fetchData();
+
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to update status. Please try again.", "error");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+    const isClientActive = selectedClient?.is_active;
 
     return (
-        <>
+        <div className="flex flex-col h-screen bg-[#F1F5F9] font-sans overflow-hidden">
             <title>Clients | CargoFlow</title>
-            {/* Modal */}
-            {modal === "addClient" && (
-                <AddClientModal onClose={closeModal} />
-            )}
+            <DashboardNavbar />
 
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
-                <DashboardNavbar />
+            <main className="flex-1 overflow-hidden px-[100px] py-6 flex flex-col gap-5">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-[22px] font-extrabold text-[#0F172A] m-0 tracking-tight">Manage Clients</h1>
+                        <p className="text-xs text-[#94A3B8] mt-1">{data.total_clients} registered business clients</p>
+                    </div>
+                    <button onClick={() => setModal('addClient')} className="flex items-center gap-1.5 px-[18px] py-[9px] bg-[#2563EB] text-white text-xs font-semibold rounded-lg hover:bg-blue-700">
+                        <span>+</span> Add Client
+                    </button>
+                </div>
 
-                <main style={{ flex: 1, overflow: "auto", padding: "24px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
-
-                    {/* Header */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div>
-                            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.5px" }}>Manage Clients</h1>
-                            <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>{data.total_clients} registered business clients</p>
+                {/* KPI Grid */}
+                <div className="grid grid-cols-4 gap-3">
+                    {[
+                        { label: "Total Clients", val: data.total_clients, color: "text-[#2563EB]" },
+                        { label: "Active", val: data.active, color: "text-[#10B981]" },
+                        { label: "Overdue", val: data.overdue, color: "text-[#EF4444]" },
+                        { label: "Total Revenue", val: `₹${data.total_revenue.toLocaleString()}`, color: "text-[#7C3AED]" },
+                    ].map(k => (
+                        <div key={k.label} className="bg-white rounded-xl p-[14px_18px] border border-[#F1F5F9] shadow-sm">
+                            <div className={`text-[26px] font-extrabold ${k.color} tracking-tighter`}>{k.val}</div>
+                            <div className="text-[11px] text-[#94A3B8] mt-1 uppercase font-bold">{k.label}</div>
                         </div>
-                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => openModal("addClient")}>
-                            <Icon d={icons.plus} size={13} stroke="white" /> Add Client
+                    ))}
+                </div>
+
+                {/* Filters */}
+                <div className="flex gap-2.5 items-center">
+                    <input className="flex-1 max-w-[300px] border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs focus:outline-none bg-white font-medium" placeholder="Search clients, contacts, cities..." value={search} onChange={e => setSearch(e.target.value)} />
+                    {["All", "Active", "Overdue", "Inactive"].map(f => (
+                        <button key={f} onClick={() => { setFilter(f); setCurrentPage(1); }} className={`px-3.5 py-1.5 rounded-lg border text-xs font-semibold ${filter === f ? 'bg-[#EFF6FF] border-[#2563EB] text-[#2563EB]' : 'bg-white border-[#E2E8F0] text-[#64748B]'}`}>
+                            {f}
                         </button>
-                    </div>
+                    ))}
+                </div>
 
-                    {/* KPIs */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
-                        {[
-                            { label: "Total Clients", value: data.total_clients, color: "#2563EB" },
-                            { label: "Active", value: data.active, color: "#10B981" },
-                            { label: "Overdue", value: data.overdue, color: "#EF4444" },
-                            { label: "Total Revenue", value: `₹${data.total_revenue.toLocaleString()}`, color: "#7C3AED" },
-                        ].map(k => (
-                            <div key={k.label} style={{ background: "white", borderRadius: 10, padding: "14px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #F1F5F9" }}>
-                                <div style={{ fontSize: 26, fontWeight: 800, color: k.color, letterSpacing: "-0.5px" }}>{k.value}</div>
-                                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>{k.label}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Filters */}
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
-                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients, contacts, cities..."
-                                style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "7px 12px 7px 34px", fontSize: 12, color: "#334155", outline: "none", background: "white", boxSizing: "border-box" }} />
-                            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
-                                <Icon d={icons.search} size={13} stroke="#94A3B8" />
-                            </span>
-                        </div>
-                        {["All", "Active", "Overdue", "Inactive"].map(f => (
-                            <button key={f} onClick={() => setFilter(f)}
-                                style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid", borderColor: filter === f ? "#2563EB" : "#E2E8F0", background: filter === f ? "#EFF6FF" : "white", color: filter === f ? "#2563EB" : "#64748B", fontSize: 12, fontWeight: filter === f ? 600 : 400, cursor: "pointer" }}>
-                                {f}
-                            </button>
-                        ))}
-                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#94A3B8" }}>{filtered.length} clients</span>
-                    </div>
-
-                    {/* Table */}
-                    <div style={{ background: "white", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", overflow: "hidden" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                            <thead>
-                                <tr style={{ background: "#F8FAFC" }}>
+                {/* Table */}
+                <div className="flex-1 bg-white rounded-xl border border-[#F1F5F9] shadow-sm flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-auto">
+                        <table className="w-full border-collapse text-left">
+                            <thead className="sticky top-0 bg-[#F8FAFC] z-10 shadow-sm">
+                                <tr>
                                     {["Company Name", "Contact Person", "Email", "Phone", "City", "Shipments", "Revenue", "Status", "Joined", "Actions"].map(h => (
-                                        <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "#94A3B8", textAlign: "left", borderBottom: "1px solid #F1F5F9", whiteSpace: "nowrap" }}>{h}</th>
+                                        <th key={h} className="px-4 py-2.5 text-[11px] font-semibold text-[#94A3B8] uppercase border-b border-[#F1F5F9] whitespace-nowrap">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map(c => (
-                                    <tr key={c.id} style={{ borderBottom: "1px solid #F8FAFC", cursor: "pointer" }}
-                                        onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
-                                        onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                                        <td style={{ padding: "13px 16px" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                <div style={{ width: 34, height: 34, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#2563EB", flexShrink: 0 }}>
-                                                    {c.name[0]}
-                                                </div>
+                                {paginatedData.map(c => (
+                                    <tr key={c.id} className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC] transition-colors group">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8.5 h-8.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-xs font-bold shrink-0">{c.business_name[0]}</div>
                                                 <div>
-                                                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{c.name}</div>
-                                                    <div style={{ fontSize: 10, color: "#94A3B8" }}>{c.id}</div>
+                                                    <div className="text-xs font-bold text-[#0F172A]">{c.contact_person}</div>
+                                                    <div className="text-[10px] text-[#94A3B8]">{c.id}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={{ padding: "13px 16px", fontSize: 12, color: "#334155" }}>{c.contact}</td>
-                                        <td style={{ padding: "13px 16px", fontSize: 11, color: "#64748B" }}>{c.email}</td>
-                                        <td style={{ padding: "13px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{c.phone}</td>
-                                        <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748B" }}>{c.city}</td>
-                                        <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{c.shipments}</td>
-                                        <td style={{ padding: "13px 16px", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{c.revenue}</td>
-                                        <td style={{ padding: "13px 16px" }}>
-                                            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: statusMeta[c.status]?.bg, color: statusMeta[c.status]?.color }}>{c.status}</span>
+                                        <td className="p-4 text-xs text-[#334155]">{c.contact_person}</td>
+                                        <td className="p-4 text-[11px] text-[#64748B]">{c.email}</td>
+                                        <td className="p-4 text-[11px] text-[#64748B] whitespace-nowrap">{c.phone}</td>
+                                        <td className="p-4 text-xs text-[#64748B]">{c.city}</td>
+                                        <td className="p-4 text-[13px] font-bold text-[#0F172A]">{c.shipments}</td>
+                                        <td className="p-4 text-xs font-bold text-[#2563EB]">{c.revenue_str}</td>
+                                        <td className="p-4">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusMeta[c.status]?.bg} ${statusMeta[c.status]?.text}`}>
+                                                {c.status}
+                                            </span>
                                         </td>
-                                        <td style={{ padding: "13px 16px", fontSize: 11, color: "#94A3B8" }}>{c.joined}</td>
-                                        <td style={{ padding: "13px 16px" }}>
-                                            <div style={{ display: "flex", gap: 6 }}>
-                                                <button onClick={() => console.warn("Missing backend API for this action")} style={{ padding: "5px 10px", border: "1px solid #E2E8F0", borderRadius: 6, background: "white", color: "#334155", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>View</button>
-                                                <button onClick={() => console.warn("Missing backend API for this action")} style={{ padding: "5px 10px", border: "none", borderRadius: 6, background: "#EFF6FF", color: "#2563EB", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Invoice</button>
-                                            </div>
+                                        <td className="p-4 text-[11px] text-[#94A3B8]">{c.joined_date}</td>
+                                        <td className="p-4">
+                                            <button onClick={() => handleViewClient(c)} className="px-4 py-1.5 border border-[#E2E8F0] rounded-md bg-white text-[#334155] text-[11px] font-bold hover:bg-gray-50 uppercase tracking-tighter">View</button>
                                         </td>
                                     </tr>
                                 ))}
@@ -224,8 +219,124 @@ export default function ClientsPage() {
                         </table>
                     </div>
 
-                </main>
-            </div>
-        </>
+                    {/* Pagination Footer */}
+                    <div className="p-4 border-t border-[#F1F5F9] flex justify-between items-center bg-white">
+                        <span className="text-[11px] text-[#94A3B8]">Showing {paginatedData.length} of {filtered.length} clients</span>
+                        <div className="flex gap-2">
+                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-3 py-1 text-xs border border-[#E2E8F0] rounded-md hover:bg-gray-50 disabled:opacity-30 font-semibold">Previous</button>
+                            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 text-xs border border-[#E2E8F0] rounded-md hover:bg-gray-50 disabled:opacity-30 font-semibold">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            {/* --- FIXED VIEW CLIENT MODAL --- */}
+            {modal === 'viewClient' && selectedClient && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-slate-200">
+                        <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                            <div>
+                                <h2 className="text-xl font-black text-slate-900 leading-none">Client Profile</h2>
+                                <p className="text-[10px] text-slate-400 mt-2 font-black uppercase tracking-widest">Admin Control Center</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {!isEditing ? (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 transition"
+                                    >
+                                        <SquarePen size={18} className="text-slate-600" />
+                                    </button>
+                                ) : (
+                                    <button onClick={handleSaveProfile} disabled={isUpdating} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase tracking-widest disabled:opacity-50 transition-all">
+                                        {isUpdating ? "Saving..." : "Save Changes"}
+                                    </button>
+                                )}
+                                <button onClick={() => setModal(null)} className="text-slate-400 hover:text-black text-2xl ml-2 leading-none">&times;</button>
+                            </div>
+                        </div>
+
+                        {/* Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+
+                            {/* Profile Header Card */}
+                            <div className="flex items-center gap-6 mb-10 pb-8 border-b border-slate-50">
+                                {/* Avatar Color based on boolean is_active */}
+                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black shrink-0 transition-colors ${isClientActive ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                                    {editForm.contact_person?.[0]}
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-900 leading-tight">{editForm.contact_person}</h3>
+                                    <div className="mt-2 flex gap-2">
+                                        {/* Status Badge: Now using the boolean state directly */}
+                                        <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider ${isClientActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                            {isClientActive ? "Account Active" : "Account Blocked"}
+                                        </span>
+                                        <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-50 text-slate-400 uppercase tracking-wider border border-slate-100">
+                                            Partner Since {selectedClient.joined_date}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                                {[
+                                    { label: "Business Name", name: "business_name" },
+                                    { label: "Contact Person", name: "contact_person" },
+                                    { label: "Official Email", name: "email" },
+                                    { label: "Phone Number", name: "phone" },
+                                    { label: "Operational City", name: "city" },
+                                ].map((field) => (
+                                    <div key={field.name}>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">{field.label}</label>
+                                        <input
+                                            disabled={!isEditing}
+                                            name={field.name}
+                                            value={editForm[field.name] || ""}
+                                            onChange={handleInputChange}
+                                            className={`w-full px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all ${isEditing ? 'border-blue-200 bg-blue-50/20 focus:outline-none focus:ring-2 focus:ring-blue-500' : 'border-slate-100 bg-slate-50 text-slate-500 cursor-not-allowed'}`}
+                                        />
+                                    </div>
+                                ))}
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Shipments Count</label>
+                                    <div className="w-full px-4 py-2.5 rounded-lg text-sm font-bold bg-slate-50 border border-slate-100 text-slate-900">
+                                        {selectedClient.shipments} total deliveries
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Danger Zone */}
+                            <div className="mt-12 p-6 bg-red-50/50 rounded-2xl border border-red-100">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h4 className="text-xs font-black text-red-700 uppercase tracking-widest">Danger Zone</h4>
+                                        <p className="text-[10px] text-red-600 mt-1 font-medium">Temporary disable or remove this client's access.</p>
+                                    </div>
+                                    <button
+                                        onClick={handleToggleStatus}
+                                        disabled={isUpdating}
+                                        className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border shadow-sm ${isClientActive
+                                            ? "bg-white border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
+                                            : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
+                                            }`}
+                                    >
+                                        {isClientActive ? "Block Client" : "Unblock Client"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {modal === 'addClient' && <AddClientModal onClose={() => setModal(null)} />}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={hideToast}
+            />
+        </div>
     );
 }

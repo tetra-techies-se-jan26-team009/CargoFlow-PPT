@@ -1,58 +1,122 @@
 import { useState } from "react";
 import { BTN_PRI, BTN_SEC } from "../modalStyle";
-import Modal , {ModalHeader} from "../Modal"
+import Modal, { ModalHeader } from "../Modal";
 
-
-
-
-export function ExportModal({ onClose, shipments }) {
+export function ExportModal({ onClose, shipments, showToast }) {
     const [fmt, setFmt] = useState("csv");
-    const [done, setDone] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+
     const doExport = () => {
-        if (fmt === "csv") {
-            const headers = ["ID", "Client", "Agent", "Origin", "Dest", "Status", "ETA", "Risk"];
-            const rows = shipments.map(s => [s.id, s.client, s.agent, s.origin, s.dest, s.status, s.eta, s.risk]);
-            const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
-            const blob = new Blob([csv], { type: "text/csv" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "shipments.csv";
-            a.click();
-            URL.revokeObjectURL(a.href);
+        setIsExporting(true);
+
+        try {
+            let blob;
+            let filename = `CargoFlow_Report_${new Date().toISOString().split('T')[0]}`;
+
+            if (fmt === "csv") {
+                const headers = ["Tracking ID", "Client", "Agent", "Origin", "Destination", "Status", "Weight", "Price", "Risk"];
+                const rows = shipments.map(s => [
+                    s.id, s.client, s.agent, s.origin, s.dest, s.status, s.weight, s.price, s.risk
+                ]);
+                const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+                blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                filename += ".csv";
+            } else {
+                // JSON Export
+                const jsonContent = JSON.stringify(shipments, null, 2);
+                blob = new Blob([jsonContent], { type: "application/json" });
+                filename += ".json";
+            }
+
+            // Download Trigger
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(link.href);
+
+            // UI Feedback
+            if (showToast) showToast(`Report exported as ${fmt.toUpperCase()}`);
+            
+            // Artificial delay for smooth transition
+            setTimeout(() => {
+                setIsExporting(false);
+                onClose();
+            }, 800);
+
+        } catch (error) {
+            console.error(error);
+            if (showToast) showToast("Export failed", "error");
+            setIsExporting(false);
         }
-        setDone(true);
-        setTimeout(onClose, 1400);
     };
+
     return (
-        <Modal onClose={onClose} width={380}>
-            <ModalHeader title="Export Report" onClose={onClose} />
-            {done ? (
-                <div style={{ textAlign: "center", padding: "16px 0" }}>
-                    <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#059669" }}>Exported successfully!</div>
-                </div>
-            ) : (
-                <>
-                    <div style={{ marginBottom: 14 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Format</div>
-                        <div style={{ display: "flex", gap: 8 }}>
+        <Modal onClose={onClose} width={400}>
+            <div className="p-1">
+                <ModalHeader title="Export Report" onClose={onClose} />
+                
+                <div className="p-6">
+                    {/* Format Selector */}
+                    <div className="mb-6">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">
+                            Select File Format
+                        </label>
+                        <div className="flex gap-3">
                             {["csv", "json"].map(f => (
-                                <button key={f} onClick={() => setFmt(f)}
-                                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1.5px solid", borderColor: fmt === f ? "#2563EB" : "#E2E8F0", background: fmt === f ? "#EFF6FF" : "white", color: fmt === f ? "#1D4ED8" : "#64748B", fontSize: 12, fontWeight: fmt === f ? 700 : 400, cursor: "pointer", textTransform: "uppercase" }}>
-                                    .{f}
+                                <button 
+                                    key={f} 
+                                    onClick={() => setFmt(f)}
+                                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                                        fmt === f 
+                                        ? "border-blue-600 bg-blue-50/50 text-blue-700" 
+                                        : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
+                                    }`}
+                                >
+                                    <span className={`text-[10px] font-black uppercase tracking-tighter ${fmt === f ? "text-blue-600" : "text-slate-300"}`}>
+                                        {f === 'csv' ? 'Spreadsheet' : 'Data Object'}
+                                    </span>
+                                    <span className="text-sm font-black uppercase">.{f}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#64748B" }}>
-                        {shipments.length} shipments will be exported
+
+                    {/* Meta Info Box */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-8 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm shadow-sm">
+                                📦
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Records Found</p>
+                                <p className="text-sm font-black text-slate-900">{shipments.length} Shipments</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">System Status</p>
+                            <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Ready</p>
+                        </div>
                     </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={onClose} style={BTN_SEC}>Cancel</button>
-                        <button onClick={doExport} style={BTN_PRI}>Export</button>
+
+                    {/* Actions */}
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={onClose} 
+                            style={{ ...BTN_SEC, flex: 1, borderRadius: '10px', height: '44px', fontWeight: '800', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px' }}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={doExport} 
+                            disabled={isExporting}
+                            style={{ ...BTN_PRI, flex: 1, borderRadius: '10px', height: '44px', fontWeight: '800', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px' }}
+                        >
+                            {isExporting ? "Processing..." : "Generate Report"}
+                        </button>
                     </div>
-                </>
-            )}
+                </div>
+            </div>
         </Modal>
     );
 }

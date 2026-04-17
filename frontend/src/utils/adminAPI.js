@@ -64,6 +64,17 @@ export const updateAgent = async (agentId) => {
     }
 }
 
+
+export const updateAgentDetails = async (agentId, data) => {
+    try {
+        const res = await api.patch(`/api/v1/admin/delivery_agents/${agentId}`, data);
+        return res.data;
+    } catch (error) {
+        console.error("Failed to update agent details:", error);
+        throw error;
+    }
+};
+
 // ---Clients Data-----------------------------------------------------------------------
 export const getClients = async () => {
     try {
@@ -84,3 +95,24 @@ export const createClient = async (data) => {
         throw error;
     }
 }
+
+export const updateClientProfile = async (dbId, updateData) => {
+    // URL will now be .../business_clients/2 instead of .../CLT-002
+    const response = await api.patch(`/api/v1/admin/business_clients/${dbId}`, updateData);
+    return response.data;
+};
+
+// Fix for Block/Unblock
+export const toggleClientStatus = async (dbId) => {
+    const response = await api.patch(`/api/v1/admin/business_clients/${dbId}/status`);
+    return response.data;
+};
+export const assignAgent = async (shipmentId, agentId) => {
+    try {
+        const res = await api.post(`/api/v1/admin/shipments/${shipmentId}/assign/${agentId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Failed to assign agent:", error);
+        throw error;
+    }
+};

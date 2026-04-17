@@ -1,44 +1,31 @@
 import { useState, useEffect } from "react";
 import DashboardNavbar from "../../components/DashboardNavbar";
 import { getCurrentUser, updateProfile } from "../../utils/auth";
-
-const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-        <path d={d} />
-    </svg>
-);
-
-const icons = {
-    user: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z",
-    lock: "M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4",
-    bell: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
-    globe: "M12 2a10 10 0 100 20A10 10 0 0012 2z M2 12h20 M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z",
-    shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-    save: "M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z M17 21v-8H7v8 M7 3v5h8",
-};
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/ui/Toast";
+import { User, Lock, Bell, Globe, Shield } from 'lucide-react';
 
 const tabs = [
-    { key: "profile", label: "Profile", icon: icons.user },
-    { key: "security", label: "Security", icon: icons.lock },
-    { key: "notifications", label: "Notifications", icon: icons.bell },
-    { key: "regional", label: "Regional", icon: icons.globe },
-    { key: "security2", label: "Permissions", icon: icons.shield },
+    { key: "profile", label: "Profile", icon: User },
+    { key: "notifications", label: "Notifications", icon: Bell },
+    { key: "regional", label: "Regional", icon: Globe },
 ];
 
+// --- Components ---
 const Toggle = ({ on, onToggle }) => (
     <button onClick={onToggle}
-        style={{ width: 44, height: 24, borderRadius: 12, background: on ? "#2563EB" : "#E2E8F0", border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
-        <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "white", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+        className={`relative w-11 h-6 rounded-full border-none cursor-pointer transition-colors duration-200 shrink-0 ${on ? "bg-blue-600" : "bg-slate-200"}`}>
+        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-200 shadow-sm ${on ? "left-5.5" : "left-0.5"}`} />
     </button>
 );
 
-const FieldRow = ({ label, desc, children }) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: desc ? "flex-start" : "center", padding: "16px 0", borderBottom: "1px solid #F1F5F9" }}>
-        <div style={{ flex: 1, marginRight: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{label}</div>
-            {desc && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>{desc}</div>}
+const FieldRow = ({ label, desc, children, highlight = false }) => (
+    <div className={`flex justify-between items-start py-5 border-b border-slate-50 last:border-0 ${highlight ? "bg-blue-50/30 -mx-4 px-4 rounded-lg" : ""}`}>
+        <div className="flex-1 mr-6">
+            <div className="text-[13px] font-bold text-slate-900 leading-none mb-1.5">{label}</div>
+            {desc && <div className="text-[11px] text-slate-400 font-medium leading-relaxed">{desc}</div>}
         </div>
-        {children}
+        <div className="shrink-0">{children}</div>
     </div>
 );
 
@@ -46,15 +33,16 @@ export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState("profile");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [saveMsg, setSaveMsg] = useState(null); 
+    const { toast, showToast, hideToast } = useToast();
+
+    const [profile, setProfile] = useState({
+        name: "", email: "", phone: "", company: "CargoFlow Pvt. Ltd.", timezone: "Asia/Kolkata",
+        lang: "English (India)", currency: "INR (₹)"
+    });
 
     const [notifs, setNotifs] = useState({
         email_shipment: true, email_delay: true, email_report: false,
         sms_delivery: true, sms_delay: false, push_all: true,
-    });
-
-    const [profile, setProfile] = useState({
-        name: "", email: "", phone: "", company: " Cargo Flow Pvt. Ltd.", timezone: "Asia/Kolkata"
     });
 
     useEffect(() => {
@@ -70,255 +58,191 @@ export default function SettingsPage() {
                     }));
                 }
             } catch (err) {
-                console.error("Failed to load user:", err);
+                showToast("Failed to load user data", "error");
+                console.error("Error fetching user:", err);
             } finally {
                 setLoading(false);
             }
         };
         fetchUser();
-    }, []);
+    }, [showToast]);
 
-    // ── Save profile changes ─────────────────────────────────────────────
-    const handleSaveProfile = async () => {
+    const handleSave = async (category) => {
         setSaving(true);
-        setSaveMsg(null);
         try {
-            await updateProfile({
-                name: profile.name,
-                phone: profile.phone,
-                email: profile.email,
-            });
-            setSaveMsg({ type: "success", text: "Profile updated successfully!" });
+            if (category === 'profile') {
+                const updatedUser = await updateProfile({
+                    name: profile.name,
+                    phone: profile.phone
+                });
+
+                // Trigger a global event to notify the Navbar
+                const event = new CustomEvent("userProfileUpdated", { detail: updatedUser });
+                window.dispatchEvent(event);
+            }
+
+            showToast("Profile updated successfully!", "success");
         } catch (err) {
-            setSaveMsg({ type: "error", text: err.message || "Failed to save. Please try again." });
+            showToast("Update failed", "error");
+            console.error("Error updating profile:", err);
         } finally {
             setSaving(false);
-            setTimeout(() => setSaveMsg(null), 3000);
         }
     };
-    if (loading) {
-        return (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#F1F5F9" }}>
-                <DashboardNavbar />
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", fontSize: 14 }}>
-                    Loading settings...
-                </div>
-            </div>
-        );
-    }
+
+    if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-400 font-black uppercase tracking-tighter">Initializing Secure Environment...</div>;
+
     return (
-        <>
+        <div className="flex flex-col h-screen bg-[#F8FAFC] font-sans overflow-hidden">
             <title>Settings | CargoFlow</title>
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F1F5F9", color: "#0F172A" }}>
-                <DashboardNavbar />
+            <DashboardNavbar />
 
-                <main style={{ flex: 1, overflow: "auto", padding: "24px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
-
-                    {/* Header */}
+            <main className="flex-1 overflow-auto px-[100px] py-8 max-w-[1400px] mx-auto w-full">
+                {/* Header Section */}
+                <div className="mb-8 flex justify-between items-end">
                     <div>
-                        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: 0, letterSpacing: "-0.5px" }}>Settings</h1>
-                        <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>Manage your account and platform preferences</p>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Account Settings</h1>
+                        <p className="text-xs text-slate-400 mt-1 font-medium">Configure your personal experience and security protocols</p>
                     </div>
+                    <div className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-md border border-emerald-100">
+                        Level: Enterprise Admin
+                    </div>
+                </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 20, alignItems: "start" }}>
+                <div className="grid grid-cols-[240px_1fr] gap-8">
+                    {/* Navigation Sidebar */}
+                    <div className="space-y-1">
+                        {tabs.map(t => {
+                            const IconComponent = t.icon; // Get the component reference
+                            const active = activeTab === t.key;
 
-                        {/* Tab Sidebar */}
-                        <div style={{ background: "white", borderRadius: 12, padding: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9" }}>
-                            {tabs.map(t => {
-                                const active = activeTab === t.key;
-                                return (
-                                    <button key={t.key} onClick={() => setActiveTab(t.key)}
-                                        style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: active ? "#EFF6FF" : "none", color: active ? "#2563EB" : "#64748B", fontWeight: active ? 600 : 400, fontSize: 13, textAlign: "left", marginBottom: 2, transition: "all 0.1s" }}>
-                                        <Icon d={t.icon} size={15} stroke={active ? "#2563EB" : "#94A3B8"} /> {t.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
+                            return (
+                                <button
+                                    key={t.key}
+                                    onClick={() => setActiveTab(t.key)}
+                                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 border-none cursor-pointer text-left
+                ${active ? "bg-white shadow-sm border-slate-100 text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
+                                >
+                                    {/* Render the Lucide Icon */}
+                                    <IconComponent
+                                        size={16}
+                                        strokeWidth={active ? 3 : 2}
+                                        className={active ? "text-blue-600" : "text-slate-400"}
+                                    />
+                                    <span className={`text-[13px] ${active ? "font-black" : "font-bold"}`}>
+                                        {t.label}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {/* Content Panel */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col min-h-[500px] overflow-hidden">
+                        <div className="flex-1 p-10">
 
-                        {/* Content panel */}
-                        <div style={{ background: "white", borderRadius: 12, padding: "24px 28px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9" }}>
-
-                            {/* ── PROFILE TAB ── */}
+                            {/* --- PROFILE TAB --- */}
                             {activeTab === "profile" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Profile Information</h2>
+                                <div className="animate-in fade-in duration-300">
+                                    <h2 className="text-lg font-black text-slate-900 mb-8 tracking-tight">Public Profile</h2>
 
-                                    {/* Avatar */}
-                                    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 0", borderBottom: "1px solid #F1F5F9", marginBottom: 8 }}>
-                                        <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: "#2563EB" }}>
-                                            {profile.name?.[0]?.toUpperCase() || "A"}
+                                    <div className="mb-10 p-6 bg-slate-50 rounded-2xl flex items-center gap-6 border border-slate-100">
+                                        <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-200">
+                                            {profile.name?.[0]}
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginBottom: 4 }}>{profile.name}</div>
-                                            <div style={{ fontSize: 12, color: "#94A3B8" }}>{profile.email}</div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Identification</p>
+                                            <h3 className="text-lg font-black text-slate-900 leading-none">{profile.name}</h3>
+                                            <p className="text-xs text-slate-400 mt-1.5 font-bold">{profile.company}</p>
                                         </div>
                                     </div>
 
-                                    {/* Editable fields */}
-                                    <FieldRow label="Full Name">
-                                        <input type="text" value={profile.name}
-                                            onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}
-                                            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white" }} />
-                                    </FieldRow>
+                                    <div className="space-y-2">
+                                        <FieldRow label="Legal Name" desc="Used for official documents and billing.">
+                                            <input type="text" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })}
+                                                className="w-64 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none" />
+                                        </FieldRow>
 
-                                    {/* Email — read only, can't change via this form */}
-                                    <FieldRow label="Email">
-                                        <input type="email" value={profile.email}
-                                            onChange={e => setProfile(p => ({ ...p, email: e.target.value }))}
-                                            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white" }} />
-                                    </FieldRow>
+                                        <FieldRow label="Login Email" desc="The primary address linked to this account.">
+                                            <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
+                                                <span className="text-sm font-bold text-slate-400">{profile.email}</span>
+                                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">Verified</span>
+                                            </div>
+                                        </FieldRow>
 
-                                    <FieldRow label="Phone">
-                                        <input type="tel" value={profile.phone}
-                                            onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
-                                            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white" }} />
-                                    </FieldRow>
-
-                                    <FieldRow label="Company">
-                                        <input type="text" value={profile.company} disabled
-                                            onChange={e => setProfile(p => ({ ...p, company: e.target.value }))}
-                                            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white" }} />
-                                    </FieldRow>
-
-                                    <FieldRow label="Timezone" desc="Used for scheduling and report generation">
-                                        <select value={profile.timezone} onChange={e => setProfile(p => ({ ...p, timezone: e.target.value }))}
-                                            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white", cursor: "pointer" }}>
-                                            <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
-                                        </select>
-                                    </FieldRow>
-
-                                    {/* Save message */}
-                                    {saveMsg && (
-                                        <div style={{ margin: "12px 0", padding: "10px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: saveMsg.type === "success" ? "#D1FAE5" : "#FEE2E2", color: saveMsg.type === "success" ? "#065F46" : "#991B1B" }}>
-                                            {saveMsg.text}
-                                        </div>
-                                    )}
-
-                                    <div style={{ marginTop: 20 }}>
-                                        <button onClick={handleSaveProfile} disabled={saving}
-                                            style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", border: "none", borderRadius: 8, background: saving ? "#93C5FD" : "#2563EB", color: "white", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
-                                            <Icon d={icons.save} size={14} stroke="white" />
-                                            {saving ? "Saving..." : "Save Changes"}
-                                        </button>
+                                        <FieldRow label="Phone Number" desc="Used for emergency delay alerts and 2FA.">
+                                            <input type="tel" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                                                className="w-64 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none" />
+                                        </FieldRow>
                                     </div>
+
+                                    <button onClick={() => handleSave('profile')} disabled={saving}
+                                        className="mt-10 px-8 py-3 bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all disabled:opacity-50">
+                                        {saving ? "Processing..." : "Commit Changes"}
+                                    </button>
                                 </div>
                             )}
 
-                            {/* ── SECURITY TAB ── */}
-                            {activeTab === "security" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Security Settings</h2>
-                                    <FieldRow label="Change Password" desc="Last changed 45 days ago">
-                                        <button style={{ padding: "8px 16px", border: "1px solid #E2E8F0", borderRadius: 8, background: "white", color: "#334155", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>Update Password</button>
-                                    </FieldRow>
-                                    <FieldRow label="Two-Factor Authentication" desc="Add an extra layer of security to your account">
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                            <span style={{ fontSize: 12, color: "#EF4444", fontWeight: 500 }}>Disabled</span>
-                                            <button style={{ padding: "7px 14px", border: "none", borderRadius: 7, background: "#2563EB", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Enable 2FA</button>
-                                        </div>
-                                    </FieldRow>
-                                    <FieldRow label="Active Sessions" desc="Devices currently logged into your account">
-                                        <button style={{ padding: "8px 16px", border: "1px solid #FCA5A5", borderRadius: 8, background: "white", color: "#EF4444", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>Revoke All Sessions</button>
-                                    </FieldRow>
-                                    <FieldRow label="Login History" desc="Review recent account access">
-                                        <button style={{ padding: "8px 16px", border: "1px solid #E2E8F0", borderRadius: 8, background: "white", color: "#334155", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>View History</button>
-                                    </FieldRow>
-                                </div>
-                            )}
-
-                            {/* ── NOTIFICATIONS TAB ── */}
+                            {/* --- NOTIFICATIONS TAB --- */}
                             {activeTab === "notifications" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Notification Preferences</h2>
+                                <div className="animate-in fade-in duration-300">
+                                    <h2 className="text-lg font-black text-slate-900 mb-8 tracking-tight">Notification Channels</h2>
 
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL</div>
-                                    <FieldRow label="Shipment Updates" desc="When a shipment status changes">
-                                        <Toggle on={notifs.email_shipment} onToggle={() => setNotifs(n => ({ ...n, email_shipment: !n.email_shipment }))} />
-                                    </FieldRow>
-                                    <FieldRow label="Delay Alerts" desc="When a shipment is flagged as delayed">
-                                        <Toggle on={notifs.email_delay} onToggle={() => setNotifs(n => ({ ...n, email_delay: !n.email_delay }))} />
-                                    </FieldRow>
-                                    <FieldRow label="Monthly Reports" desc="Auto-generated performance reports">
-                                        <Toggle on={notifs.email_report} onToggle={() => setNotifs(n => ({ ...n, email_report: !n.email_report }))} />
-                                    </FieldRow>
+                                    <section className="mb-10">
+                                        <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-4">Critical System Alerts</h3>
+                                        <FieldRow label="Delay & Risk Alerts" desc="Immediate email/push when a high-priority shipment is blocked.">
+                                            <Toggle on={notifs.email_delay} onToggle={() => setNotifs({ ...notifs, email_delay: !notifs.email_delay })} />
+                                        </FieldRow>
+                                        <FieldRow label="Status Transitions" desc="Updates when cargo moves from Processing to In-Transit.">
+                                            <Toggle on={notifs.email_shipment} onToggle={() => setNotifs({ ...notifs, email_shipment: !notifs.email_shipment })} />
+                                        </FieldRow>
+                                    </section>
 
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.5px", margin: "20px 0 8px" }}>SMS</div>
-                                    <FieldRow label="Delivery Confirmation" desc="SMS when shipment is delivered">
-                                        <Toggle on={notifs.sms_delivery} onToggle={() => setNotifs(n => ({ ...n, sms_delivery: !n.sms_delivery }))} />
-                                    </FieldRow>
-                                    <FieldRow label="Delay Alerts" desc="SMS for high-risk delays">
-                                        <Toggle on={notifs.sms_delay} onToggle={() => setNotifs(n => ({ ...n, sms_delay: !n.sms_delay }))} />
-                                    </FieldRow>
+                                    <section>
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Operational Reports</h3>
+                                        <FieldRow label="Weekly Performance" desc="Summary of delivery times and agent efficiency.">
+                                            <Toggle on={notifs.email_report} onToggle={() => setNotifs({ ...notifs, email_report: !notifs.email_report })} />
+                                        </FieldRow>
+                                    </section>
 
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.5px", margin: "20px 0 8px" }}>PUSH</div>
-                                    <FieldRow label="All Push Notifications" desc="Browser and mobile push alerts">
-                                        <Toggle on={notifs.push_all} onToggle={() => setNotifs(n => ({ ...n, push_all: !n.push_all }))} />
-                                    </FieldRow>
-                                    <div style={{ marginTop: 20 }}>
-                                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                                            <Icon d={icons.save} size={14} stroke="white" /> Save Preferences
-                                        </button>
-                                    </div>
+                                    <button onClick={() => handleSave('preferences')}
+                                        className="mt-10 px-8 py-3 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all">
+                                        Update Preferences
+                                    </button>
                                 </div>
                             )}
 
-                            {/* ── REGIONAL TAB ── */}
+                            {/* --- REGIONAL TAB --- */}
                             {activeTab === "regional" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Regional Settings</h2>
-                                    {[
-                                        { label: "Language", desc: "Platform display language", options: ["English (India)", "Hindi", "Tamil", "Telugu"] },
-                                        { label: "Currency", desc: "Used for invoicing and reports", options: ["INR (₹)", "USD ($)", "EUR (€)"] },
-                                        { label: "Date Format", desc: "How dates are displayed", options: ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"] },
-                                        { label: "Distance Unit", desc: "Used in route calculations", options: ["Kilometers", "Miles"] },
-                                        { label: "Weight Unit", desc: "For shipment weight display", options: ["Kilograms (kg)", "Pounds (lb)"] },
-                                    ].map(f => (
-                                        <FieldRow key={f.label} label={f.label} desc={f.desc}>
-                                            <select style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 240, background: "white", cursor: "pointer" }}>
-                                                {f.options.map(o => <option key={o}>{o}</option>)}
+                                <div className="animate-in fade-in duration-300">
+                                    <h2 className="text-lg font-black text-slate-900 mb-8 tracking-tight">Localization</h2>
+                                    <div className="space-y-2">
+                                        <FieldRow label="Preferred Language" desc="Primary interface and communication language.">
+                                            <select className="w-64 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold">
+                                                <option>English (India)</option>
+                                                <option>Hindi</option>
                                             </select>
                                         </FieldRow>
-                                    ))}
-                                    <div style={{ marginTop: 20 }}>
-                                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                                            <Icon d={icons.save} size={14} stroke="white" /> Save Regional Settings
-                                        </button>
+                                        <FieldRow label="Currency Unit" desc="Default currency for invoices and dashboards.">
+                                            <select className="w-64 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold">
+                                                <option>INR (₹) - Indian Rupee</option>
+                                                <option>USD ($) - US Dollar</option>
+                                            </select>
+                                        </FieldRow>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* ── PERMISSIONS TAB ── */}
-                            {activeTab === "security2" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Role Permissions</h2>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                        {[
-                                            { role: "ADMIN", perms: ["Full access", "Manage agents", "Manage clients", "View reports", "Settings"], color: "#7C3AED", bg: "#EDE9FE" },
-                                            { role: "DELIVERY_AGENT", perms: ["View assigned shipments", "Update delivery status", "Report issues"], color: "#2563EB", bg: "#EFF6FF" },
-                                            { role: "BUSINESS_CLIENT", perms: ["Track shipments", "Request pickup", "View own invoices", "Contact support"], color: "#10B981", bg: "#D1FAE5" },
-                                        ].map(r => (
-                                            <div key={r.role} style={{ padding: "16px 18px", borderRadius: 10, border: "1px solid #F1F5F9", background: "#F8FAFC" }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: r.bg, color: r.color }}>{r.role}</span>
-                                                </div>
-                                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                                                    {r.perms.map(p => (
-                                                        <span key={p} style={{ fontSize: 11, color: "#64748B", background: "white", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 10px" }}>✓ {p}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={{ marginTop: 16, padding: "12px 16px", background: "#FEF3C7", borderRadius: 8, border: "1px solid #FDE68A", fontSize: 12, color: "#92400E" }}>
-                                        ⚠️ Role permissions are system-defined. Contact your system administrator to modify access levels.
-                                    </div>
+                                    <button onClick={() => handleSave('regional settings')}
+                                        className="mt-10 px-8 py-3 bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all">
+                                        Save Regional Settings
+                                    </button>
                                 </div>
                             )}
 
                         </div>
                     </div>
-                </main>
-            </div>
-        </>
+                </div>
+            </main>
+
+            {/* --- Global Notification --- */}
+            <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
+        </div>
     );
 }

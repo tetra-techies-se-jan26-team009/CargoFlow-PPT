@@ -28,7 +28,7 @@ const steps = [
   },
   {
     number: '04',
-    title: 'Delivered Successfully',
+    title: 'Delivery Successfully',
     description:
       'Your package reaches its destination on time with proof of delivery and customer signature.',
     icon: CheckCircleIcon,

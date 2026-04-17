@@ -3,6 +3,11 @@ import DashboardNavbar from "../../components/DashboardNavbar";
 import { getShipments } from "../../utils/adminAPI";
 import AddShipmentModal from "../../components/ui/Modals/AddShipments";
 import { ExportModal } from "../../components/ui/Modals/ExportModal";
+import ViewShipmentModal from "../../components/ui/Modals/ViewShipmentModal";
+import InvoiceModal from "../../components/ui/Modals/InvoiceModal";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/ui/Toast";
+import { useLocation } from "react-router-dom";
 
 const Icon = ({
     d,
@@ -24,6 +29,19 @@ const Icon = ({
         <path d={d} />
     </svg>
 );
+
+const buttonStyles = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #E2E8F0",
+    borderRadius: 6,
+    padding: "6px",
+    background: "white",
+    cursor: "pointer",
+    color: "#64748B",
+    transition: "all 0.2s ease",
+};
 
 const icons = {
     plus: "M12 5v14 M5 12h14",
@@ -63,6 +81,20 @@ export default function ShipmentsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [shipments, setShipments] = useState([]);
+    const [selectedShipment, setSelectedShipment] = useState(null);
+    const { toast, showToast, hideToast } = useToast();
+
+    // Search 
+    const { search } = useLocation();
+    const queryParams = new URLSearchParams(search);
+    const globalSearchQ = queryParams.get("q") || "";
+    const location = useLocation();
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const q = params.get("q") || "";
+        setSearchQ(q); // This updates the local search state used by your filter
+    }, [location.search]);
 
 
     const addShipment = (shipment) => {
@@ -123,13 +155,17 @@ export default function ShipmentsPage() {
 
 
     const filtered = shipments.filter((s) => {
+        const term = globalSearchQ || searchQ; // Use navbar search if local search is empty
+        const matchSearch = !term || [s.id, s.client, s.agent].some(v =>
+            v.toLowerCase().includes(term.toLowerCase())
+        );
         const matchStatus = statusFilter === "All" || s.status === statusFilter;
         const matchRisk = riskFilter === "All" || s.risk === riskFilter;
-        const matchSearch =
-            !searchQ ||
-            s.id.toLowerCase().includes(searchQ.toLowerCase()) ||
-            s.client.toLowerCase().includes(searchQ.toLowerCase()) ||
-            s.agent.toLowerCase().includes(searchQ.toLowerCase());
+        // const matchSearch =
+        //     !searchQ ||
+        //     s.id.toLowerCase().includes(searchQ.toLowerCase()) ||
+        //     s.client.toLowerCase().includes(searchQ.toLowerCase()) ||
+        //     s.agent.toLowerCase().includes(searchQ.toLowerCase());
         return matchStatus && matchRisk && matchSearch;
     });
 
@@ -174,10 +210,25 @@ export default function ShipmentsPage() {
             <title>Shipments | CargoFlow</title>
             {/* Modals */}
             {modal === "addShipment" && (
-                <AddShipmentModal onClose={closeModal} onAdd={(s) => { addShipment(s); closeModal(); }} />
+                <AddShipmentModal onClose={closeModal} onAdd={(s) => { addShipment(s); closeModal(); }} showToast={showToast} />
             )}
             {modal === "export" && (
-                <ExportModal shipments={filtered} onClose={closeModal} />
+                <ExportModal shipments={filtered} onClose={closeModal} showToast={showToast} />
+            )}
+
+            {modal === "viewShipment" && (
+                <ViewShipmentModal
+                    shipment={selectedShipment}
+                    onClose={closeModal}
+                    showToast={showToast}
+                />
+            )}
+            {modal === "invoice" && (
+                <InvoiceModal
+                    shipment={selectedShipment}
+                    onClose={closeModal}
+                    showToast={showToast}
+                />
             )}
             <div
                 style={{
@@ -648,30 +699,23 @@ export default function ShipmentsPage() {
                                             <td style={{ padding: "12px 14px" }}>
                                                 <div style={{ display: "flex", gap: 6 }}>
                                                     <button
-                                                        onClick={() => console.warn("Missing backend API for this action")}
-                                                        style={{
-                                                            border: "1px solid #E2E8F0",
-                                                            borderRadius: 6,
-                                                            padding: "4px 8px",
-                                                            background: "white",
-                                                            cursor: "pointer",
-                                                            color: "#64748B",
+                                                        onClick={() => {
+                                                            setSelectedShipment(s);
+                                                            openModal("viewShipment");
                                                         }}
+                                                        style={{ ...buttonStyles }}
                                                     >
                                                         <Icon d={icons.eye} size={13} stroke="#64748B" />
                                                     </button>
                                                     <button
-                                                        onClick={() => console.warn("Missing backend API for this action")}
-                                                        style={{
-                                                            border: "1px solid #E2E8F0",
-                                                            borderRadius: 6,
-                                                            padding: "4px 8px",
-                                                            background: "white",
-                                                            cursor: "pointer",
-                                                            color: "#64748B",
+                                                        onClick={() => {
+                                                            setSelectedShipment(s);
+                                                            openModal("invoice");
                                                         }}
+                                                        style={{ ...buttonStyles }}
                                                     >
-                                                        <Icon d={icons.edit} size={13} stroke="#64748B" />
+                                                        {/* Use a document/file icon here */}
+                                                        <Icon d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" size={13} stroke="#64748B" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -753,6 +797,12 @@ export default function ShipmentsPage() {
                     </div>
                 </main>
             </div>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={hideToast}
+            />
         </>
 
     );

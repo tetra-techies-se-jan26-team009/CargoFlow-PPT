@@ -103,7 +103,7 @@ const LiveMap = () => (
                 </g>
             ))}
             <rect x="415" y="149" width="28" height="17" rx="5" fill="#1D4ED8" />
-            <text x="429" y="162" textAnchor="middle" fontSize="10" fill="white" fontFamily="sans-serif">🚚</text>
+            <text x="429" y="162" textAnchor="middle" fontSize="10" fill="white" fontFamily="sans-serif"></text>
         </svg>
         <div style={{ position: "absolute", top: 10, right: 12, background: "white", borderRadius: 20, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: "#EF4444", boxShadow: "0 1px 4px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#EF4444", display: "inline-block" }} />
@@ -200,6 +200,7 @@ export default function AdminDashboard() {
 
                 const mappedShipments = (shipRes?.shipments || []).map(s => ({
                     ...s,
+                    db_id: s.id,
                     id: s.tracking_id,
                     dest: s.destination,
                     agent: s.agent || "Unassigned",

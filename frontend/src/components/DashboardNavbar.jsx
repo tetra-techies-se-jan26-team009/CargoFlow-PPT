@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { Bell, Search, Settings, User, Menu, ChevronDown, Package } from 'lucide-react';
@@ -25,6 +25,7 @@ const Icon = ({
     </svg>
 );
 
+
 const navLinks = [
     { label: "Dashboard", path: "/admin/dashboard" },
     { label: "Shipments", path: "/admin/shipments" },
@@ -40,6 +41,24 @@ export default function DashboardNavbar() {
     const { user, logout } = useAuth();
     const [showProfile, setShowProfile] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const searchInputRef = useRef(null);
+    const [displayName, setDisplayName] = useState(user?.name || "Admin");
+
+    useEffect(() => {
+        // Listen for the custom event we created in Settings
+        const handleUpdate = (event) => {
+            if (event.detail?.name) {
+                setDisplayName(event.detail.name);
+            }
+        };
+
+        window.addEventListener("userProfileUpdated", handleUpdate);
+        return () => window.removeEventListener("userProfileUpdated", handleUpdate);
+    }, [])
+
+    const focusSearch = () => {
+        searchInputRef.current?.focus();
+    };
 
     const notifications = [
         { id: 1, title: 'Shipment Delayed', desc: 'V1-20250303 is running 2 hours late', time: '5m ago', type: 'warning' },
@@ -52,6 +71,43 @@ export default function DashboardNavbar() {
         logout();
         navigate("/login");
     };
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Check for Meta (Mac) or Control (Windows) + K
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                focusSearch();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    const handleSearch = (e) => {
+        const value = e.target.value;
+        setSearch(value);
+
+        // We only trigger navigation/filtering if we are on a list page
+        if (location.pathname.includes('/admin/shipments') ||
+            location.pathname.includes('/admin/agents') ||
+            location.pathname.includes('/admin/clients')) {
+
+            // Update URL: /admin/shipments?q=value
+            navigate(`?q=${encodeURIComponent(value)}`, { replace: true });
+        }
+    };
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('nav input')?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     return (
         <nav
@@ -114,44 +170,32 @@ export default function DashboardNavbar() {
                     gap: 14,
                 }}
             >
-                <div style={{ position: "relative" }}>
-                    <div className="hidden md:flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-64 transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white">
-                        <Search className="w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search shipments..."
-                            className="bg-transparent border-none outline-none text-sm text-gray-700 placeholder:text-gray-400 w-full"
-                        />
-                        <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 bg-gray-200 rounded">⌘K</kbd>
-                    </div>
-
-                </div>
-                {/* <button
-                    style={{
-                        background: "none",
-                        border: "none",
-                        color: "rgba(255,255,255,0.6)",
-                        cursor: "pointer",
-                        position: "relative",
-                        padding: 4,
-                    }}
+                <div
+                    className="hidden md:flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-64 transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white cursor-text"
+                    onClick={focusSearch} // Clicking the background focuses the input
                 >
-                    <Icon d={icons.bell} size={18} stroke="rgba(255,255,255,0.6)" />
-                    <span
-                        style={{
-                            position: "absolute",
-                            top: 2,
-                            right: 2,
-                            background: "#EF4444",
-                            borderRadius: "50%",
-                            width: 7,
-                            height: 7,
-                        }}
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <input
+                        ref={searchInputRef} // Attach the ref
+                        type="text"
+                        value={search}
+                        onChange={handleSearch}
+                        placeholder="Search shipments..."
+                        className="bg-transparent border-none outline-none text-sm text-gray-700 placeholder:text-gray-400 w-full"
                     />
-                </button> */}
-                {/* Notifications */}
+
+                    {/* Make the KBD badge look and act like a button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent double-triggering the parent div
+                            focusSearch();
+                        }}
+                        className="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-black text-slate-500 bg-slate-200 rounded hover:bg-slate-300 hover:text-slate-700 transition-colors cursor-pointer border-none"
+                    >
+                        ⌘K
+                    </button>
+                </div>
+
                 <div className="relative">
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
@@ -203,57 +247,13 @@ export default function DashboardNavbar() {
                 >
                     <Settings className="w-6 h-6 text-gray-600" />
                 </div>
-                {/* <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "4px 10px",
-                        borderRadius: 8,
-                        background: "rgba(255,255,255,0.07)",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: 28,
-                            height: 28,
-                            background: "#2563EB",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: 11,
-                            fontWeight: 700,
-                        }}
-                    >
-                        {user?.name?.[0]?.toUpperCase()}
-                    </div>
-                    <span style={{ color: "white", fontSize: 12, fontWeight: 500 }}>
-                        {user?.name}
-                    </span>
-                </div> */}
-
-                {/* <button
-                    onClick={handleLogout}
-                    style={{
-                        background: "none",
-                        border: "none",
-                        color: "rgba(255,255,255,0.4)",
-                        cursor: "pointer",
-                        padding: 4,
-                    }}
-                >
-                    <Icon d={icons.logout} size={16} stroke="rgba(255,255,255,0.4)" />
-                </button> */}
-                {/* Profile */}
                 <div className="relative">
                     <button
                         onClick={() => setShowProfile(!showProfile)}
                         className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                     >
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
-                            {user?.name?.[0]?.toUpperCase()}
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center text-white font-semibold text-sm">
+                            {displayName?.[0]?.toUpperCase()}
                         </div>
                         <ChevronDown className="w-4 h-4 text-gray-500" />
                     </button>
@@ -261,12 +261,11 @@ export default function DashboardNavbar() {
                     {showProfile && (
                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="px-4 py-3 border-b border-gray-100">
-                                <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
+                                <p className="text-sm font-semibold text-gray-900">{displayName}</p>
                                 <p className="text-xs text-gray-500">{user?.email}</p>
                             </div>
                             <div className="p-2">
                                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" onClick={() => navigate("/admin/settings")}>Profile Settings</button>
-                                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">Preferences</button>
                                 <button className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors" onClick={handleLogout}>Log Out</button>
                             </div>
                         </div>

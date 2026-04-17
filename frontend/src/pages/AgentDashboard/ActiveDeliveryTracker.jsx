@@ -268,7 +268,7 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
             x={100 + (progress / 100) * 400}
             y="80"
             textAnchor="middle"
-          >🚚</text>
+          ></text>
         </svg>
         <div className="absolute top-3 right-3 bg-white rounded-lg px-3 py-1.5 shadow-lg">
           <div className="text-xs text-gray-600">Estimated Time</div>
