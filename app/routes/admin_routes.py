@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -7,6 +7,7 @@ from ..schemas import DeliveryAgentCreate, AdminShipmentCreate, UserRegister, Up
 from ..auth import require_role, hash_password
 from datetime import date, timezone
 import random
+from app.utils.email import send_email
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin Routes"])
 
@@ -79,6 +80,7 @@ def generate_tracking_number(db: Session):
 
 @router.post("/shipments", status_code=201)
 def create_shipment(data: AdminShipmentCreate,
+                    background_tasks: BackgroundTasks,
                     db: Session = Depends(get_db),
                     current_user: User = Depends(require_role(UserRole.ADMIN))):
 
@@ -150,6 +152,97 @@ def create_shipment(data: AdminShipmentCreate,
 
     db.commit()
     db.refresh(shipment)
+
+    # ---------------- EMAIL PART ---------------- 
+
+    html_content = f"""
+    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7fa; padding: 40px 20px; line-height: 1.6;">
+        <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+            
+            <div style="background-color: #0f172a; padding: 40px 30px; text-align: center; border-bottom: 4px solid #2563eb;">
+                <span style="color: #ffffff; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; text-transform: none;">
+                    Cargo<span style="color: #2563eb;">Flow</span>
+                </span>
+                <p style="color: #94a3b8; font-size: 12px; margin-top: 8px; text-transform: uppercase; letter-spacing: 2px;">Smart Logistics for SMEs</p>
+            </div>
+
+            <div style="padding: 50px 40px;">
+                <h2 style="color: #1e293b; margin-top: 0; font-size: 26px; font-weight: 700;">Shipment Created</h2>
+                <p style="color: #64748b; font-size: 16px; margin-bottom: 30px;">
+                    A new shipment has been successfully registered in our system. Below are the details for your reference.
+                </p>
+
+                <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 25px; border-radius: 4px; margin: 30px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td colspan="2" style="padding-bottom: 15px;">
+                                <div style="color: #475569; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Tracking ID</div>
+                                <div style="color: #2563eb; font-size: 22px; font-weight: 800;">{shipment.tracking_number}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 45%; padding-top: 10px;">
+                                <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">From</div>
+                                <div style="color: #1e293b; font-weight: 600; font-size: 15px;">{pickup.city}</div>
+                            </td>
+                            <td style="width: 10%; padding-top: 15px; text-align: center; color: #cbd5e1; font-size: 20px;">➔</td>
+                            <td style="width: 45%; padding-top: 10px; text-align: right;">
+                                <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">To</div>
+                                <div style="color: #1e293b; font-weight: 600; font-size: 15px;">{delivery.city}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <a href="http://localhost:5173/" style="background-color: #2563eb; color: #ffffff; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);">
+                        Track Shipment
+                    </a>
+                </div>
+            </div>
+
+            <div style="background-color: #f1f5f9; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td align="center" style="width: 33%;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 18px;">99.8%</div>
+                            <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600;">Uptime</div>
+                        </td>
+                        <td align="center" style="width: 33%; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 18px;">250K+</div>
+                            <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600;">Delivered</div>
+                        </td>
+                        <td align="center" style="width: 33%;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 18px;">24/7</div>
+                            <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600;">Support</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="padding: 30px; text-align: center; background-color: #0f172a;">
+                <p style="font-size: 12px; color: #64748b; margin: 0;">
+                    © 2026 CargoFlow Inc. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+"""
+
+    background_tasks.add_task(
+        send_email,
+        sender.email,
+        f"Shipment {shipment.tracking_number} Created",
+        html_content
+    )
+
+    if shipment.receiver_email and shipment.receiver_email.strip():
+        background_tasks.add_task(
+            send_email,
+            shipment.receiver_email,
+            f"You have a Shipment {shipment.tracking_number}",
+            html_content
+        )
 
     return {
         "tracking_number": shipment.tracking_number,
