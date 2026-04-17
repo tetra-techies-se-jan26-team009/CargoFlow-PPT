@@ -1,15 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/24/solid";
+// Add Eye icons from lucide
+import { Package, Eye, EyeOff, Loader2 } from "lucide-react"; 
 import { loginUser, getCurrentUser } from "../../utils/auth";
 import { useAuth } from "../../hooks/useAuth";
-import { Package } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // NEW: Loading state
+  
   const { setUser } = useAuth();
   const navigate = useNavigate();
 
@@ -19,153 +22,136 @@ const Login = () => {
     return "";
   };
 
-  const handleEmailBlur = () => {
-    setEmailError(validateEmail(email));
-  };
-
-  const stats = [
-    { icon: TruckIcon, value: "99.8%", label: "On-time Delivery" },
-    { icon: InboxIcon, value: "250K+", label: "Shipments Managed" },
-    { icon: PhoneArrowDownLeftIcon, value: "24/7", label: "Support" },
-  ];
-
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault(); // NEW: Prevents page reload
+    
     const err = validateEmail(email);
     if (err) { setEmailError(err); return; }
-    if (!password) { alert("Enter your password"); return; }
-
+    
+    setIsLoading(true); // NEW: Start loading
     try {
       const data = await loginUser(email, password);
       const userData = await getCurrentUser();
       setUser(userData);
 
       switch (data.role) {
-        case "ADMIN":
-          navigate("/admin/dashboard"); break;
-        case "DELIVERY_AGENT":
-          alert("Delivery agents should use the mobile app to log in."); break;
-        case "BUSINESS_CLIENT":
-          navigate("/dashboard"); break;
+        case "ADMIN": navigate("/admin/dashboard"); break;
+        case "BUSINESS_CLIENT": navigate("/dashboard"); break;
+        case "DELIVERY_AGENT": 
+           // In industry, we use Toasts instead of Alerts
+           alert("Agents must use the CargoFlow Mobile App."); 
+           break;
         default: navigate("/");
       }
     } catch (err) {
       alert(err.message || "Invalid Credentials");
+    } finally {
+      setIsLoading(false); // NEW: End loading
     }
   };
 
   return (
-    <>
-      <title>CargoFlow</title>
-      <div className="min-h-screen flex font-sans">
-        <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
-              <Package className="w-6 h-6 text-accent" />
-            </div>
-            <span className="text-xl font-bold text-background">CargoFlow</span>
-          </Link>
-          <div className="mx-24">
-            <h1 className="text-5xl font-bold leading-snug mb-3">
-              Logistics Partner<br />for SMEs
-            </h1>
-            <p className="text-md text-accent leading-relaxed mb-8">
-              Trust. Speed. Visibility. <br /> CargoFlow provides reliable shipment management solutions for your growing business.
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              {stats.map((s) => (
-                <div key={s.label} className="bg-accent text-[#0f1c2e] rounded-lg p-3 flex flex-col items-center text-center">
-                  <span className="mb-1">
-                    <s.icon className="w-7 h-7" />
-                  </span>
-                  <span className="text-base font-bold">{s.value}</span>
-                  <span className="text-[10px] mt-0.5">{s.label}</span>
-                </div>
-              ))}
-            </div>
+
+    <div className="min-h-screen flex font-sans selection:bg-blue-100">
+      <title>Authorization | CargoFLow</title>
+      {/* Left Panel: Narrative & Stats */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0f1c2e] flex-col justify-between p-12 text-white relative overflow-hidden">
+        {/* Abstract background flare for that "Premium" feel */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_30%_30%,#2563eb_0%,transparent_50%)]" />
+        
+        <Link to="/" className="flex items-center gap-2 z-10">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/40">
+            <Package className="w-6 h-6 text-white" />
           </div>
+          <span className="text-2xl font-black tracking-tighter ">CargoFlow</span>
+        </Link>
 
-          <div />
-        </div>
-        <div className="flex-1 flex flex-col bg-white">
-          <div className="flex justify-end px-8 pt-6">
-            <Link
-              to="/"
-              className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center px-8">
-            <div className="w-full max-w-sm">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Log In to Your Account</h2>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
-                  onBlur={handleEmailBlur}
-                  placeholder="email@business.com"
-                  className={`w-full border rounded px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 transition
-                  ${emailError
-                      ? "border-red-500 focus:ring-red-200"
-                      : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
-                    }`}
-                />
-                {emailError && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {emailError}
-                  </p>
-                )}
+        <div className="max-w-md mx-auto z-10">
+          <h1 className="text-6xl font-black leading-tight mb-6 tracking-tighter">
+            Smart Logistics <br /><span className="text-blue-500">for Scale.</span>
+          </h1>
+          <p className="text-lg text-slate-400 mb-10 leading-relaxed font-medium">
+            Streamline your supply chain with real-time intelligence and enterprise-grade reliability.
+          </p>
+          
+          <div className="grid grid-cols-3 gap-4">
+            {[{ icon: TruckIcon, val: "99.8%", lab: "Uptime" },
+              { icon: InboxIcon, val: "250K+", lab: "Shipments" },
+              { icon: PhoneArrowDownLeftIcon, val: "24/7", lab: "Expertise" }
+            ].map((s, i) => (
+              <div key={i} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/10">
+                <s.icon className="w-6 h-6 text-blue-400 mb-2" />
+                <div className="text-xl font-bold">{s.val}</div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{s.lab}</div>
               </div>
+            ))}
+          </div>
+        </div>
+        <div className="text-slate-500 text-xs font-medium z-10">© 2026 CargoFlow Technologies. All rights reserved.</div>
+      </div>
 
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">Password</label>
-                  <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
-                    Forgot Password?
-                  </Link>
-                </div>
+      {/* Right Panel: Form */}
+      <div className="flex-1 flex flex-col bg-slate-50 justify-center items-center p-8">
+        <div className="w-full max-w-[400px] bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+          <header className="mb-8">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Welcome back</h2>
+            <p className="text-slate-500 text-sm mt-2 font-medium">Enter your credentials to access the platform.</p>
+          </header>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
+                className={`w-full bg-slate-50 border px-4 py-3 rounded-xl text-sm font-bold transition-all focus:ring-4 focus:ring-blue-500/10 outline-none ${emailError ? "border-red-500" : "border-slate-200 focus:border-blue-500"}`}
+                placeholder="name@company.com"
+              />
+              {emailError && <p className="mt-2 text-xs text-red-500 font-bold italic">{emailError}</p>}
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Password</label>
+                <Link to="/forgot-password" opacity-70 className="text-[11px] font-black text-blue-600 uppercase hover:text-blue-800 transition-colors">Forgot?</Link>
+              </div>
+              <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
                   placeholder="••••••••"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition"
                 />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleLogin}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-accent font-semibold text-sm py-2.5 rounded transition"
-              >
-                LOG IN
-              </button>
-
-              <p className="mt-4 text-center text-sm text-gray-500">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-blue-600 font-medium hover:underline">
-                  Register
-                </Link>
-              </p>
             </div>
-          </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-[0.2em] py-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+            >
+              {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "Authorize Access"}
+            </button>
+          </form>
+
+          <p className="mt-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+            New here? <Link to="/register" className="text-blue-600 hover:underline">Create Account</Link>
+          </p>
         </div>
       </div>
-    </>
+    </div>
   );
-
 };
 
 export default Login;

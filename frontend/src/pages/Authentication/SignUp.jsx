@@ -1,32 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TruckIcon, InboxIcon, PhoneArrowDownLeftIcon } from "@heroicons/react/24/solid";
+import { Package, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import api from "../../utils/api";
-import { Package } from "lucide-react";
 
-const Field = ({ label, field, type = "text", placeholder, formData, errors, handleChange, handleBlur, ...rest }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <input
-            type={type}
-            value={formData[field]}
-            onChange={handleChange(field)}
-            onBlur={handleBlur(field)}
-            placeholder={placeholder}
-            {...rest}
-            className={`w-full border rounded px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 transition
-                ${errors[field]
-                    ? "border-red-500 focus:ring-red-200"
-                    : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
-                }`}
-        />
+const Field = ({ label, field, type = "text", placeholder, formData, errors, handleChange, handleBlur, showVisibilityToggle, onToggleVisibility, ...rest }) => (
+    <div className="group">
+        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5 group-focus-within:text-blue-600 transition-colors">
+            {label}
+        </label>
+        <div className="relative">
+            <input
+                type={type}
+                value={formData[field]}
+                onChange={handleChange(field)}
+                onBlur={handleBlur(field)}
+                placeholder={placeholder}
+                {...rest}
+                className={`w-full bg-slate-50 border px-4 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 outline-none
+                    ${errors[field]
+                        ? "border-red-500 focus:ring-4 focus:ring-red-500/10 shadow-[0_0_0_1px_rgba(239,68,68,1)]"
+                        : "border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-white"
+                    }`}
+            />
+            {showVisibilityToggle && (
+                <button
+                    type="button"
+                    onClick={onToggleVisibility}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                    {type === "password" ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
+            )}
+        </div>
         {errors[field] && (
-            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {errors[field]}
-            </p>
+            <div className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-red-500 animate-in fade-in slide-in-from-top-1">
+                <XCircle size={12} /> {errors[field]}
+            </div>
         )}
     </div>
 );
@@ -35,68 +45,65 @@ const Signup = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [serverError, setServerError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordStrength, setPasswordStrength] = useState(0);
 
     const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        city:"",
-        password: "",
-        confirmPassword: "",
+        firstName: "", lastName: "", email: "", phone: "", city: "", password: "", confirmPassword: ""
     });
-
-    const stats = [
-        { icon: TruckIcon, value: "99.8%", label: "On-time Delivery" },
-        { icon: InboxIcon, value: "250K+", label: "Shipments Managed" },
-        { icon: PhoneArrowDownLeftIcon, value: "24/7", label: "Support" },
-    ];
-
     const [errors, setErrors] = useState({});
+
+    // Real-time password strength logic
+    useEffect(() => {
+        const pass = formData.password;
+        let strength = 0;
+        if (pass.length > 5) strength += 25;
+        if (/[A-Z]/.test(pass)) strength += 25;
+        if (/[0-9]/.test(pass)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(pass)) strength += 25;
+        setPasswordStrength(strength);
+    }, [formData.password]);
 
     const validate = (field, value) => {
         switch (field) {
             case "email":
-                if (!value) return "Email is required";
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address";
-                return "";
+                return !value ? "Email required" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "Invalid email format" : "";
+            case "phone":
+                return !value ? "Phone required" : value.length < 10 ? "Enter 10-digit mobile number" : "";
             case "password":
-                if (!value) return "Password is required";
-                if (value.length < 6) return "Password must be at least 6 characters";
-                return "";
+                return !value ? "Password required" : value.length < 6 ? "Must be 6+ characters" : "";
             case "confirmPassword":
-                if (!value) return "Please confirm your password";
-                if (value !== formData.password) return "Passwords do not match";
-                return "";
+                return value !== formData.password ? "Passwords do not match" : "";
             default:
-                if (!value) return "This field is required";
-                return "";
+                return !value ? "Required" : "";
         }
     };
 
     const handleChange = (field) => (e) => {
-        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+        let value = e.target.value;
+        if (field === "phone") value = value.replace(/\D/g, "").slice(0, 10);
+        setFormData(prev => ({ ...prev, [field]: value }));
         setServerError("");
-        if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+        if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
     };
 
     const handleBlur = (field) => () => {
         const err = validate(field, formData[field]);
-        setErrors((prev) => ({ ...prev, [field]: err }));
+        setErrors(prev => ({ ...prev, [field]: err }));
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         const newErrors = {};
-        Object.keys(formData).forEach((field) => {
-            const err = validate(field, formData[field]);
-            if (err) newErrors[field] = err;
+        Object.keys(formData).forEach(f => {
+            const err = validate(f, formData[f]);
+            if (err) newErrors[f] = err;
         });
+
         setErrors(newErrors);
         if (Object.keys(newErrors).length > 0) return;
 
         setIsLoading(true);
-        setServerError("");
-
         try {
             await api.post("/api/auth/register", {
                 name: `${formData.firstName} ${formData.lastName}`.trim(),
@@ -105,117 +112,129 @@ const Signup = () => {
                 phone: formData.phone,
                 password: formData.password,
             });
-
             navigate("/login", { state: { registered: true } });
-
         } catch (err) {
-            const detail = err.response?.data?.detail;
-            if (detail === "Email already registered") {
-                setErrors((prev) => ({ ...prev, email: "This email is already registered" }));
-            } else {
-                setServerError(detail || "Registration failed. Please try again.");
-            }
+            setServerError(err.response?.data?.detail || "System temporarily unavailable.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex font-sans">
-            <title>Registration | CargoFlow</title>
-            <div className="flex-1 flex flex-col bg-background">
-                <div className="flex justify-start px-8 pt-6">
-                    <Link to="/" className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Back to Home
+        <div className="min-h-screen flex font-sans selection:bg-blue-100">
+            <title>Join CargoFlow | Enterprise Logistics</title>
+
+            <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+                <div className="flex justify-start px-8 pt-8">
+                    <Link to="/" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                        Exit to Home
                     </Link>
                 </div>
 
-                <div className="flex-1 flex items-center justify-center px-8 py-6">
-                    <div className="w-full max-w-sm">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-1">Create Your Account</h2>
-                        <p className="text-sm text-gray-500 mb-5">Fill in your details to get started.</p>
+                <div className="flex-1 flex items-center justify-center px-8 py-12">
+                    <div className="w-full max-w-md">
+                        <header className="mb-10">
+                            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Start shipping.</h2>
+                            <p className="text-slate-400 font-medium mt-2">Create your CargoFlow enterprise account today.</p>
+                        </header>
+
                         {serverError && (
-                            <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-                                {serverError}
+                            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3 text-red-700 text-sm font-bold animate-in zoom-in duration-300">
+                                <XCircle className="shrink-0" size={20} /> {serverError}
                             </div>
                         )}
 
-                        <div className="space-y-3">
-                            <div className="flex gap-3">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="flex gap-4">
                                 <div className="flex-1">
-                                    <Field label="First Name" field="firstName" placeholder="John"
-                                        formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                                    <Field label="First Name" field="firstName" placeholder="John" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
                                 </div>
                                 <div className="flex-1">
-                                    <Field label="Last Name" field="lastName" placeholder="Doe"
-                                        formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                                    <Field label="Last Name" field="lastName" placeholder="Doe" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
                                 </div>
                             </div>
 
-                            <Field label="Email Address" field="email" type="email" placeholder="email@business.com"
-                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                            <Field label="Email Address" field="email" type="email" placeholder="name@company.com" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
-                            <Field label="Phone Number" field="phone" type="tel" placeholder="+91 98765 43210" maxLength={10}
-                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <Field label="Phone" field="phone" type="tel" placeholder="9876543210" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                                </div>
+                                <div className="flex-1">
+                                    <Field label="Operational City" field="city" placeholder="New Delhi" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                                </div>
+                            </div>
 
-                            <Field label="City" field="city" type="text" placeholder="New Delhi"
-                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                            <div className="space-y-1.5">
+                                <Field label="Password" field="password" type={showPassword ? "text" : "password"} placeholder="••••••••" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} showVisibilityToggle onToggleVisibility={() => setShowPassword(!showPassword)} />
+                                {/* Password Strength Bar */}
+                                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden flex gap-1">
+                                    <div className={`h-full transition-all duration-500 ${passwordStrength >= 25 ? 'bg-red-400' : 'bg-transparent'}`} style={{ width: '25%' }}></div>
+                                    <div className={`h-full transition-all duration-500 ${passwordStrength >= 50 ? 'bg-amber-400' : 'bg-transparent'}`} style={{ width: '25%' }}></div>
+                                    <div className={`h-full transition-all duration-500 ${passwordStrength >= 75 ? 'bg-blue-400' : 'bg-transparent'}`} style={{ width: '25%' }}></div>
+                                    <div className={`h-full transition-all duration-500 ${passwordStrength >= 100 ? 'bg-emerald-400' : 'bg-transparent'}`} style={{ width: '25%' }}></div>
+                                </div>
+                            </div>
 
-                            <Field label="Password" field="password" type="password" placeholder="Min. 6 characters"
-                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                            <Field label="Verify Password" field="confirmPassword" type="password" placeholder="••••••••" formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
 
-                            <Field label="Confirm Password" field="confirmPassword" type="password" placeholder="Re-enter password"
-                                formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-slate-200 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2 mt-4"
+                            >
+                                {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Establish Account"}
+                            </button>
+                        </form>
 
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={isLoading}
-                            className="mt-5 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-accent font-semibold text-sm py-2.5 rounded transition"
-                        >
-                            {isLoading ? "Creating Account..." : "CREATE ACCOUNT"}
-                        </button>
-
-                        <p className="mt-4 text-center text-sm text-gray-500">
-                            Already have an account?{" "}
-                            <Link to="/login" className="text-blue-600 font-medium hover:underline">
-                                Log In
-                            </Link>
+                        <p className="mt-8 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                            Already part of the network? <Link to="/login" className="text-blue-600 hover:underline underline-offset-4">Log In</Link>
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="hidden md:flex md:w-1/2 bg-[#0f1c2e] flex-col justify-between p-10 text-accent">
-                <Link to="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
-                        <Package className="w-6 h-6 text-accent" />
+            {/* Side Panel: Brand Reinforcement */}
+            <div className="hidden lg:flex lg:w-[45%] bg-[#0f1c2e] flex-col justify-between p-12 text-white relative overflow-hidden shadow-[-20px_0_40px_rgba(0,0,0,0.2)]">
+                <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_30%_30%,#2563eb_0%,transparent_50%)]" />
+
+                <Link to="/" className="flex items-center gap-2 z-10">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-2xl">
+                        <Package className="w-6 h-6 text-white" />
                     </div>
-                    <span className="text-xl font-bold text-background">CargoFlow</span>
+                    <span className="text-2xl font-black tracking-tighter">CargoFlow</span>
                 </Link>
+
                 <div>
+
                     <h1 className="text-5xl font-bold leading-snug mb-3">
+
                         Logistics Partner<br />for SMEs
+
                     </h1>
-                    <p className="text-sm text-accent leading-relaxed mb-8">
-                        Trust. Speed. Visibility.<br /> CargoFlow provides reliable shipment management solutions for your growing business.
-                    </p>
-                    <div className="grid grid-cols-3 gap-3">
-                        {stats.map((s) => (
-                            <div key={s.label} className="bg-accent text-[#0f1c2e] rounded-lg p-3 flex flex-col items-center text-center">
-                                <span className="mb-1"><s.icon className="w-7 h-7" /></span>
-                                <span className="text-base font-bold">{s.value}</span>
-                                <span className="text-[10px] mt-0.5">{s.label}</span>
+                    <div className="grid grid-cols-3 gap-4 mt-6">
+                        {[
+                            { icon: TruckIcon, val: "99.8%", lab: "Transit Precision" },
+                            { icon: InboxIcon, val: "250K+", lab: "Active Nodes" },
+                            { icon: PhoneArrowDownLeftIcon, val: "24/7", lab: "Direct Liaison" }
+                        ].map((s, i) => (
+                            <div key={i} className="flex items-center gap-4 group cursor-default">
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/10 group-hover:bg-blue-600 transition-colors">
+                                    <s.icon className="w-6 h-6 text-blue-400 group-hover:text-white" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-black">{s.val}</div>
+                                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">{s.lab}</div>
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
-                <div />
+
+                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest z-10 opacity-50">
+                    Proprietary Software © 2026 CargoFlow Technologies.
+                </div>
             </div>
         </div>
     );

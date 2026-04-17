@@ -774,7 +774,6 @@ export default function ClientDashboard() {
       const builtNotifs = buildClientNotifications(allShipments);
       setNotifs(builtNotifs);
 
-      // 🔥 BUSINESS CHECK (KEY LOGIC)
       if (!dashRes?.business || !dashRes.business.name) {
         setBusinessModalOpen(true);
       }
@@ -791,28 +790,6 @@ export default function ClientDashboard() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // useEffect(() => {
-  //   const checkBusiness = async () => {
-  //     try {
-  //       const data = await getClientBusiness();
-
-  //       if (!data || !data.name) {
-  //         setHasBusiness(false);
-  //         setBusinessModalOpen(true);
-  //       } else {
-  //         setHasBusiness(true);
-  //       }
-  //     } catch {
-  //       setHasBusiness(false);
-  //       setBusinessModalOpen(true);
-  //     } finally {
-  //       setBusinessChecked(true);
-  //     }
-  //   };
-
-  //   checkBusiness();
-  // }, []);
 
   // ── Outside click for notif panel ─────────────────────────────────────────
   useEffect(() => {
@@ -954,7 +931,17 @@ export default function ClientDashboard() {
         `}</style>
 
         {/* ── CLIENT NAVBAR ──────────────────────────────────────────────── */}
-        <div ref={notifPanelRef} style={{ position: "relative" }}>
+        <div
+          ref={notifPanelRef}
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 1000, // Highest priority
+            width: "100%",
+            backgroundColor: "white", // Or #F0F4FA to match background
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+          }}
+        >
           <ClientNavbar {...navbarProps} />
           {notifOpen && (
             <NotifPanel
@@ -1391,7 +1378,7 @@ export default function ClientDashboard() {
                             fontSize: 16,
                           }}
                         >
-                        <Dot />
+                          <Dot />
                         </span>
                       </div>
                       <div
@@ -2255,50 +2242,104 @@ function BusinessModal({ onSuccess }) {
   const [type, setType] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const submit = async () => {
+  const submit = async (e) => {
+    if (e) e.preventDefault(); // Standard form practice
     if (!name.trim() || !type.trim()) return;
 
     try {
       setLoading(true);
-
-      await createBusiness({
-        name,
-        type,
-      });
-
+      await createBusiness({ name, type });
       onSuccess();
     } catch {
-      alert("Failed to create business");
+      // Industry standard: Inline error or Toast, not browser alert
+      console.error("System Error: Business creation failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-      <ModalHeader title="🏢 Add Your Business" onClose={() => { }} />
+    <div style={{ padding: "8px" }} className="animate-in fade-in zoom-in duration-300">
+      <div style={{ marginBottom: "24px" }}>
+        <h2 style={{ fontSize: "20px", fontWeight: "900", color: "#0F172A", tracking: "-0.5px", marginBottom: "4px" }}>
+          Establish Your Identity
+        </h2>
+        <p style={{ fontSize: "12px", color: "#64748B", fontWeight: "500" }}>
+          Link your business profile to activate freight management capabilities.
+        </p>
+      </div>
 
-      <FormGroup label="Business Name">
-        <input
-          style={inputStyle}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </FormGroup>
+      <form onSubmit={submit}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginBottom: "28px" }}>
+          
+          <FormGroup label="OFFICIAL BUSINESS NAME">
+            <div style={{ position: "relative" }}>
+              <input
+                style={{ ...inputStyle, paddingLeft: "40px" }}
+                placeholder="E.g. Acme Corp, Global Traders LLC"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", opacity: 0.4 }}>
+                <Icon d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-7h.01" size={16} />
+              </span>
+            </div>
+            <p style={{ fontSize: "10px", color: "#94A3B8", marginTop: "6px", fontStyle: "italic" }}>
+              This will appear on all your logistics invoices.
+            </p>
+          </FormGroup>
 
-      <FormGroup label="Business Type">
-        <input
-          style={inputStyle}
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-        />
-      </FormGroup>
+          <FormGroup label="BUSINESS SECTOR / TYPE">
+            <div style={{ position: "relative" }}>
+              <select
+                style={{ ...inputStyle, paddingLeft: "40px", appearance: "none", cursor: "pointer" }}
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                required
+              >
+                <option value="" disabled>Select your sector...</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Documents">Documents</option>
+                <option value="Food & Perishables">Food & Perishables</option>
+                <option value="Machinery">Machinery</option>
+                <option value="Pharmaceuticals">Pharmaceuticals</option>
+                <option value="Other">Other</option>
+              </select>
+              <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", opacity: 0.4 }}>
+                <Icon d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" size={16} />
+              </span>
+            </div>
+          </FormGroup>
+        </div>
 
-      <ModalActions>
-        <BtnPrimary onClick={submit} disabled={loading}>
-          {loading ? "Saving..." : "Save Business"}
-        </BtnPrimary>
-      </ModalActions>
-    </>
+        <ModalActions>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: loading ? "#94A3B8" : "#2563EB",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: "800",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              cursor: loading ? "not-allowed" : "pointer",
+              transition: "all 0.2s ease",
+              boxShadow: "0 4px 12px rgba(37,99,235,0.2)"
+            }}
+            onMouseEnter={(e) => !loading && (e.currentTarget.style.background = "#1D4ED8")}
+            onMouseLeave={(e) => !loading && (e.currentTarget.style.background = "#2563EB")}
+          >
+            {loading ? "Registering Business..." : "Finalize Profile →"}
+          </button>
+        </ModalActions>
+      </form>
+    </div>
   );
 }
