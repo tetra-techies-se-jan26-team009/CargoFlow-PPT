@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ClientNavbar from "../../components/ClientNavbar";
 import { createShipment } from "../../utils/clientAPI";
@@ -30,17 +30,43 @@ const STEPS = [
     { label: "Confirm", icon: icons.check },
 ];
 
-const CITIES = [
-    "Chennai", "Mumbai", "Delhi", "Bangalore", "Hyderabad",
-    "Pune", "Kolkata", "Kochi", "Ahmedabad", "Jaipur",
-];
+// const CITIES = [
+//     "Chennai", "Mumbai", "Delhi", "Bangalore", "Hyderabad",
+//     "Pune", "Kolkata", "Kochi", "Ahmedabad", "Jaipur",
+// ];
 
-const INDIAN_STATES = [
-    "Andhra Pradesh", "Delhi", "Goa", "Gujarat", "Karnataka",
-    "Kerala", "Madhya Pradesh", "Maharashtra", "Punjab",
-    "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh",
-    "West Bengal",
-];
+// const INDIAN_STATES = [
+//     "Andhra Pradesh", "Delhi", "Goa", "Gujarat", "Karnataka",
+//     "Kerala", "Madhya Pradesh", "Maharashtra", "Punjab",
+//     "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh",
+//     "West Bengal",
+// ];
+
+// Getting States and Cities from APIs
+
+const getStates = async () => {
+    const res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: "India" })
+    });
+    const data = await res.json();
+    return data.data.states;
+};
+
+const getCities = async (state) => {
+    const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            country: "India",
+            state: state
+        })
+    });
+
+    const data = await res.json();
+    return data.data;
+};
 
 // Priority → price multiplier (base price computed from weight)
 const PRIORITY_PRICE = { Standard: 1, Express: 1.8, Overnight: 2.8 };
@@ -142,37 +168,57 @@ export default function RequestPickup() {
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
     const [apiError, setApiError] = useState(null);
-    const [result, setResult] = useState(null); // successful API response
+    const [result, setResult] = useState(null);
     const [copied, setCopied] = useState(false);
 
+    // --- API Data States ---
+    const [statesList, setStatesList] = useState([]);
+    const [pickupCities, setPickupCities] = useState([]);
+    const [deliveryCities, setDeliveryCities] = useState([]);
+    const [loadingCities, setLoadingCities] = useState({ pickup: false, delivery: false });
+
     const [f, setF] = useState({
-        // Step 0 – Locations
-        pickup_city: "",
-        pickup_line1: "",
-        pickup_state: "",
-        pickup_pincode: "",
-        delivery_city: "",
-        delivery_line1: "",
-        delivery_state: "",
-        delivery_pincode: "",
-        receiver_name: "",
-        receiver_phone: "",
-        receiver_email: "",
-        // Step 1 – Package
-        weight: "",
-        category: "",
-        fragile: false,
-        // Step 2 – Schedule
-        date: "",
-        priority: "Standard",
+        pickup_state: "", pickup_city: "", pickup_line1: "", pickup_pincode: "",
+        delivery_state: "", delivery_city: "", delivery_line1: "", delivery_pincode: "",
+        receiver_name: "", receiver_phone: "", receiver_email: "",
+        weight: "", category: "", fragile: false, date: "", priority: "Standard",
     });
+
+    // 1. Initial Load: Fetch All States
+    useEffect(() => {
+        getStates().then(data => setStatesList(data || []));
+    }, []);
+
+    // 2. Handle Pickup State Selection
+    const handlePickupStateChange = async (stateName) => {
+        set("pickup_state", stateName);
+        set("pickup_city", ""); // Reset city
+        setLoadingCities(prev => ({ ...prev, pickup: true }));
+        try {
+            const cities = await getCities(stateName);
+            setPickupCities(cities || []);
+        } finally {
+            setLoadingCities(prev => ({ ...prev, pickup: false }));
+        }
+    };
+
+    // 3. Handle Delivery State Selection
+    const handleDeliveryStateChange = async (stateName) => {
+        set("delivery_state", stateName);
+        set("delivery_city", ""); // Reset city
+        setLoadingCities(prev => ({ ...prev, delivery: true }));
+        try {
+            const cities = await getCities(stateName);
+            setDeliveryCities(cities || []);
+        } finally {
+            setLoadingCities(prev => ({ ...prev, delivery: false }));
+        }
+    };
 
     const set = (k, v) => {
         setF(p => ({ ...p, [k]: v }));
-        // Clear error on change
         if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n; });
     };
-
     const price = computePrice(f.weight, f.priority);
 
     // ── Navigation ──────────────────────────────────────────────────────────
@@ -187,7 +233,7 @@ export default function RequestPickup() {
     const priorityMap = {
         Standard: "MEDIUM",
         Express: "HIGH",
-        Overnight: "HIGH", 
+        Overnight: "HIGH",
     };
 
     // ── Submit ───────────────────────────────────────────────────────────────
@@ -282,7 +328,7 @@ export default function RequestPickup() {
                         </div>
 
                         <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 24px" }}>
-                           Our agent will call you 30 minutes before pickup
+                            Our agent will call you 30 minutes before pickup
                         </p>
 
                         <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -306,6 +352,7 @@ export default function RequestPickup() {
     return (
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#F8FAFC", color: "#0F172A" }}>
             <ClientNavbar />
+            <title>Request Pickup</title>
 
             <style>{`
                 @keyframes slideIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
@@ -353,111 +400,87 @@ export default function RequestPickup() {
                     {/* Panel */}
                     <div style={{ background: "white", borderRadius: 16, padding: "28px 32px", boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", marginBottom: 16, animation: "slideIn 0.25s ease" }}>
 
-                        {/* ── STEP 0 — Locations ──────────────────────────── */}
                         {step === 0 && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0F172A" }}>Pickup & Delivery Locations</h3>
+                            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2">
 
-                                {/* City row */}
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                                    <Field label="Pickup City" required error={errors.pickup_city}>
-                                        <select value={f.pickup_city} onChange={e => set("pickup_city", e.target.value)}
-                                            style={errors.pickup_city ? selectErrStyle : selectStyle}>
-                                            <option value="">Select city</option>
-                                            {CITIES.map(c => <option key={c}>{c}</option>)}
-                                        </select>
-                                    </Field>
-                                    <Field label="Delivery City" required error={errors.delivery_city}>
-                                        <select value={f.delivery_city} onChange={e => set("delivery_city", e.target.value)}
-                                            style={errors.delivery_city ? selectErrStyle : selectStyle}>
-                                            <option value="">Select city</option>
-                                            {CITIES.map(c => <option key={c}>{c}</option>)}
-                                        </select>
-                                    </Field>
-                                </div>
+                                {/* --- ORIGIN SECTION --- */}
+                                <section className="relative pl-10">
+                                    <div className="absolute left-[19px] top-8 bottom-0 w-0.5 border-l-2 border-dashed border-blue-200" />
+                                    <div className="absolute left-[10px] top-0 w-5 h-5 rounded-full bg-blue-600 border-4 border-white shadow-md" />
+                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 mb-6">Origin Dispatch Point</h3>
 
-                                {/* Pickup address block */}
-                                <div style={{ padding: "16px 18px", background: "#F8FAFC", borderRadius: 12, border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: 14 }}>
-                                    <div className="text-primary" style={{ fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                                        <MapPin className="w-7 h-4 text-primary" /> Pickup Address
-                                    </div>
-                                    <Field label="Street Address" required hint="Building, street name, area" error={errors.pickup_line1}>
-                                        <input value={f.pickup_line1} onChange={e => set("pickup_line1", e.target.value)}
-                                            placeholder="e.g. 42, Anna Salai, T. Nagar"
-                                            style={errors.pickup_line1 ? inputErrStyle : inputStyle}
-                                            onFocus={onFocus} onBlur={onBlur} />
-                                    </Field>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                        <Field label="State" required error={errors.pickup_state}>
-                                            <select value={f.pickup_state} onChange={e => set("pickup_state", e.target.value)}
-                                                style={errors.pickup_state ? selectErrStyle : selectStyle}>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        {/* State Choice First */}
+                                        <Field label="Pickup State" required error={errors.pickup_state}>
+                                            <select value={f.pickup_state} onChange={e => handlePickupStateChange(e.target.value)} style={selectStyle}>
                                                 <option value="">Select state</option>
-                                                {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                                                {statesList.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
                                             </select>
                                         </Field>
-                                        <Field label="Pincode" required error={errors.pickup_pincode}>
-                                            <input value={f.pickup_pincode} onChange={e => set("pickup_pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                                placeholder="600002"
-                                                style={errors.pickup_pincode ? inputErrStyle : inputStyle}
-                                                onFocus={onFocus} onBlur={onBlur} />
-                                        </Field>
-                                    </div>
-                                </div>
 
-                                {/* Delivery address block */}
-                                <div style={{ padding: "16px 18px", background: "#F8FAFC", borderRadius: 12, border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: 14 }}>
-                                    <div className="text-green-600" style={{ fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                                        <MapPinCheck className="w-7 h-4 text-green-600" />Delivery Address
-                                    </div>
-                                    <Field label="Street Address" required hint="Building, street name, area" error={errors.delivery_line1}>
-                                        <input value={f.delivery_line1} onChange={e => set("delivery_line1", e.target.value)}
-                                            placeholder="e.g. 101, Nariman Point"
-                                            style={errors.delivery_line1 ? inputErrStyle : inputStyle}
-                                            onFocus={onFocus} onBlur={onBlur} />
-                                    </Field>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                        <Field label="State" required error={errors.delivery_state}>
-                                            <select value={f.delivery_state} onChange={e => set("delivery_state", e.target.value)}
-                                                style={errors.delivery_state ? selectErrStyle : selectStyle}>
-                                                <option value="">Select state</option>
-                                                {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                                        {/* City based on State */}
+                                        <Field label="Pickup City" required error={errors.pickup_city}>
+                                            <select
+                                                disabled={!f.pickup_state || loadingCities.pickup}
+                                                value={f.pickup_city}
+                                                onChange={e => set("pickup_city", e.target.value)}
+                                                style={selectStyle}
+                                            >
+                                                <option value="">{loadingCities.pickup ? "Loading Cities..." : "Select city"}</option>
+                                                {pickupCities.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </Field>
-                                        <Field label="Pincode" required error={errors.delivery_pincode}>
-                                            <input value={f.delivery_pincode} onChange={e => set("delivery_pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                                placeholder="400021"
-                                                style={errors.delivery_pincode ? inputErrStyle : inputStyle}
-                                                onFocus={onFocus} onBlur={onBlur} />
-                                        </Field>
+
+                                        <div className="col-span-2 grid grid-cols-[1fr_140px] gap-4">
+                                            <Field label="Street Address" required error={errors.pickup_line1}>
+                                                <input value={f.pickup_line1} onChange={e => set("pickup_line1", e.target.value)} placeholder="Building/Area" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+                                            </Field>
+                                            <Field label="Pincode" required error={errors.pickup_pincode}>
+                                                <input value={f.pickup_pincode} onChange={e => set("pickup_pincode", e.target.value.replace(/\D/g, ""))} maxLength={6} placeholder="600001" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+                                            </Field>
+                                        </div>
                                     </div>
-                                </div>
+                                </section>
 
-                                {/* Receiver info */}
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                                    <Field label="Receiver Name" required error={errors.receiver_name}>
-                                        <input value={f.receiver_name} onChange={e => set("receiver_name", e.target.value)}
-                                            placeholder="Receiver's full name"
-                                            style={errors.receiver_name ? inputErrStyle : inputStyle}
-                                            onFocus={onFocus} onBlur={onBlur} />
-                                    </Field>
-                                    <Field label="Receiver Phone" required error={errors.receiver_phone}
-                                        hint="10-digit Indian mobile number">
-                                        <input value={f.receiver_phone} onChange={e => set("receiver_phone", e.target.value)}
-                                            placeholder="+91 98765 43210"
-                                            maxLength={10}
-                                            style={errors.receiver_phone ? inputErrStyle : inputStyle}
-                                            onFocus={onFocus} onBlur={onBlur} />
-                                    </Field>
-                                </div>
-                                <Field label="Receiver Email" required error={errors.receiver_email} hint="For delivery notifications">
-                                    <input type="email" value={f.receiver_email} onChange={e => set("receiver_email", e.target.value)}
-                                        placeholder="receiver@example.com"
-                                        style={errors.receiver_email ? inputErrStyle : inputStyle}
-                                        onFocus={onFocus} onBlur={onBlur} />
-                                </Field>
-                            </div>
-                        )}
+                                {/* --- RECEIVER SECTION --- */}
+                                <section className="relative pl-10">
+                                    <div className="absolute left-[10px] top-0 w-5 h-5 rounded-full bg-emerald-500 border-4 border-white shadow-md" />
+                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 mb-6">Destination Details</h3>
 
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="col-span-2 grid grid-cols-2 gap-4">
+                                            <Field label="Receiver Name" required error={errors.receiver_name}><input value={f.receiver_name} onChange={e => set("receiver_name", e.target.value)} placeholder="Full Name" style={inputStyle} /></Field>
+                                            <Field label="Receiver Phone" required error={errors.receiver_phone}><input value={f.receiver_phone} onChange={e => set("receiver_phone", e.target.value)} placeholder="+91" style={inputStyle} /></Field>
+                                        </div>
+
+                                        {/* State Choice First */}
+                                        <Field label="Delivery State" required error={errors.delivery_state}>
+                                            <select value={f.delivery_state} onChange={e => handleDeliveryStateChange(e.target.value)} style={selectStyle}>
+                                                <option value="">Select state</option>
+                                                {statesList.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        {/* City based on State */}
+                                        <Field label="Delivery City" required error={errors.delivery_city}>
+                                            <select
+                                                disabled={!f.delivery_state || loadingCities.delivery}
+                                                value={f.delivery_city}
+                                                onChange={e => set("delivery_city", e.target.value)}
+                                                style={selectStyle}
+                                            >
+                                                <option value="">{loadingCities.delivery ? "Loading Cities..." : "Select city"}</option>
+                                                {deliveryCities.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <div className="col-span-2 grid grid-cols-[1fr_140px] gap-4">
+                                            <Field label="Delivery Address" required error={errors.delivery_line1}><input value={f.delivery_line1} onChange={e => set("delivery_line1", e.target.value)} placeholder="Apt/Street" style={inputStyle} /></Field>
+                                            <Field label="Pincode" required error={errors.delivery_pincode}><input value={f.delivery_pincode} onChange={e => set("delivery_pincode", e.target.value.replace(/\D/g, ""))} maxLength={6} placeholder="400001" style={inputStyle} /></Field>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>)}
                         {/* ── STEP 1 — Package ────────────────────────────── */}
                         {step === 1 && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
