@@ -26,6 +26,10 @@ class PriorityLevel(enum.Enum):
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
 
+class AgentDutyStatus(enum.Enum):
+    ON_DUTY = "ON_DUTY"
+    OFF_DUTY = "OFF_DUTY"
+
 
 # -------------------- Business --------------------
 
@@ -72,6 +76,7 @@ class User(Base):
     current_lat = Column(Float, nullable=True)
     current_lng = Column(Float, nullable=True)
     last_location_update = Column(DateTime, default=datetime.utcnow)
+    duty_status = Column(Enum(AgentDutyStatus), default=AgentDutyStatus.ON_DUTY, nullable=True)
 
     business_id = Column(Integer, ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
     business = relationship("Business", foreign_keys=[business_id], back_populates="users")

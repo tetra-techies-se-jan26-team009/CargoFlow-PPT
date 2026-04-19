@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-from .models import PriorityLevel, ShipmentStatus
+from .models import PriorityLevel, ShipmentStatus, AgentDutyStatus
 
 class UserRegister(BaseModel):
     name: str
@@ -98,3 +98,6 @@ class UpdateClient(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     city: Optional[str] = None
+
+class DutyStatusUpdate(BaseModel):
+    status: AgentDutyStatus

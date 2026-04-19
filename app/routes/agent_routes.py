@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
-from ..schemas import LocationUpdate, AgentUpdateShipmentStatus
+from ..schemas import LocationUpdate, AgentUpdateShipmentStatus, DutyStatusUpdate
 
 router = APIRouter(prefix="/api/v1/agent", tags=["Agent Routes"])
 
@@ -171,3 +171,19 @@ def update_location(data: LocationUpdate,
     db.commit()
 
     return {"message": "Location updated"}
+
+@router.patch("/update/duty-status", status_code=200)
+def update_duty_status(data: DutyStatusUpdate,
+                       db: Session = Depends(get_db),
+                       current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
+
+    current_user.duty_status = data.status
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "Duty status updated successfully",
+        "agent": current_user.name,
+        "status": current_user.duty_status.value
+    }

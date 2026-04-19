@@ -20,7 +20,7 @@ app.include_router(admin_routes.router)
 app.include_router(client_routes.router)
 app.include_router(agent_routes.router)
 
-# app.include_router(chatbot_router, prefix="/chatbot", tags=["Chatbot"])
+app.include_router(chatbot_router, prefix="/chatbot", tags=["Chatbot"])
 
 @app.on_event("startup")
 def startup():
@@ -45,7 +45,7 @@ def startup():
         db.close()
 
     # print("[main] Initializing CargoFlow chatbot...")
-    # chatbot_module.rag = CargoFlowRAG()
+    chatbot_module.rag = CargoFlowRAG()
     # print("[main] Chatbot ready.")
 
 @app.get("/health")
