@@ -83,7 +83,18 @@ def agent_dashboard(db: Session = Depends(get_db),
     total_distance = 0  # placeholder
     rating = 4.8  # static for now
 
-    # ------------------ RESPONSE ------------------
+    shipments = db.query(Shipment).filter(
+    Shipment.assigned_agent_id == current_user.id
+).order_by(Shipment.updated_at.desc()).all()
+
+    shipment_list = []
+    for s in shipments:
+        shipment_list.append({
+            "id": s.id,
+            "tracking_number": s.tracking_number,
+            "receiver_name": s.receiver_name,
+            "status": s.status.value
+        })
 
     return {
         "summary": {
@@ -94,7 +105,8 @@ def agent_dashboard(db: Session = Depends(get_db),
             "distance": total_distance,
             "rating": rating
         },
-        "active_delivery": active_delivery
+        "active_delivery": active_delivery,
+        "shipments": shipment_list 
     }
 
 @router.patch("/shipments/{id}/status")
