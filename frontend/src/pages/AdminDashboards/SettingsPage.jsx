@@ -65,7 +65,7 @@ export default function SettingsPage() {
             }
         };
         fetchUser();
-    }, [showToast]);
+    }, []);
 
     const handleSave = async (category) => {
         setSaving(true);
