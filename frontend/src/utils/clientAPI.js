@@ -111,6 +111,31 @@ export const normalizeClientShipment = (shipment = {}) => {
 
         status,
         progress: getShipmentProgress(shipment),
+        pickupCoords: shipment.pickup_coords
+            ? {
+                lat: shipment.pickup_coords.lat,
+                lng: shipment.pickup_coords.lng
+            }
+            : {
+                lat: shipment.pickup_address?.latitude,
+                lng: shipment.pickup_address?.longitude
+            },
+
+        deliveryCoords: shipment.delivery_coords
+            ? {
+                lat: shipment.delivery_coords.lat,
+                lng: shipment.delivery_coords.lng
+            }
+            : {
+                lat: shipment.delivery_address?.latitude,
+                lng: shipment.delivery_address?.longitude
+            },
+        agentCoords: shipment.current_location
+            ? {
+                lat: shipment.current_location.lat,
+                lng: shipment.current_location.lng
+            }
+            : null,
         agent: pick(
             shipment.agent_name,
             shipment.agent,
@@ -118,7 +143,7 @@ export const normalizeClientShipment = (shipment = {}) => {
             shipment.assigned_agent?.name,
             "Unassigned",
         ),
-        
+
         eta: formatDateTime(
             pick(
                 shipment.eta,
@@ -163,7 +188,7 @@ export const buildClientNotifications = (shipments = []) =>
                     ? "⚠️"
                     : shipment.status === "Pending"
                         ? "⏰"
-                        : "📦",
+                        : "",
         bg:
             shipment.status === "Delivered"
                 ? "#D1FAE5"

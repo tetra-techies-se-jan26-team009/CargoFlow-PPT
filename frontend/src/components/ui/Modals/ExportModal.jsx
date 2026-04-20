@@ -86,7 +86,7 @@ export function ExportModal({ onClose, shipments, showToast }) {
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-8 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm shadow-sm">
-                                📦
+                                
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Records Found</p>

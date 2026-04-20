@@ -3,7 +3,7 @@ import { getCurrentUser } from "../../utils/auth";
 import { getDashboard, getShipments, getAgents } from "../../utils/adminAPI";
 import DashboardNavbar from "../../components/DashboardNavbar";
 import { Link } from "react-router-dom";
-import { statusMeta, BASE_RISK_ALERTS } from "../../utils/tempData";
+import { statusMeta,BASE_RISK_ALERTS } from "../../utils/tempData";
 import AddShipmentModal from "../../components/ui/Modals/AddShipments";
 import { AddClientModal } from "../../components/ui/Modals/AddClientModal";
 import { AIInsightsModal } from "../../components/ui/Modals/AIInsightsModal";
@@ -12,6 +12,8 @@ import { ExportModal } from "../../components/ui/Modals/ExportModal";
 import { ReportModal } from "../../components/ui/Modals/ReportModal";
 import { ShipmentDetailModal } from "../../components/ui/Modals/ShipmentDetailModal";
 import { AssignModal } from "../../components/ui/Modals/AssignModal"
+import TrackingMap from "../../components/TrackingMap";
+import { getWeather } from "../../utils/weatherAPI";
 
 
 
@@ -70,56 +72,6 @@ const riskMeta = {
 const agentStatusColor = { Active: "#22C55E", Idle: "#F59E0B", Off: "#9CA3AF" };
 
 
-
-// ─── Live Map ───────────────────────────────────────────────────────────────
-const LiveMap = () => (
-    <div style={{ position: "relative", width: "100%", height: "100%", background: "#EFF6FF", borderRadius: 10, overflow: "hidden" }}>
-        <svg width="100%" height="100%" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid slice">
-            {Array.from({ length: 8 }).map((_, i) => (
-                <line key={`h${i}`} x1="0" y1={i * 46} x2="900" y2={i * 46} stroke="#BFDBFE" strokeWidth="0.7" />
-            ))}
-            {Array.from({ length: 18 }).map((_, i) => (
-                <line key={`v${i}`} x1={i * 53} y1="0" x2={i * 53} y2="320" stroke="#BFDBFE" strokeWidth="0.7" />
-            ))}
-            <path d="M120 240 Q280 140 440 170" stroke="#2563EB" strokeWidth="2.5" fill="none" strokeDasharray="7,4" opacity="0.9" />
-            <path d="M440 170 Q600 100 750 130" stroke="#2563EB" strokeWidth="2.5" fill="none" strokeDasharray="7,4" opacity="0.9" />
-            <path d="M200 260 Q380 210 560 230" stroke="#10B981" strokeWidth="2" fill="none" strokeDasharray="6,4" opacity="0.65" />
-            <path d="M300 180 Q500 240 680 200" stroke="#F59E0B" strokeWidth="2" fill="none" strokeDasharray="6,4" opacity="0.65" />
-            <path d="M120 240 Q200 290 350 270" stroke="#8B5CF6" strokeWidth="1.8" fill="none" strokeDasharray="5,5" opacity="0.5" />
-            {[
-                [120, 240, "Chennai", true],
-                [440, 170, "Hyderabad", false],
-                [750, 130, "Mumbai", true],
-                [200, 260, "Bangalore", false],
-                [560, 230, "Pune", false],
-                [300, 180, "Delhi", false],
-                [680, 200, "Kolkata", false],
-                [350, 270, "Kochi", false],
-            ].map(([x, y, label, active]) => (
-                <g key={label}>
-                    {active && <circle cx={x} cy={y} r={20} fill="#2563EB" opacity="0.12" />}
-                    <circle cx={x} cy={y} r={active ? 9 : 5.5} fill={active ? "#2563EB" : "#93C5FD"} opacity={active ? 1 : 0.75} />
-                    <text x={x} y={y - 15} textAnchor="middle" fontSize="9.5" fill="#1E3A5F" fontFamily="sans-serif" fontWeight="700">{label}</text>
-                </g>
-            ))}
-            <rect x="415" y="149" width="28" height="17" rx="5" fill="#1D4ED8" />
-            <text x="429" y="162" textAnchor="middle" fontSize="10" fill="white" fontFamily="sans-serif"></text>
-        </svg>
-        <div style={{ position: "absolute", top: 10, right: 12, background: "white", borderRadius: 20, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: "#EF4444", boxShadow: "0 1px 4px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#EF4444", display: "inline-block" }} />
-            LIVE
-        </div>
-        <div style={{ position: "absolute", bottom: 10, left: 12, display: "flex", gap: 14, fontSize: 10, color: "#64748B", fontFamily: "sans-serif" }}>
-            {[["#2563EB", "Active"], ["#10B981", "Delivered"], ["#F59E0B", "Delayed"], ["#8B5CF6", "Scheduled"]].map(([c, l]) => (
-                <span key={l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ width: 18, height: 2.5, background: c, display: "inline-block", borderRadius: 2 }} />
-                    {l}
-                </span>
-            ))}
-        </div>
-    </div>
-);
-
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
@@ -129,7 +81,9 @@ export default function AdminDashboard() {
     // ── Shipments state (mutable) ──
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-
+    const [selectedShipment, setSelectedShipment] = useState(null);
+    //eslint-disable-next-line
+    const [weather, setWeather] = useState(null);
     // ── Dynamic state ──
     const [shipments, setShipments] = useState([]);
     const [agentsList, setAgentsList] = useState([]);
@@ -234,6 +188,18 @@ export default function AdminDashboard() {
         const mc = clientFilter === "Client" || s.client === clientFilter;
         return ms && ma && mc;
     });
+    const totalShipments = shipments.length;
+
+    const deliveredCount = shipments.filter(s => s.status === "Delivered").length;
+    const delayedCount = shipments.filter(s => s.status === "Delayed").length;
+
+    // ✅ Performance formula
+    const performance =
+        totalShipments > 0
+            ? ((deliveredCount - delayedCount * 0.5) / totalShipments) * 100
+            : 0;
+
+    const performanceValue = performance.toFixed(1);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
     const pageSlice = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -442,7 +408,11 @@ export default function AdminDashboard() {
                                 </button>
                             </div>
                             <div style={{ height: 300 }}>
-                                <LiveMap />
+                                <TrackingMap
+                                    pickup={selectedShipment?.pickup_coords || null}
+                                    delivery={selectedShipment?.delivery_coords || null}
+                                    currentAgent={null}
+                                />
                             </div>
                         </div>
 
@@ -460,7 +430,17 @@ export default function AdminDashboard() {
                                     {shipments.filter(s => s.status !== "Delivered").slice(0, 4).map(s => (
                                         <button
                                             key={s.id}
-                                            onClick={() => openModal("detail", s)}
+                                            onClick={async () => {
+                                                setSelectedShipment(s);
+
+                                                if (s.delivery_coords) {
+                                                    const data = await getWeather(
+                                                        s.delivery_coords.lat,
+                                                        s.delivery_coords.lng
+                                                    );
+                                                    setWeather(data);
+                                                }
+                                            }}
                                             style={{
                                                 display: "flex", alignItems: "center", gap: 10,
                                                 padding: "9px 10px", background: "#F8FAFC", borderRadius: 8,
@@ -526,25 +506,37 @@ export default function AdminDashboard() {
                                 DELIVERY PERFORMANCE SCORE
                             </div>
                             <div style={{ fontSize: 52, fontWeight: 800, color: "#0F172A", letterSpacing: "-2px", lineHeight: 1 }}>
-                                96.4<span style={{ fontSize: 26, color: "#2563EB" }}>%</span>
+                                {performanceValue}
+                                <span style={{ fontSize: 26, color: "#2563EB" }}>%</span>
                             </div>
                             <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 5 }}>AI-calculated operational efficiency</div>
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ background: "#F1F5F9", borderRadius: 6, height: 10, overflow: "hidden", marginBottom: 16 }}>
-                                <div style={{ width: "96.4%", height: "100%", background: "linear-gradient(90deg,#10B981,#2563EB)", borderRadius: 6 }} />
+                                <div style={{ width: `${performanceValue}%`, height: "100%", background: "linear-gradient(90deg,#10B981,#2563EB)", borderRadius: 6 }} />
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
                                 {[
-                                    { label: "On-time Rate", value: "99.1%", color: "#10B981" },
-                                    { label: "Delayed", value: `${shipments.filter(s => s.status === "Delayed").length} shipments`, color: "#EF4444" },
-                                    { label: "Risk Flagged", value: `${shipments.filter(s => s.risk === "High").length} shipments`, color: "#F59E0B" },
-                                ].map(m => (
-                                    <div key={m.label}>
-                                        <div style={{ fontSize: 20, fontWeight: 800, color: m.color, letterSpacing: "-0.5px" }}>{m.value}</div>
-                                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{m.label}</div>
-                                    </div>
-                                ))}
+                                    {
+                                        label: "On-time Rate",
+                                        value: `${((deliveredCount / totalShipments) * 100 || 0).toFixed(1)}%`,
+                                        color: "#10B981"
+                                    },
+                                    {
+                                        label: "Delayed",
+                                        value: `${delayedCount} shipments`,
+                                        color: "#EF4444"
+                                    },
+                                    {
+                                        label: "Risk Flagged",
+                                        value: `${shipments.filter(s => s.risk === "High").length} shipments`,
+                                        color: "#F59E0B"
+                                    },].map(m => (
+                                        <div key={m.label}>
+                                            <div style={{ fontSize: 20, fontWeight: 800, color: m.color, letterSpacing: "-0.5px" }}>{m.value}</div>
+                                            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{m.label}</div>
+                                        </div>
+                                    ))}
                             </div>
                         </div>
                     </div>
@@ -740,8 +732,8 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                     </div>
-                </main>
-            </div>
+                </main >
+            </div >
         </>
     );
 }

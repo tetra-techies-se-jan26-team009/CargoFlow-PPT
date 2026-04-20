@@ -54,6 +54,7 @@ export default function ClientInvoices() {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", minHeight:"100vh", fontFamily:"'DM Sans','Segoe UI',sans-serif", background:"#F8FAFC", color:"#0F172A" }}>
+      <title>Invoices</title>
       <ClientNavbar />
 
       {/* PAY MODAL */}

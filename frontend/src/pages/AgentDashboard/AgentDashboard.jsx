@@ -20,6 +20,7 @@ import DeliveryCard from './DeliveryCard';
 import ScannerModal from './ScannerModal';
 import DeliveryConfirmationModal from './DeliveryConfirmationModal';
 import AgentNavbar from '../../components/AgentNavbar';
+import TrackingMap from "../../components/TrackingMap";
 
 export function AgentDashboard() {
   const { showToast: addToast } = useToast();
@@ -66,7 +67,20 @@ export function AgentDashboard() {
             address: `${data.active_delivery.delivery_address?.line || ''}, ${data.active_delivery.delivery_address?.city || ''}`,
             packageType: (data.active_delivery.package?.weight || 0) + " kg",
             codAmount: `₹${data.active_delivery.package?.price || 0}`,
-            cod: (data.active_delivery.package?.price || 0) > 0
+            cod: (data.active_delivery.package?.price || 0) > 0,
+            pickup_coords: activeShipment?.pickup_address?.latitude
+              ? {
+                lat: activeShipment.pickup_address.latitude,
+                lng: activeShipment.pickup_address.longitude
+              }
+              : null,
+
+            delivery_coords: activeShipment?.delivery_address?.latitude
+              ? {
+                lat: activeShipment.delivery_address.latitude,
+                lng: activeShipment.delivery_address.longitude
+              }
+              : null,
           });
           console.log("ACTIVE DELIVERY FINAL:", {
             tracking: data.active_delivery?.tracking_id,
@@ -111,7 +125,7 @@ export function AgentDashboard() {
       setLoading(false);
     }
     //eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // REMOVED 'stats' from here
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -122,34 +136,36 @@ export function AgentDashboard() {
   const handleConfirmDelivery = async (data) => {
     const targetId = data?.dbId;
 
-    console.log("TARGET ID:", targetId);
-
     if (!targetId) {
-      console.error("❌ Missing dbId", {
-        selectedDelivery,
-        activeDelivery
-      });
       addToast("Error: Shipment ID not found", "error");
       return;
     }
 
     try {
-      const remarks = `Received by: ${data.customerName}. Notes: ${data.notes}`;
+      // 1. Prepare structured remarks for the Admin to see
+      const remarks = `Recipient: ${data.customerName}. Method: ${data.payment_method}. Notes: ${data.remarks}`;
 
-      await updateShipmentStatus(targetId, "OUT_FOR_DELIVERY", remarks);
-      await updateShipmentStatus(targetId, "DELIVERED", remarks);
+      // 2. Call the API with the new financial fields allowed by your updated backend
+      await updateShipmentStatus(
+        targetId,
+        "DELIVERED",
+        remarks,
+        data.payment_method // Send the method (CASH/UPI)
+      );
 
-      addToast("Shipment completed!", "success");
-
+      addToast("Shipment finalized and recorded!", "success");
       setShowConfirmation(false);
       setSelectedDelivery(null);
 
+      // 3. Re-fetch data so it moves from 'Active' to 'Logs' instantly
       await loadDashboardData();
     } catch (err) {
-      console.error(err);
-      addToast("Update failed", "error");
+      addToast(err?.response?.data?.detail || "Update failed", "error");
     }
   };
+
+
+
 
   if (authLoading || (loading && !stats.total)) {
     return (
@@ -204,16 +220,21 @@ export function AgentDashboard() {
                 <Activity className="w-4 h-4 text-blue-600" /> Active Assignment
               </h2>
               {activeDelivery ? (
-                <div className="ring-1 ring-slate-200 rounded-2xl shadow-xl shadow-slate-100 overflow-hidden">
-                  <ActiveDeliveryTracker
-                    delivery={activeDelivery}
-                    onComplete={() => {
-                      setSelectedDelivery({
-                        ...activeDelivery,
-                        dbId: activeDelivery?.dbId
-                      });
-                      setShowConfirmation(true);
-                    }} />
+                <div className="space-y-4">
+                  {/* Existing UI */}
+                  <div className="ring-1 ring-slate-200 rounded-2xl shadow-xl overflow-hidden">
+                    <ActiveDeliveryTracker
+                      delivery={activeDelivery}
+                      onComplete={() => {
+                        setSelectedDelivery({
+                          ...activeDelivery,
+                          dbId: activeDelivery?.dbId
+                        });
+                        setShowConfirmation(true);
+                      }}
+                    />
+                  </div>
+
                 </div>
               ) : (
                 <div className="h-48 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center p-6 text-center">

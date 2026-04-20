@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getTrackingInfo, CLIENT_STATUS_META } from "../utils/clientAPI";
 import { Package, MapPin, Clock, ArrowLeft, CheckCircle } from "lucide-react";
+import TrackingMap from "../components/TrackingMap";
 
 export default function TrackingPage() {
   const { trackingId } = useParams();
@@ -25,8 +26,26 @@ export default function TrackingPage() {
     console.log("TRACKING DATA:", data);
   }, [trackingId]);
 
+  useEffect(() => {
+    console.log("TRACKING DATA UPDATED:", data);
+  }, [data]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const updated = await getTrackingInfo(trackingId);
+        setData(updated);
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [trackingId]);
+
   if (loading) return <div className="h-screen flex items-center justify-center">Locating Shipment...</div>;
   if (!data) return <div className="text-center py-20">Tracking ID not found.</div>;
+
 
   const statusStyle = CLIENT_STATUS_META[data.status] || CLIENT_STATUS_META["Pending"]; //
 
@@ -80,23 +99,36 @@ export default function TrackingPage() {
         </section>
         {/* Shipment Details */}
         <section className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-6">
+          {(data?.pickupCoords || data?.pickup_coords) &&
+            (data?.deliveryCoords || data?.delivery_coords) ? (
+            <TrackingMap
+              pickup={data.pickupCoords || data.pickup_coords}
+              delivery={data.deliveryCoords || data.delivery_coords}
+              currentAgent={data.agentCoords}
+            />
+          ) : (
+            <div className="text-sm text-gray-500">Location data not available</div>
+          )}
           <h2 className="text-lg font-bold text-slate-900">Shipment Details</h2>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
 
             <div>
-              <p className="text-slate-400 text-xs">Receiver</p>
+              <p className="text-slate-400 text-xs">Receiver Name</p>
               <p className="font-semibold">{data.receiverName}</p>
             </div>
 
             <div>
-              <p className="text-slate-400 text-xs">Phone</p>
-              <p className="text-xs text-gray-500">{data.agent?.phone}</p>
-            </div>
-            <div>
               <p className="text-slate-400 text-xs">Delivery Agent</p>
-              <p className="font-semibold">{data.agent?.name}</p>
+              <p className="font-semibold">
+                {typeof data.agent === "object"
+                  ? data.agent.name
+                  : data.agent}
+              </p>
 
+              {typeof data.agent === "object" && (
+                <p className="text-xs text-gray-500">{data.agent.phone}</p>
+              )}
             </div>
 
             <div>

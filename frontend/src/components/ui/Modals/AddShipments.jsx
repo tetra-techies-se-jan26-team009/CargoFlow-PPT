@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import Modal, { ModalHeader } from "../Modal";
+import { getCoordsFromPincode } from '../../../utils/geocoding';
 import { createShipment, getClients } from "../../../utils/adminAPI";
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
@@ -149,6 +150,37 @@ function AddressBlock({ prefix, label, accentColor, accentBg, f, set, errs }) {
         set(sk, val);
         set(ck, "");
     };
+    const handlePincodeBlur = async (type) => {
+        const pincode = type === "pickup" ? f.pickup_pincode : f.delivery_pincode;
+
+        if (pincode.length !== 6) return;
+
+        const coords = await getCoordsFromPincode(pincode);
+        console.log("GEOCODE RESULT:", coords);
+
+        if (!coords) {
+            console.warn("Invalid pincode:", pincode);
+
+            if (type === "pickup") {
+                set("pickup_lat", null);
+                set("pickup_lng", null);
+            } else {
+                set("delivery_lat", null);
+                set("delivery_lng", null);
+            }
+            return;
+        }
+
+        if (type === "pickup") {
+            set("pickup_lat", coords.lat);
+            set("pickup_lng", coords.lng);
+            if (!f.pickup_city) set("pickup_city", coords.city);
+        } else {
+            set("delivery_lat", coords.lat);
+            set("delivery_lng", coords.lng);
+            if (!f.delivery_city) set("delivery_city", coords.city);
+        }
+    };
 
     return (
         <div style={{ padding: "16px", background: "#F9FAFB", border: `1px solid #E5E7EB`, borderRadius: 12, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -180,10 +212,17 @@ function AddressBlock({ prefix, label, accentColor, accentBg, f, set, errs }) {
             </div>
 
             <F label="Pincode" required error={errs[pk]}>
-                <input className="asf-in" value={f[pk]}
+                <input
+                    className="asf-in"
+                    value={f[pk]}
                     onChange={e => set(pk, e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="6-digit pincode" maxLength={6}
-                    style={iBase(errs[pk])} onFocus={oF} onBlur={oB} />
+                    onBlur={() => handlePincodeBlur(prefix)}
+                    placeholder="6-digit pincode"
+                    maxLength={6}
+                    style={iBase(errs[pk])}
+                    onFocus={oF}
+                    onBlurCapture={oB}
+                />
             </F>
         </div>
     );
@@ -301,6 +340,10 @@ export default function AddShipmentModal({ onClose }) {
         delivery_line1: "", delivery_city: "", delivery_state: "", delivery_pincode: "",
         weight: "", price: "",
         category: "", fragile: false, pickup_date: "", priority: "STANDARD",
+        pickup_lat: 0,
+        pickup_lng: 0,
+        delivery_lat: 0,
+        delivery_lng: 0,
     };
 
     const [f, setF] = useState(INIT);
@@ -377,6 +420,8 @@ export default function AddShipmentModal({ onClose }) {
         fetchClients();
     }, []);
 
+
+
     // ── Submit ────────────────────────────────────────────────────────────────
     const submit = async () => {
         const e = validate();
@@ -409,6 +454,10 @@ export default function AddShipmentModal({ onClose }) {
                 delivery_city: f.delivery_city,
                 delivery_state: f.delivery_state,
                 delivery_pincode: f.delivery_pincode,
+                pickup_lat: f.pickup_lat,
+                pickup_lng: f.pickup_lng,
+                delivery_lat: f.delivery_lat,
+                delivery_lng: f.delivery_lng,
 
                 // 3. Ensure numerical safety
                 weight: parseFloat(f.weight) || 0,
@@ -443,6 +492,10 @@ export default function AddShipmentModal({ onClose }) {
             setLoading(false);
         }
     };
+
+
+    // new codes 
+    // till here 
     const fromLabel = f.pickup_city || f.pickup_state || "Origin";
     const toLabel = f.delivery_city || f.delivery_state || "Destination";
     const routeActive = !!(f.pickup_city && f.delivery_city);
@@ -577,7 +630,6 @@ export default function AddShipmentModal({ onClose }) {
                         </div>
                     )}
 
-                    {/* 1 ── Client Reference */}
                     {/* 1 ── Client Reference */}
                     <div style={{ zIndex: 10 }}> {/* High z-index so dropdown floats over other inputs */}
                         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>

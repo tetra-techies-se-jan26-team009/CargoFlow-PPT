@@ -198,7 +198,7 @@ export const agents = [
 export const BASE_RISK_ALERTS = [
     { icon: "⚠️", label: "Route congestion — Chennai Port", border: "#FDE68A", type: "warning" },
     { icon: "🌦️", label: "Weather delay — Mumbai region", border: "#BFDBFE", type: "info" },
-    { icon: "📦", label: "3 clients with overdue invoices", border: "#FECACA", type: "danger" },
+    { icon: "", label: "3 clients with overdue invoices", border: "#FECACA", type: "danger" },
 ];
 
 
@@ -262,7 +262,7 @@ export const timelineSteps = [
 ];
 
 export const INITIAL_NOTIFS = [
-  { id: 1, icon: "📦", bg: "#DBEAFE", msg: "V1-20250301 is now at Pune junction hub", time: "2 hours ago", unread: true },
+  { id: 1, icon: "", bg: "#DBEAFE", msg: "V1-20250301 is now at Pune junction hub", time: "2 hours ago", unread: true },
   { id: 2, icon: "✅", bg: "#D1FAE5", msg: "Invoice #INV-0041 is due in 7 days", time: "5 hours ago", unread: true },
   { id: 3, icon: "⏰", bg: "#FEF3C7", msg: "Pickup scheduled for Mar 5 confirmed", time: "Yesterday", unread: false },
 ];

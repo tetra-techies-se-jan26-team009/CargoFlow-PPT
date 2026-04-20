@@ -4,6 +4,7 @@ import Login from "./pages/Authentication/Login";
 import AgentLogin from "./pages/Authentication/AgentLogin";
 import Signup from "./pages/Authentication/SignUp";
 import HomePage from "./pages/LandingPage/HomePage";
+import 'leaflet/dist/leaflet.css';
 
 import AdminDashboard from "./pages/AdminDashboards/AdminDashboard";
 import ShipmentsPage from "./pages/AdminDashboards/ShipmentsPage";

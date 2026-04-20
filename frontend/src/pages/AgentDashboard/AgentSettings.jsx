@@ -44,16 +44,14 @@ export default function AgentSettings() {
             await updateAgentProfile({
                 name: formData.name,
                 phone: formData.phone,
-                password: formData.confirmPassword,
+                password: formData.newPassword,
             });
 
             setUser(prev => ({
                 ...prev,
                 name: formData.name,
-                email: formData.email,
                 phone: formData.phone
             }));
-            addToast("Profile updated successfully", "success");
 
             addToast("Profile updated successfully", "success");
             if (activeTab === "security") {

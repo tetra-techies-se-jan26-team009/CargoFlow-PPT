@@ -739,6 +739,7 @@ export default function ClientDashboard() {
 
   // ── API state ─────────────────────────────────────────────────────────────
 
+  //eslint-disable-next-line no-unused-vars
   const [dashboardData, setDashboardData] = useState(null);
   const [shipmentsData, setShipmentsData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -872,7 +873,7 @@ export default function ClientDashboard() {
 
   // ── Navbar bridge props ───────────────────────────────────────────────────
   const navbarProps = {
-    onTrackSearch: (id) => openModal("track", { id }),
+    onTrackSearch: (id) => navigate(`/track/${id}`),
     onBellClick: () => setNotifOpen((p) => !p),
     unreadCount,
     onConfirmPickup: () => openModal("confirmPickup"),
@@ -1077,7 +1078,7 @@ export default function ClientDashboard() {
               }}
             >
               <HeroTrackBox
-                onTrack={(id) => openModal("track", { id })}
+                onTrack={(id) => navigate(`/track/${id}`)}
                 showToast={showToast}
               />
             </div>
@@ -1640,7 +1641,7 @@ export default function ClientDashboard() {
                     color: "#94A3B8",
                   }}
                 >
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>📦</div>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}></div>
                   <div
                     style={{
                       fontSize: 14,
@@ -1976,7 +1977,7 @@ export default function ClientDashboard() {
                   icon: icons.search,
                   color: "#0891B2",
                   bg: "linear-gradient(135deg,#F0F9FF,#E0F2FE)",
-                  action: () => openModal("track", {}),
+                  action: () => navigate("/track"),
                 },
                 {
                   label: "Download Report",

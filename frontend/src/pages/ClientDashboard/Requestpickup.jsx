@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import ClientNavbar from "../../components/ClientNavbar";
 import { createShipment } from "../../utils/clientAPI";
 import { MapPin, MapPinCheck, PhoneIncoming } from 'lucide-react';
+import { getCoordsFromPincode } from '../../utils/geocoding';
+
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", strokeWidth = 1.6 }) => (
@@ -29,18 +31,6 @@ const STEPS = [
     { label: "Schedule", icon: icons.clock },
     { label: "Confirm", icon: icons.check },
 ];
-
-// const CITIES = [
-//     "Chennai", "Mumbai", "Delhi", "Bangalore", "Hyderabad",
-//     "Pune", "Kolkata", "Kochi", "Ahmedabad", "Jaipur",
-// ];
-
-// const INDIAN_STATES = [
-//     "Andhra Pradesh", "Delhi", "Goa", "Gujarat", "Karnataka",
-//     "Kerala", "Madhya Pradesh", "Maharashtra", "Punjab",
-//     "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh",
-//     "West Bengal",
-// ];
 
 // Getting States and Cities from APIs
 
@@ -182,6 +172,10 @@ export default function RequestPickup() {
         delivery_state: "", delivery_city: "", delivery_line1: "", delivery_pincode: "",
         receiver_name: "", receiver_phone: "", receiver_email: "",
         weight: "", category: "", fragile: false, date: "", priority: "Standard",
+        pickup_lat: 0,
+        pickup_lng: 0,
+        delivery_lat: 0,
+        delivery_lng: 0,
     });
 
     // 1. Initial Load: Fetch All States
@@ -215,6 +209,42 @@ export default function RequestPickup() {
         }
     };
 
+
+    // New codes 
+
+    const handlePincodeBlur = async (type) => {
+        const pincode = type === "pickup" ? f.pickup_pincode : f.delivery_pincode;
+
+        if (pincode.length !== 6) return;
+
+        const coords = await getCoordsFromPincode(pincode);
+        console.log("GEOCODE RESULT:", coords);
+
+        if (!coords) {
+            console.warn("Invalid pincode:", pincode);
+            return;
+        }
+
+        if (coords) {
+            if (type === "pickup") {
+                setF(prev => ({
+                    ...prev,
+                    pickup_lat: coords.lat,
+                    pickup_lng: coords.lng,
+                    pickup_city: prev.pickup_city || coords.city
+                }));
+            } else {
+                setF(prev => ({
+                    ...prev,
+                    delivery_lat: coords.lat,
+                    delivery_lng: coords.lng,
+                    delivery_city: prev.delivery_city || coords.city
+                }));
+            }
+        }
+    };
+
+    // Till here 
     const set = (k, v) => {
         setF(p => ({ ...p, [k]: v }));
         if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n; });
@@ -237,34 +267,58 @@ export default function RequestPickup() {
     };
 
     // ── Submit ───────────────────────────────────────────────────────────────
+
     const handleSubmit = async () => {
         setApiError(null);
+        await handlePincodeBlur("pickup");
+        await handlePincodeBlur("delivery");
+
+        // 🔥 STEP 2 — VALIDATE LAT/LNG
+        if (!f.pickup_lat || !f.pickup_lng) {
+            alert("Pickup location not resolved. Please re-enter pickup pincode.");
+            return;
+        }
+
+        if (!f.delivery_lat || !f.delivery_lng) {
+            alert("Delivery location not resolved. Please re-enter delivery pincode.");
+            return;
+        }
+
         setSubmitting(true);
+
         try {
-            // Map form state → backend ClientShipmentCreate schema
             const payload = {
                 pickup_line1: f.pickup_line1,
                 pickup_city: f.pickup_city,
                 pickup_state: f.pickup_state,
                 pickup_pincode: f.pickup_pincode,
+
                 delivery_line1: f.delivery_line1,
                 delivery_city: f.delivery_city,
                 delivery_state: f.delivery_state,
                 delivery_pincode: f.delivery_pincode,
+
                 receiver_name: f.receiver_name,
                 receiver_phone: f.receiver_phone.replace(/\s|\+91/g, ""),
                 receiver_email: f.receiver_email,
+
                 weight: Number(f.weight) || 0,
                 price: price,
-                // Extra context fields (backend ignores extras gracefully)
+
                 category: f.category,
                 fragile: f.fragile,
                 pickup_date: f.date ? new Date(f.date).toISOString() : null,
                 priority: priorityMap[f.priority] || "MEDIUM",
+
+                pickup_lat: f.pickup_lat,
+                pickup_lng: f.pickup_lng,
+                delivery_lat: f.delivery_lat,
+                delivery_lng: f.delivery_lng,
             };
 
             const data = await createShipment(payload);
             setResult(data);
+
         } catch (err) {
             const msg =
                 err?.response?.data?.detail ||
@@ -436,7 +490,18 @@ export default function RequestPickup() {
                                                 <input value={f.pickup_line1} onChange={e => set("pickup_line1", e.target.value)} placeholder="Building/Area" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
                                             </Field>
                                             <Field label="Pincode" required error={errors.pickup_pincode}>
-                                                <input value={f.pickup_pincode} onChange={e => set("pickup_pincode", e.target.value.replace(/\D/g, ""))} maxLength={6} placeholder="600001" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+                                                <input
+                                                    value={f.pickup_pincode}
+                                                    onChange={e => set("pickup_pincode", e.target.value.replace(/\D/g, ""))}
+                                                    maxLength={6}
+                                                    placeholder="600001"
+                                                    style={inputStyle}
+                                                    onFocus={onFocus}
+                                                    onBlur={(e) => {
+                                                        handlePincodeBlur('pickup');
+                                                        onBlur(e);
+                                                    }}
+                                                />
                                             </Field>
                                         </div>
                                     </div>
@@ -487,7 +552,10 @@ export default function RequestPickup() {
 
                                         <div className="col-span-2 grid grid-cols-[1fr_140px] gap-4">
                                             <Field label="Delivery Address" required error={errors.delivery_line1}><input value={f.delivery_line1} onChange={e => set("delivery_line1", e.target.value)} placeholder="Apt/Street" style={inputStyle} /></Field>
-                                            <Field label="Pincode" required error={errors.delivery_pincode}><input value={f.delivery_pincode} onChange={e => set("delivery_pincode", e.target.value.replace(/\D/g, ""))} maxLength={6} placeholder="400001" style={inputStyle} /></Field>
+                                            <Field label="Pincode" required error={errors.delivery_pincode}><input onBlur={(e) => {
+                                                handlePincodeBlur('delivery');
+                                                onBlur(e);
+                                            }} value={f.delivery_pincode} onChange={e => set("delivery_pincode", e.target.value.replace(/\D/g, ""))} maxLength={6} placeholder="400001" style={inputStyle} /></Field>
                                         </div>
                                     </div>
                                 </section>
@@ -595,7 +663,7 @@ export default function RequestPickup() {
                                     </div>
                                     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                                         <div style={{ flex: 1, height: 1, background: "#BFDBFE" }} />
-                                        <span style={{ fontSize: 18 }}>✈️</span>
+                                        <span style={{ fontSize: 18 }}></span>
                                         <div style={{ flex: 1, height: 1, background: "#BFDBFE" }} />
                                     </div>
                                     <div style={{ textAlign: "center" }}>

@@ -2,12 +2,13 @@ import { Navigation, Phone, MapPin, Clock, Package, AlertCircle, CheckCircle, Me
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
+import TrackingMap from "../../components/TrackingMap";
 
 export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, onNavigate }) {
   const [progress, setProgress] = useState(65);
+  // eslint-disable-next-line no-unused-vars
   const [etaMins, setEtaMins] = useState(15);
   const [navActive, setNavActive] = useState(false);
-
   // Simulate progress ticking every 8s
   useEffect(() => {
     const id = setInterval(() => {
@@ -30,6 +31,26 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
       '_blank'
     );
   };
+  const calculateDistance = (p1, p2) => {
+    if (!p1 || !p2) return null;
+
+    const R = 6371;
+    const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+    const dLng = (p2.lng - p1.lng) * Math.PI / 180;
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(p1.lat * Math.PI / 180) *
+      Math.cos(p2.lat * Math.PI / 180) *
+      Math.sin(dLng / 2) ** 2;
+
+    return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2);
+  };
+
+  const distance = calculateDistance(
+    delivery?.pickup_coords,
+    delivery?.delivery_coords
+  );
 
   return (
     <motion.div
@@ -108,11 +129,11 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <InfoCard icon={Package} label="Package Type" value={delivery.packageType} />
-              <InfoCard icon={Clock} label="ETA" value={delivery.expectedDelivery} />
+              <InfoCard icon={Clock} label="ETA" value={delivery.eta || "N/A"} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <InfoCard label="Weight" value={delivery.weight} />
-              <InfoCard label="Distance" value={delivery.distance} />
+              <InfoCard label="Weight" value={delivery.packageType || "N/A"} />
+              <InfoCard label="Distance" value={distance ? `${distance} km` : "N/A"} />
             </div>
             {delivery.cod && (
               <div className="bg-amber-500/20 border border-amber-400/30 backdrop-blur-sm rounded-lg p-3">
@@ -162,38 +183,18 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
 
       {/* Mini Map */}
       <div className="h-48 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 relative overflow-hidden">
-        <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <line key={`h-${i}`} x1="0" y1={i * 50} x2="600" y2={i * 50} stroke="#BFDBFE" strokeWidth="0.5" opacity="0.5" />
-          ))}
-          {Array.from({ length: 12 }).map((_, i) => (
-            <line key={`v-${i}`} x1={i * 50} y1="0" x2={i * 50} y2="200" stroke="#BFDBFE" strokeWidth="0.5" opacity="0.5" />
-          ))}
-          <path d="M100 100 Q300 50 500 100" stroke="#3B82F6" strokeWidth="3" fill="none" strokeDasharray="8,4" opacity="0.8">
-            <animate attributeName="stroke-dashoffset" from="0" to="24" dur="1s" repeatCount="indefinite" />
-          </path>
-          <g>
-            <circle cx="100" cy="100" r="20" fill="#10B981" opacity="0.2" />
-            <circle cx="100" cy="100" r="8" fill="#10B981" />
-            <text x="100" y="130" textAnchor="middle" fontSize="10" fill="#1E40AF" fontWeight="700">Pickup</text>
-          </g>
-          <g>
-            <circle cx="500" cy="100" r="20" fill="#EF4444" opacity="0.2">
-              <animate attributeName="r" from="20" to="25" dur="2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="500" cy="100" r="8" fill="#EF4444" />
-            <text x="500" y="130" textAnchor="middle" fontSize="10" fill="#1E40AF" fontWeight="700">Destination</text>
-          </g>
-          <text
-            fontSize="18"
-            x={100 + (progress / 100) * 400}
-            y="80"
-            textAnchor="middle"
-          ></text>
-        </svg>
-        <div className="absolute top-3 right-3 bg-white rounded-lg px-3 py-1.5 shadow-lg">
-          <div className="text-xs text-gray-600">Estimated Time</div>
-          <div className="text-sm font-bold text-gray-900">{etaMins} min{etaMins !== 1 ? 's' : ''}</div>
+        {/* REAL MAP REPLACEMENT */}
+        <div className="h-[250px] rounded-xl overflow-hidden">
+          {delivery?.pickup_coords && delivery?.delivery_coords ? (
+            <TrackingMap
+              pickup={delivery.pickup_coords}
+              delivery={delivery.delivery_coords}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              Loading map...
+            </div>
+          )}
         </div>
         {navActive && (
           <div className="absolute top-3 left-3 bg-blue-600 text-white rounded-lg px-3 py-1.5 shadow-lg flex items-center gap-1.5">
