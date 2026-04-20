@@ -62,10 +62,19 @@ def agent_dashboard(db: Session = Depends(get_db),
             },
 
             "delivery_address": {
-                "line": active_shipment.delivery_address.line1,
-                "city": active_shipment.delivery_address.city,
-                "pincode": active_shipment.delivery_address.pincode
-            },
+            "line": active_shipment.delivery_address.line1,
+            "city": active_shipment.delivery_address.city,
+            "pincode": active_shipment.delivery_address.pincode,
+            "latitude": active_shipment.delivery_address.latitude,
+            "longitude": active_shipment.delivery_address.longitude
+        },
+        "pickup_address": {
+            "line": active_shipment.pickup_address.line1,
+            "city": active_shipment.pickup_address.city,
+            "pincode": active_shipment.pickup_address.pincode,
+            "latitude": active_shipment.pickup_address.latitude,
+            "longitude": active_shipment.pickup_address.longitude
+        },
 
             "package": {
                 "weight": active_shipment.weight,
