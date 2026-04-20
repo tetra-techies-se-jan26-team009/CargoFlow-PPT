@@ -19,7 +19,12 @@ cd backend
 
 ```bash
 uv venv
+
+# Activate (Windows)
 .venv\Scripts\activate
+
+# Activate (Mac/Linux)
+source .venv/bin/activate
 ```
 
 ---
@@ -32,7 +37,28 @@ uv sync
 
 ---
 
-### 4. Run the server
+### 4. Configure Environment Variables
+
+Create a ```.env``` file in the root directory:
+
+```env
+DATABASE_URL=postgresql://<username>:<password>@localhost:5432/<db_name>
+
+SECRET_KEY=your_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=admin123
+ADMIN_PHONE=9999999999
+
+HF_API_TOKEN=your_huggingface_token
+BREVO_API_KEY=your_brevo_api_key
+```
+
+---
+
+### 5. Run the server
 
 ```bash
 uvicorn app.main:app --reload
@@ -40,7 +66,7 @@ uvicorn app.main:app --reload
 
 ---
 
-### 5. Access API docs
+### 6. Access API docs
 
 ```
 http://127.0.0.1:8000/docs
@@ -48,7 +74,7 @@ http://127.0.0.1:8000/docs
 
 ---
 
-## 6. Running Tests
+## 7. Running Tests
 
 ```bash
 python -m pytest -v
@@ -56,7 +82,7 @@ python -m pytest -v
 
 ---
 
-## 7. Test Coverage
+## 8. Test Coverage
 
 ```bash
 python -m pytest --cov=app --cov-report=term-missing
