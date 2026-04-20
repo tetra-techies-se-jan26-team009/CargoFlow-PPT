@@ -9,7 +9,6 @@ import AdminDashboard from "./pages/AdminDashboards/AdminDashboard";
 import ShipmentsPage from "./pages/AdminDashboards/ShipmentsPage";
 import AgentsPage from "./pages/AdminDashboards/AgentsPage";
 import ClientsPage from "./pages/AdminDashboards/ClientsPage";
-import ReportsPage from "./pages/AdminDashboards/ReportsPage";
 import SettingsPage from "./pages/AdminDashboards/SettingsPage";
 
 import ClientDashboard from "./pages/ClientDashboard/Clientdashboard";
@@ -20,7 +19,10 @@ import ClientSettings from "./pages/ClientDashboard/Clientsetting";
 
 import ChatbotWidget from "./components/ChatBotWidget";
 
+import TrackingPage from './pages/TrackingPage';
+
 import { AgentDashboard } from "./pages/AgentDashboard/AgentDashboard";
+import AgentSettings from "./pages/AgentDashboard/AgentSettings";
 
 const AdminRoute = ({ children }) => (
   <ProtectedRoute allowedRole="ADMIN">{children}</ProtectedRoute>
@@ -51,7 +53,6 @@ export default function App() {
         <Route path="/admin/shipments" element={<AdminRoute><ShipmentsPage /></AdminRoute>} />
         <Route path="/admin/agents" element={<AdminRoute><AgentsPage /></AdminRoute>} />
         <Route path="/admin/clients" element={<AdminRoute><ClientsPage /></AdminRoute>} />
-        <Route path="/admin/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
         <Route path="/admin/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
 
         {/* Business Client Routes */}
@@ -63,6 +64,10 @@ export default function App() {
 
         {/* Delivery Agent Routes */}
         <Route path="/agent/dashboard" element={<AgentRoute><AgentDashboard /></AgentRoute>} />
+        <Route path="/agent/profile" element={<AgentRoute><AgentSettings /></AgentRoute>} />
+
+        {/* Tracking Route */}
+        <Route path="/track/:trackingId" element={<TrackingPage />} />
 
         {/* Catch-all */}
         <Route path="/unauthorized" element={<div className="p-8 text-center text-red-500 text-xl">Access Denied</div>} />

@@ -97,22 +97,18 @@ export const normalizeClientShipment = (shipment = {}) => {
     return {
         ...shipment,
         id: pick(shipment.tracking_id, shipment.id, shipment.shipment_id, "N/A"),
-        from: pick(
-            shipment.pickup_city,
-            shipment.origin,
-            shipment.from,
-            shipment.pickup?.city,
-            shipment.pickup_address?.city,
-            "Unknown",
-        ),
-        to: pick(
-            shipment.delivery_city,
-            shipment.destination,
-            shipment.to,
-            shipment.delivery?.city,
-            shipment.delivery_address?.city,
-            "Unknown",
-        ),
+        from:
+            shipment.route?.origin ||
+            shipment.pickup_city ||
+            shipment.pickup_address?.city ||
+            "Not available",
+
+        to:
+            shipment.route?.destination ||
+            shipment.delivery_city ||
+            shipment.delivery_address?.city ||
+            "Not available",
+
         status,
         progress: getShipmentProgress(shipment),
         agent: pick(
@@ -122,6 +118,7 @@ export const normalizeClientShipment = (shipment = {}) => {
             shipment.assigned_agent?.name,
             "Unassigned",
         ),
+        
         eta: formatDateTime(
             pick(
                 shipment.eta,
@@ -141,8 +138,15 @@ export const normalizeClientShipment = (shipment = {}) => {
                 shipment.updated_at,
             ),
         ),
-        pickupLine1: pick(shipment.pickup_line1, shipment.pickup_address?.line1, shipment.pickup_address, "Not available"),
-        deliveryLine1: pick(shipment.delivery_line1, shipment.delivery_address?.line1, shipment.delivery_address, "Not available"),
+        pickupLine1:
+            shipment.pickup_address?.line1 ||
+            shipment.route?.origin ||
+            "Not available",
+
+        deliveryLine1:
+            shipment.delivery_address?.line1 ||
+            shipment.route?.destination ||
+            "Not available",
         receiverName: pick(shipment.receiver_name, shipment.receiver?.name, "Receiver"),
         receiverPhone: pick(shipment.receiver_phone, shipment.receiver?.phone, "Not available"),
         receiverEmail: pick(shipment.receiver_email, shipment.receiver?.email, "Not available"),
@@ -156,18 +160,18 @@ export const buildClientNotifications = (shipments = []) =>
             shipment.status === "Delivered"
                 ? "✅"
                 : shipment.status === "Delayed"
-                  ? "⚠️"
-                  : shipment.status === "Pending"
-                    ? "⏰"
-                    : "📦",
+                    ? "⚠️"
+                    : shipment.status === "Pending"
+                        ? "⏰"
+                        : "📦",
         bg:
             shipment.status === "Delivered"
                 ? "#D1FAE5"
                 : shipment.status === "Delayed"
-                  ? "#FEE2E2"
-                  : shipment.status === "Pending"
-                    ? "#FEF3C7"
-                    : "#DBEAFE",
+                    ? "#FEE2E2"
+                    : shipment.status === "Pending"
+                        ? "#FEF3C7"
+                        : "#DBEAFE",
         msg: `${shipment.id} is ${shipment.status.toLowerCase()} on ${shipment.from} to ${shipment.to}`,
         time: shipment.date,
         unread: index === 0,

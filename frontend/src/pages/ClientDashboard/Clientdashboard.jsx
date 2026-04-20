@@ -504,7 +504,7 @@ const TrackModal = ({ onClose, initialId = "", showToast }) => {
                 borderTop: "1px solid #E2E8F0",
               }}
             >
-              📦 Receiver: <strong>{result.receiverName}</strong>
+              Receiver: <strong>{result.receiverName}</strong>
               {result.receiverPhone !== "Not available" &&
                 ` · ${result.receiverPhone}`}
             </div>
@@ -660,7 +660,7 @@ const MessageAgentModal = ({ onClose, agent }) => {
 
   return (
     <>
-      <ModalHeader title="💬 Message Agent" onClose={onClose} />
+      <ModalHeader title=" Message Agent" onClose={onClose} />
       <div
         ref={chatRef}
         style={{
@@ -1872,7 +1872,7 @@ export default function ClientDashboard() {
                     {recentShipments.map((s) => (
                       <tr
                         key={s.id}
-                        onClick={() => openModal("track", { id: s.id })}
+                        onClick={() => navigate(`/track/${s.id}`)}
                         style={{
                           borderBottom: "1px solid #F8FAFC",
                           cursor: "pointer",
@@ -2271,7 +2271,7 @@ function BusinessModal({ onSuccess }) {
 
       <form onSubmit={submit}>
         <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginBottom: "28px" }}>
-          
+
           <FormGroup label="OFFICIAL BUSINESS NAME">
             <div style={{ position: "relative" }}>
               <input

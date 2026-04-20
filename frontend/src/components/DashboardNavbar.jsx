@@ -31,7 +31,6 @@ const navLinks = [
     { label: "Shipments", path: "/admin/shipments" },
     { label: "Agents", path: "/admin/agents" },
     { label: "Clients", path: "/admin/clients", },
-    { label: "Reports", path: "/admin/reports", },
 ];
 
 export default function DashboardNavbar() {

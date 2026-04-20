@@ -1,12 +1,13 @@
 import { Bell, ChevronDown, MapPin, Phone, Star, LogOut, Settings, BarChart3, Search, X, Package } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth'; // Added to access dynamic user data
 
-// ══════════════════════════════════════════════════════════════════════════════
-export default function AgentNavbar({ agent }) {
+export default function AgentNavbar({ agentStats }) {
+  const { user, logout } = useAuth(); // Access dynamic user data
   const [showProfile,       setShowProfile]       = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [search,            setSearch]            = useState('');
+  const [search,             setSearch]            = useState('');
   const [notifs, setNotifs] = useState([
     { id: 1, title: 'New Delivery Assigned', desc: 'SH-20250305 added to your route', time: '2m ago',  type: 'info',    read: false },
     { id: 2, title: 'Payment Received',      desc: '₹2,840 credited to your account', time: '15m ago', type: 'success', read: false },
@@ -15,11 +16,15 @@ export default function AgentNavbar({ agent }) {
   const [dutyStatus, setDutyStatus] = useState('on');
 
   const navigate = useNavigate();
-  // const location = useLocation();
   const notifRef   = useRef(null);
   const profileRef = useRef(null);
 
-  // Close dropdowns on outside click
+  // Dynamic Avatar Helper
+  const getAvatar = (name) => {
+    if (!name) return "AG";
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (notifRef.current   && !notifRef.current.contains(e.target))   setShowNotifications(false);
@@ -39,7 +44,6 @@ export default function AgentNavbar({ agent }) {
   const dutyDotClr  = { on: 'bg-green-500', off: 'bg-red-500', break: 'bg-amber-500' };
   const dutyOptions = [
     { key: 'on',    label: 'On Duty',  dot: 'bg-green-500' },
-    { key: 'break', label: 'On Break', dot: 'bg-amber-500' },
     { key: 'off',   label: 'Off Duty', dot: 'bg-red-500'   },
   ];
 
@@ -49,7 +53,7 @@ export default function AgentNavbar({ agent }) {
     <nav className="bg-background/80 sticky top-0 z-50 backdrop-blur-xl border-b border-gray-200"
       style={{ height: 58, display: 'flex', alignItems: 'center', padding: '0 28px', flexShrink: 0, zIndex: 100 }}>
 
-      {/* ── Logo ──────────────────────────────────────────────────────────── */}
+      {/* Logo */}
       <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/agent/dashboard')}>
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
           <Package className="w-5 h-5 text-white" />
@@ -60,7 +64,7 @@ export default function AgentNavbar({ agent }) {
         </div>
       </div>
 
-      {/* ── Right side ────────────────────────────────────────────────────── */}
+      {/* Right side */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
 
         {/* Search */}
@@ -137,7 +141,6 @@ export default function AgentNavbar({ agent }) {
                 ))}
               </div>
 
-              {/* Footer — matches DashboardNavbar */}
               <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
                 <button className="text-xs text-blue-600 font-medium hover:text-blue-700 w-full text-center">
                   View all notifications
@@ -150,60 +153,57 @@ export default function AgentNavbar({ agent }) {
         {/* Settings */}
         <div
           className="flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          onClick={() => navigate('/agent/settings')}
+          onClick={() => navigate('/agent/profile')}
         >
           <Settings className="w-5 h-5 text-gray-600" />
         </div>
 
-        {/* Profile */}
+        {/* Profile - DYNAMICALLY MAPPED */}
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => { setShowProfile(p => !p); setShowNotifications(false); }}
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
-              {agent.avatar}
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center text-white font-semibold text-sm">
+              {getAvatar(user?.name?.split(" ")[0])} 
             </div>
             <div className="hidden sm:block text-left">
-              <div className="text-sm font-semibold text-gray-900">{agent.name}</div>
-              <div className="text-xs text-gray-500">{agent.id}</div>
+              <div className="text-sm font-semibold text-gray-900 capitalize">{user?.name?.split(" ")[0] || "Agent"}</div>
+              <div className="text-xs text-gray-500 uppercase tracking-tighter">{user?.id ? `ID-000${user.id}` : 'ID-0000'}</div>
             </div>
             <ChevronDown className={`w-4 h-4 text-gray-500 hidden sm:block transition-transform duration-150 ${showProfile ? 'rotate-180' : ''}`} />
           </button>
 
           {showProfile && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
-              {/* Profile header */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
-                    {agent.avatar}
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                    {getAvatar(user?.name?.split(" ")[0])}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{agent.name}</p>
-                    <p className="text-xs text-gray-500">{agent.id}</p>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">{user?.name || 'Agent'}</p>
+                    <p className="text-xs text-gray-500 uppercase">ID-000{user?.id}</p>
                   </div>
                 </div>
-                {/* Stats strip */}
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
                     <div className="flex items-center justify-center gap-1 text-xs font-semibold text-gray-900">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{agent.rating}
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{agentStats?.rating || '0.0'}
                     </div>
                     <div className="text-[10px] text-gray-500 mt-0.5">Rating</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs font-semibold text-gray-900">{agent.totalDeliveries}</div>
+                    <div className="text-xs font-semibold text-gray-900">{agentStats?.completed || '0'}</div>
                     <div className="text-[10px] text-gray-500 mt-0.5">Deliveries</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs font-semibold text-gray-900 truncate">{agent.phone?.slice(-5) || '—'}</div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">Contact</div>
+                    <div className="text-xs font-semibold text-gray-900 truncate">{(user?.phone || '—').slice(-4)}</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">Phone</div>
                   </div>
                 </div>
               </div>
 
-              {/* Menu items */}
               <div className="p-2">
                 {[
                   { icon: MapPin,    label: 'My Routes'   },
@@ -218,21 +218,19 @@ export default function AgentNavbar({ agent }) {
                 ))}
                 <div className="border-t border-gray-200 my-1" />
                 <button
-                  onClick={() => navigate('/login')}
-                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+                  onClick={() => { logout(); navigate('/login'); }}
+                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2 font-bold uppercase tracking-widest text-[10px]">
                   <LogOut className="w-4 h-4" />Sign Out
                 </button>
               </div>
             </div>
           )}
         </div>
-
       </div>
     </nav>
   );
 }
 
-/* ── Duty status dropdown ─────────────────────────────────────────────────── */
 function DutyDropdown({ current, options, dutyLabels, dutyColors, dutyDotClr, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

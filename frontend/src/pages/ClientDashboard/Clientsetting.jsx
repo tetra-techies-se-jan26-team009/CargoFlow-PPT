@@ -20,9 +20,7 @@ const icons = {
 const tabs = [
     { key: "profile", label: "Profile", icon: icons.user },
     { key: "security", label: "Security", icon: icons.lock },
-    { key: "notifications", label: "Notifications", icon: icons.bell },
     { key: "regional", label: "Regional", icon: icons.globe },
-    { key: "security2", label: "Permissions", icon: icons.shield },
 ];
 
 const Toggle = ({ on, onToggle }) => (
@@ -48,13 +46,8 @@ export default function ClientSettings() {
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState(null); 
 
-    const [notifs, setNotifs] = useState({
-        email_shipment: true, email_delay: true, email_report: false,
-        sms_delivery: true, sms_delay: false, push_all: true,
-    });
-
     const [profile, setProfile] = useState({
-        name: "", email: "", phone: "", company: " Cargo Flow Pvt. Ltd.", timezone: "Asia/Kolkata"
+        name: "", email: "", phone: "", timezone: "Asia/Kolkata"
     });
 
     useEffect(() => {
@@ -174,12 +167,6 @@ export default function ClientSettings() {
                                             style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white" }} />
                                     </FieldRow>
 
-                                    <FieldRow label="Company">
-                                        <input type="text" value={profile.company} disabled
-                                            onChange={e => setProfile(p => ({ ...p, company: e.target.value }))}
-                                            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white" }} />
-                                    </FieldRow>
-
                                     <FieldRow label="Timezone" desc="Used for scheduling and report generation">
                                         <select value={profile.timezone} onChange={e => setProfile(p => ({ ...p, timezone: e.target.value }))}
                                             style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#334155", outline: "none", width: 260, background: "white", cursor: "pointer" }}>
@@ -226,42 +213,6 @@ export default function ClientSettings() {
                                 </div>
                             )}
 
-                            {/* ── NOTIFICATIONS TAB ── */}
-                            {activeTab === "notifications" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Notification Preferences</h2>
-
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL</div>
-                                    <FieldRow label="Shipment Updates" desc="When a shipment status changes">
-                                        <Toggle on={notifs.email_shipment} onToggle={() => setNotifs(n => ({ ...n, email_shipment: !n.email_shipment }))} />
-                                    </FieldRow>
-                                    <FieldRow label="Delay Alerts" desc="When a shipment is flagged as delayed">
-                                        <Toggle on={notifs.email_delay} onToggle={() => setNotifs(n => ({ ...n, email_delay: !n.email_delay }))} />
-                                    </FieldRow>
-                                    <FieldRow label="Monthly Reports" desc="Auto-generated performance reports">
-                                        <Toggle on={notifs.email_report} onToggle={() => setNotifs(n => ({ ...n, email_report: !n.email_report }))} />
-                                    </FieldRow>
-
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.5px", margin: "20px 0 8px" }}>SMS</div>
-                                    <FieldRow label="Delivery Confirmation" desc="SMS when shipment is delivered">
-                                        <Toggle on={notifs.sms_delivery} onToggle={() => setNotifs(n => ({ ...n, sms_delivery: !n.sms_delivery }))} />
-                                    </FieldRow>
-                                    <FieldRow label="Delay Alerts" desc="SMS for high-risk delays">
-                                        <Toggle on={notifs.sms_delay} onToggle={() => setNotifs(n => ({ ...n, sms_delay: !n.sms_delay }))} />
-                                    </FieldRow>
-
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.5px", margin: "20px 0 8px" }}>PUSH</div>
-                                    <FieldRow label="All Push Notifications" desc="Browser and mobile push alerts">
-                                        <Toggle on={notifs.push_all} onToggle={() => setNotifs(n => ({ ...n, push_all: !n.push_all }))} />
-                                    </FieldRow>
-                                    <div style={{ marginTop: 20 }}>
-                                        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                                            <Icon d={icons.save} size={14} stroke="white" /> Save Preferences
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
                             {/* ── REGIONAL TAB ── */}
                             {activeTab === "regional" && (
                                 <div>
@@ -283,34 +234,6 @@ export default function ClientSettings() {
                                         <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", border: "none", borderRadius: 8, background: "#2563EB", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                                             <Icon d={icons.save} size={14} stroke="white" /> Save Regional Settings
                                         </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ── PERMISSIONS TAB ── */}
-                            {activeTab === "security2" && (
-                                <div>
-                                    <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>Role Permissions</h2>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                        {[
-                                            { role: "ADMIN", perms: ["Full access", "Manage agents", "Manage clients", "View reports", "Settings"], color: "#7C3AED", bg: "#EDE9FE" },
-                                            { role: "DELIVERY_AGENT", perms: ["View assigned shipments", "Update delivery status", "Report issues"], color: "#2563EB", bg: "#EFF6FF" },
-                                            { role: "BUSINESS_CLIENT", perms: ["Track shipments", "Request pickup", "View own invoices", "Contact support"], color: "#10B981", bg: "#D1FAE5" },
-                                        ].map(r => (
-                                            <div key={r.role} style={{ padding: "16px 18px", borderRadius: 10, border: "1px solid #F1F5F9", background: "#F8FAFC" }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: r.bg, color: r.color }}>{r.role}</span>
-                                                </div>
-                                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                                                    {r.perms.map(p => (
-                                                        <span key={p} style={{ fontSize: 11, color: "#64748B", background: "white", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 10px" }}>✓ {p}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={{ marginTop: 16, padding: "12px 16px", background: "#FEF3C7", borderRadius: 8, border: "1px solid #FDE68A", fontSize: 12, color: "#92400E" }}>
-                                        ⚠️ Role permissions are system-defined. Contact your system administrator to modify access levels.
                                     </div>
                                 </div>
                             )}

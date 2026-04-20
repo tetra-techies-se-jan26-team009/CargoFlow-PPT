@@ -161,11 +161,6 @@ export default function ShipmentsPage() {
         );
         const matchStatus = statusFilter === "All" || s.status === statusFilter;
         const matchRisk = riskFilter === "All" || s.risk === riskFilter;
-        // const matchSearch =
-        //     !searchQ ||
-        //     s.id.toLowerCase().includes(searchQ.toLowerCase()) ||
-        //     s.client.toLowerCase().includes(searchQ.toLowerCase()) ||
-        //     s.agent.toLowerCase().includes(searchQ.toLowerCase());
         return matchStatus && matchRisk && matchSearch;
     });
 

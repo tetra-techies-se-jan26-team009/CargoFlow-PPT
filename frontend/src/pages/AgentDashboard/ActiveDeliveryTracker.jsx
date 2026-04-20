@@ -3,14 +3,10 @@ import { Navigation, Phone, MapPin, Clock, Package, AlertCircle, CheckCircle, Me
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 
-export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, onMessage, onNavigate }) {
+export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, onNavigate }) {
   const [progress, setProgress] = useState(65);
-  const [callState, setCallState]   = useState('idle'); // idle | calling | active | ended
-  const [showMsg,   setShowMsg]     = useState(false);
-  const [msgText,   setMsgText]     = useState('');
-  const [msgSent,   setMsgSent]     = useState(false);
-  const [etaMins,   setEtaMins]     = useState(15);
-  const [navActive, setNavActive]   = useState(false);
+  const [etaMins, setEtaMins] = useState(15);
+  const [navActive, setNavActive] = useState(false);
 
   // Simulate progress ticking every 8s
   useEffect(() => {
@@ -24,26 +20,6 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
     return () => clearInterval(id);
   }, []);
 
-  // Call flow
-  const handleCall = () => {
-    if (callState === 'idle' || callState === 'ended') {
-      setCallState('calling');
-      setTimeout(() => setCallState('active'), 2000);
-      if (onCall) onCall(delivery);
-    } else if (callState === 'active') {
-      setCallState('ended');
-      setTimeout(() => setCallState('idle'), 1500);
-    }
-  };
-
-  // Message send
-  const sendMsg = () => {
-    if (!msgText.trim()) return;
-    setMsgSent(true);
-    if (onMessage) onMessage({ delivery, text: msgText });
-    setTimeout(() => { setShowMsg(false); setMsgSent(false); setMsgText(''); }, 1800);
-  };
-
   // Navigate
   const handleNav = () => {
     setNavActive(true);
@@ -54,21 +30,6 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
       '_blank'
     );
   };
-
-  const callLabel = { idle: 'Call', calling: 'Calling…', active: 'End Call', ended: 'Ended' };
-  const callStyle = {
-    idle:    'bg-white/10 hover:bg-white/20',
-    calling: 'bg-amber-500/30 hover:bg-amber-500/40',
-    active:  'bg-red-500/40 hover:bg-red-500/50',
-    ended:   'bg-white/10',
-  };
-
-  const quickMessages = [
-    'On my way, will arrive in ~15 mins',
-    'I am outside your building',
-    'Please come down to collect your package',
-    'Please call me back',
-  ];
 
   return (
     <motion.div
@@ -147,10 +108,10 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <InfoCard icon={Package} label="Package Type" value={delivery.packageType} />
-              <InfoCard icon={Clock}   label="ETA"          value={delivery.expectedDelivery} />
+              <InfoCard icon={Clock} label="ETA" value={delivery.expectedDelivery} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <InfoCard label="Weight"   value={delivery.weight} />
+              <InfoCard label="Weight" value={delivery.weight} />
               <InfoCard label="Distance" value={delivery.distance} />
             </div>
             {delivery.cod && (
@@ -167,86 +128,46 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-4 gap-3 mt-6">
-          {/* Call */}
+        {/* Action Buttons - Optimized for Professional Submission */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          {/* Primary Contact: WhatsApp */}
           <button
-            onClick={handleCall}
-            className={`flex items-center justify-center gap-2 px-4 py-3 backdrop-blur-sm rounded-xl transition-all ${callStyle[callState]}`}
+            onClick={onCall} // Triggers the WhatsApp logic in your Parent Dashboard
+            className="flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-2xl transition-all shadow-lg shadow-emerald-900/20 group"
           >
-            <Phone className={`w-4 h-4 ${callState === 'calling' ? 'animate-pulse' : ''}`} />
-            <span className="text-sm font-semibold">{callLabel[callState]}</span>
+            <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-bold uppercase tracking-wider">Contact WhatsApp</span>
           </button>
 
-          {/* Message */}
-          <button
-            onClick={() => setShowMsg(p => !p)}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span className="text-sm font-semibold">Message</span>
-          </button>
-
-          {/* Navigate */}
+          {/* Secondary: Navigate */}
           <button
             onClick={handleNav}
-            className={`flex items-center justify-center gap-2 px-4 py-3 backdrop-blur-sm rounded-xl transition-all ${navActive ? 'bg-blue-400/40' : 'bg-white/10 hover:bg-white/20'}`}
+            className={`flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-2xl transition-all ${navActive ? 'bg-blue-400/20 border-blue-400 text-blue-100' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
           >
-            <Navigation className={`w-4 h-4 ${navActive ? 'text-blue-200' : ''}`} />
-            <span className="text-sm font-semibold">{navActive ? 'Active' : 'Navigate'}</span>
-          </button>
-
-          {/* Complete */}
-          <button
-            onClick={onComplete}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 rounded-xl transition-all shadow-lg"
-          >
-            <CheckCircle className="w-4 h-4" />
-            <span className="text-sm font-semibold">Complete</span>
+            <Navigation className={`w-5 h-5 ${navActive ? 'animate-pulse' : ''}`} />
+            <span className="text-sm font-bold uppercase tracking-wider">{navActive ? 'Navigating' : 'Navigate'}</span>
           </button>
         </div>
 
-        {/* Quick Message Panel */}
-        {showMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 space-y-3"
-          >
-            <div className="text-sm font-semibold text-blue-100">Quick Message to {delivery.customer}</div>
-            <div className="flex flex-wrap gap-2">
-              {quickMessages.map(qm => (
-                <button key={qm} onClick={() => setMsgText(qm)}
-                  className="text-xs px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-left">
-                  {qm}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={msgText}
-                onChange={e => setMsgText(e.target.value)}
-                placeholder="Or type a custom message…"
-                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-blue-200 outline-none focus:border-white/40"
-                onKeyDown={e => e.key === 'Enter' && sendMsg()}
-              />
-              <button onClick={sendMsg}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${msgSent ? 'bg-green-500' : 'bg-white text-blue-700 hover:bg-blue-50'}`}>
-                {msgSent ? '✓ Sent' : 'Send'}
-              </button>
-            </div>
-          </motion.div>
-        )}
+        {/* High-Impact Completion Action */}
+        <button
+          onClick={onComplete}
+          className="w-full mt-4 flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl transition-all shadow-xl shadow-green-900/30"
+        >
+          <CheckCircle className="w-6 h-6" />
+          <span className="text-base font-bold uppercase tracking-widest">Complete Delivery</span>
+        </button>
+
       </div>
 
       {/* Mini Map */}
       <div className="h-48 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 relative overflow-hidden">
         <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
           {Array.from({ length: 5 }).map((_, i) => (
-            <line key={`h-${i}`} x1="0" y1={i*50} x2="600" y2={i*50} stroke="#BFDBFE" strokeWidth="0.5" opacity="0.5" />
+            <line key={`h-${i}`} x1="0" y1={i * 50} x2="600" y2={i * 50} stroke="#BFDBFE" strokeWidth="0.5" opacity="0.5" />
           ))}
           {Array.from({ length: 12 }).map((_, i) => (
-            <line key={`v-${i}`} x1={i*50} y1="0" x2={i*50} y2="200" stroke="#BFDBFE" strokeWidth="0.5" opacity="0.5" />
+            <line key={`v-${i}`} x1={i * 50} y1="0" x2={i * 50} y2="200" stroke="#BFDBFE" strokeWidth="0.5" opacity="0.5" />
           ))}
           <path d="M100 100 Q300 50 500 100" stroke="#3B82F6" strokeWidth="3" fill="none" strokeDasharray="8,4" opacity="0.8">
             <animate attributeName="stroke-dashoffset" from="0" to="24" dur="1s" repeatCount="indefinite" />

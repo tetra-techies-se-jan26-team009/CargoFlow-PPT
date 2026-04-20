@@ -1,13 +1,22 @@
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'motion/react';
 import { CheckCircle, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 
 
 export function MainHeroSection() {
+  const navigate = useNavigate();
+  const [heroTrackId, setHeroTrackId] = useState("");
+
+  const handleHeroTrack = () => {
+    if (heroTrackId.trim()) {
+      navigate(`/track/${heroTrackId.trim()}`);
+    }
+  };
+
   useEffect(() => {
     const shouldScroll = sessionStorage.getItem("scrollToHero");
 
@@ -86,18 +95,25 @@ export function MainHeroSection() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col lg:flex-row  mb-8">
-              <div className="mt-2 flex gap-3">
+            <div className="flex flex-col lg:flex-row mb-8">
+              <div className="mt-2 flex gap-3 w-full lg:w-auto">
                 <input
                   type="text"
-                  placeholder="Enter Tracking ID"
-                  className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                  value={heroTrackId}
+                  onChange={(e) => setHeroTrackId(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHeroTrack()}
+                  placeholder="Enter Tracking ID (e.g. CF-20260420-1234)"
+                  className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700 bg-white"
                 />
-                <button className="bg-[#0f2b4d] text-accent border border-white px-6 py-2 rounded-md font-medium hover:opacity-90">
+                <button
+                  onClick={handleHeroTrack}
+                  className="bg-[#0f2b4d] text-accent border border-white px-6 py-2 rounded-md font-medium hover:opacity-90"
+                >
                   Track
                 </button>
               </div>
             </div>
+            );
 
             {/* Social Proof */}
             <div className="flex items-center gap-6 pt-6 border-t border-gray-200">

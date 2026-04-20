@@ -1,24 +1,58 @@
-import { X, CheckCircle, Camera, Star, DollarSign, User, Upload, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { X, CheckCircle, Camera, Star, DollarSign, User, Upload, AlertTriangle, Scan } from 'lucide-react';
+import { useState, useEffect } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm }) {
-  const [step,             setStep]            = useState(1);
-  const [deliveryStatus,   setDeliveryStatus]  = useState('delivered');
-  const [failReason,       setFailReason]      = useState('');
-  const [customerName,     setCustomerName]    = useState('');
-  const [nameErr,          setNameErr]         = useState('');
-  const [codCollected,     setCodCollected]    = useState(false);
-  const [photo,            setPhoto]           = useState(null);
-  const [rating,           setRating]          = useState(0);
-  const [hoveredStar,      setHoveredStar]     = useState(0);
-  const [notes,            setNotes]           = useState('');
-  const [submitting,       setSubmitting]      = useState(false);
+  const [step, setStep] = useState(1);
+  const [deliveryStatus, setDeliveryStatus] = useState('delivered');
+  const [failReason, setFailReason] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [txnId, setTxnId] = useState("");
+  const [nameErr, setNameErr] = useState('');
+  const [codCollected, setCodCollected] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [hoveredStar, setHoveredStar] = useState(0);
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [timeLeft, setTimeLeft] = useState(120);
 
   const totalSteps = 3;
 
   const stepTitles = ['Delivery Details', 'Proof of Delivery', 'Rate Experience'];
+
+  useEffect(() => {
+    if (paymentStatus !== 'processing') return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+
+          setPaymentStatus('pending');
+
+          setTimeout(() => {
+            alert("Payment session expired. Please try again.");
+          }, 0);
+
+          return 120; // reset directly
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [paymentStatus]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const validateStep1 = () => {
@@ -36,24 +70,33 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
 
   const handleSubmit = () => {
     setSubmitting(true);
-    const data = {
-      deliveryId: delivery.id,
-      status: deliveryStatus,
-      failReason: deliveryStatus === 'failed' ? failReason : null,
-      customerName,
-      codCollected: delivery.cod ? codCollected : null,
-      photo,
-      rating,
-      notes,
-      timestamp: new Date().toISOString(),
-    };
-    setTimeout(() => {
-      setSubmitting(false);
-      setStep(4);
-      setTimeout(() => onConfirm(data), 2000);
-    }, 1000);
-  };
 
+    const backendPayload = {
+      deliveryId: delivery.dbId || delivery.id,
+      status: deliveryStatus.toUpperCase(),
+      // Add these fields so the Admin/Portal can see payment info
+      payment_method: paymentMethod,
+      payment_status: codCollected ? 'paid' : 'pending',
+      amount_collected: delivery.codAmount
+        ? String(delivery.codAmount).replace('₹', '')
+        : "0",
+      remarks: [
+        `Recipient: ${customerName}`,
+        `Method: ${paymentMethod.toUpperCase()}`,
+        `Note: ${notes}`
+      ].join(' | ')
+    };
+
+    console.log("SENDING TO DASHBOARD:", backendPayload);
+
+    onConfirm(backendPayload);
+
+    setStep(4);
+
+    setTimeout(() => {
+      onClose();
+    }, 1500);
+  };
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -165,23 +208,93 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
                 </div>
 
                 {/* COD */}
+                {/* ── PAYMENT SECTION ── */}
                 {delivery.cod && deliveryStatus === 'delivered' && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700">Collection Method</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setPaymentMethod('cash')}
+                        className={`p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${paymentMethod === 'cash' ? 'border-amber-500 bg-amber-50' : 'border-gray-100'}`}
+                      >
                         <DollarSign className="w-5 h-5 text-amber-600" />
-                        <div>
-                          <div className="font-semibold text-gray-900">Cash on Delivery</div>
-                          <div className="text-sm text-gray-600">Amount: {delivery.codAmount}</div>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={codCollected} onChange={e => setCodCollected(e.target.checked)} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600" />
-                      </label>
+                        <span className="text-sm font-bold">Cash</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPaymentMethod('digital');
+                          setPaymentStatus('processing');
+                        }}
+                        className={`p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${paymentMethod === 'digital' ? 'border-blue-500 bg-blue-50' : 'border-gray-100'}`}
+                      >
+                        <Scan className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm font-bold">QR / Online</span>
+                      </button>
                     </div>
-                    {delivery.cod && !codCollected && (
-                      <p className="text-xs text-amber-600 mt-2">⚠ Remember to collect cash before confirming</p>
+
+                    {/* Dummy Gateway Modal-within-Modal */}
+                    {paymentMethod === 'digital' && paymentStatus === 'processing' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-slate-900 rounded-2xl p-6 text-white text-center space-y-4 shadow-xl"
+                      >
+                        <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Secure Checkout</span>
+                          <span className="text-xs font-mono bg-red-500/20 text-red-400 px-2 py-1 rounded">
+                            Expires in {formatTime(timeLeft)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-xs uppercase font-black">Amount to Pay</p>
+                          <p className="text-3xl font-black text-white">{delivery.codAmount}</p>
+                        </div>
+
+                        {/* Dummy QR Code */}
+                        <div className="bg-white p-3 rounded-xl w-40 h-40 mx-auto group relative cursor-pointer"
+                          onClick={() => {
+                            setSubmitting(true);
+                            setTimeout(() => {
+                              setPaymentStatus('success');
+                              setCodCollected(true);
+
+                              const id = "CF_" + Math.random().toString(36).substr(2, 9).toUpperCase();
+                              setTxnId(id);
+                              setSubmitting(false);
+                            }, 2000);
+                          }}>
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=CargoFlow-Pay-${delivery.id}`}
+                            alt="Payment QR"
+                            className="w-full h-full opacity-90 group-hover:opacity-100 transition-opacity"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="bg-blue-600 text-[8px] font-bold px-2 py-1 rounded text-white uppercase">Tap to Simulate Pay</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-4 pt-2">
+                          <div className="flex flex-col items-center gap-1 opacity-50">
+                            <div className="w-8 h-4 bg-white/20 rounded" />
+                            <span className="text-[8px]">UPI</span>
+                          </div>
+                          <div className="flex flex-col items-center gap-1 opacity-50">
+                            <div className="w-8 h-4 bg-white/20 rounded" />
+                            <span className="text-[8px]">Cards</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {paymentStatus === 'success' && (
+                      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-emerald-500 text-white p-4 rounded-xl flex items-center gap-3">
+                        <CheckCircle className="w-6 h-6" />
+                        <div className="flex-1">
+                          <p className="font-bold text-sm">Payment Verified</p>
+                          <p className="text-[10px] opacity-90">TXN: {txnId}</p>
+                        </div>
+                      </motion.div>
                     )}
                   </div>
                 )}
@@ -241,11 +354,10 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
                       onMouseEnter={() => setHoveredStar(star)}
                       onMouseLeave={() => setHoveredStar(0)}
                       className="transition-transform hover:scale-110 active:scale-95">
-                      <Star className={`w-12 h-12 transition-colors ${
-                        star <= (hoveredStar || rating)
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-gray-300 hover:text-amber-200'
-                      }`} />
+                      <Star className={`w-12 h-12 transition-colors ${star <= (hoveredStar || rating)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'text-gray-300 hover:text-amber-200'
+                        }`} />
                     </button>
                   ))}
                 </div>

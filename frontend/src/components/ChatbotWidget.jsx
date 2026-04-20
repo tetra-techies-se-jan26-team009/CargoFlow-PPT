@@ -64,6 +64,8 @@ function MessageBubble({ msg }) {
   );
 }
 
+
+
 // ─── Chat Window ─────────────────────────────────────────────────────────────
 function ChatWindow({ onClose }) {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
@@ -80,49 +82,63 @@ function ChatWindow({ onClose }) {
     inputRef.current?.focus();
   }, []);
 
-  const sendMessage = async () => {
-    const text = input.trim();
-    if (!text) return;
+const sendMessage = async () => {
+  const text = input.trim();
+  if (!text) return;
 
-    const userMsg = { id: Date.now(), role: "user", text, time: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setIsTyping(true);
-
-    try {
-      // ── Replace this block with your actual backend call ──────────────────
-      // Example:
-      // const res = await fetch("/api/chat", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ message: text }),
-      // });
-      // const data = await res.json();
-      // const reply = data.reply;
-      // ──────────────────────────────────────────────────────────────────────
-
-      // Simulated delay — remove when wired to real backend
-      await new Promise((r) => setTimeout(r, 1200));
-      const reply = `You said: "${text}". This is a placeholder — wire me to your backend!`;
-
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: "assistant", text: reply, time: new Date() },
-      ]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          text: "Oops! Something went wrong. Please try again.",
-          time: new Date(),
-        }, console.error("Chatbot error:", error)
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
+  const userMsg = {
+    id: Date.now(),
+    role: "user",
+    text,
+    time: new Date()
   };
+
+  setMessages((prev) => [...prev, userMsg]);
+  setInput("");
+  setIsTyping(true);
+
+  try {
+    const response = await fetch("http://localhost:8000/chatbot/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        question: text,
+        top_k: 5
+      })
+    });
+
+    if (!response.ok) throw new Error("Server error");
+
+    const data = await response.json();
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now() + 1,
+        role: "assistant",
+        text: data.answer || "No response from server",
+        time: new Date()
+      }
+    ]);
+
+  } catch (error) {
+    console.error("Chatbot error:", error);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now() + 1,
+        role: "assistant",
+        text: "Server not reachable. Try again later.",
+        time: new Date()
+      }
+    ]);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
   const handleKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -229,8 +245,8 @@ function LauncherButton({ isOpen, onClick, hasUnread }) {
         className="relative z-10 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-lg flex items-center justify-center transition-all duration-200"
       >
         {hasUnread && !isOpen && (
-        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
-      )}
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
+        )}
         <span
           className="absolute transition-all duration-300"
           style={{ opacity: isOpen ? 0 : 1, transform: isOpen ? "rotate(90deg) scale(0.5)" : "rotate(0deg) scale(1)" }}
@@ -255,7 +271,7 @@ function LauncherButton({ isOpen, onClick, hasUnread }) {
         {/* icon */}
       </button>
     </div>
-  
+
   );
 }
 

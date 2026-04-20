@@ -22,6 +22,7 @@ export const getAgentDashboard = async () => {
  */
 export const updateShipmentStatus = async (shipmentId, status, remarks = "") => {
     try {
+        console.log("API CALLED:", shipmentId, status);
         const res = await api.patch(`/api/v1/agent/shipments/${shipmentId}/status`, {
             status,
             remarks
@@ -52,4 +53,9 @@ export const updateLiveLocation = async (lat, lng, shipmentId = null) => {
         console.error("Failed to update live location:", error);
         return null;
     }
+};
+
+
+export const updateAgentProfile = async (profileData) => {
+    return await api.patch("/api/auth/me", profileData);
 };

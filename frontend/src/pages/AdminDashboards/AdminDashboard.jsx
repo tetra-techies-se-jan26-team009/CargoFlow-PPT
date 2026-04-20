@@ -124,11 +124,9 @@ const LiveMap = () => (
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 export default function AdminDashboard() {
-    // const navigate = useNavigate();
     const [userName, setUserName] = useState("Admin");
 
     // ── Shipments state (mutable) ──
-    // const [shipments, setShipments] = useState(BASE_SHIPMENTS);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 

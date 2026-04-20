@@ -452,6 +452,17 @@ export default function RequestPickup() {
                                             <Field label="Receiver Name" required error={errors.receiver_name}><input value={f.receiver_name} onChange={e => set("receiver_name", e.target.value)} placeholder="Full Name" style={inputStyle} /></Field>
                                             <Field label="Receiver Phone" required error={errors.receiver_phone}><input value={f.receiver_phone} onChange={e => set("receiver_phone", e.target.value)} placeholder="+91" style={inputStyle} /></Field>
                                         </div>
+                                        <Field label="Receiver Email" required error={errors.receiver_email}>
+                                            <input
+                                                type="email"
+                                                value={f.receiver_email}
+                                                onChange={e => set("receiver_email", e.target.value)}
+                                                placeholder="example@gmail.com"
+                                                style={errors.receiver_email ? inputErrStyle : inputStyle}
+                                                onFocus={onFocus}
+                                                onBlur={onBlur}
+                                            />
+                                        </Field>
 
                                         {/* State Choice First */}
                                         <Field label="Delivery State" required error={errors.delivery_state}>
