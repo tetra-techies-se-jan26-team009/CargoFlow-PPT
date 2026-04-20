@@ -366,6 +366,14 @@ def track_shipment_public(tracking_id: str,
         "tracking_id": shipment.tracking_number,
         "status": shipment.status.value,
         "progress": progress,
+        "pickup_coords": {
+        "lat": shipment.pickup_address.latitude,
+        "lng": shipment.pickup_address.longitude
+    },
+    "delivery_coords": {
+        "lat": shipment.delivery_address.latitude,
+        "lng": shipment.delivery_address.longitude
+    },
 
         "route": {
             "origin": shipment.pickup_address.city,
