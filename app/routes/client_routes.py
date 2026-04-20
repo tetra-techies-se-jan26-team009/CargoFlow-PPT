@@ -326,7 +326,10 @@ def create_shipment(data: ClientShipmentCreate,
 
 @router.get("/track/{tracking_id}", status_code=200)
 def track_shipment_public(tracking_id: str,
-                          db: Session = Depends(get_db)):
+                         db: Session = Depends(get_db)):
+
+    if not tracking_id.startswith("CF-"):
+        raise HTTPException(status_code=400, detail="Invalid tracking format")
 
     shipment = db.query(Shipment).filter(
         Shipment.tracking_number == tracking_id
@@ -335,7 +338,7 @@ def track_shipment_public(tracking_id: str,
     if not shipment:
         raise HTTPException(status_code=404, detail="Invalid tracking ID")
 
-    # ------------------ PROGRESS ------------------
+    # ---------------- PROGRESS ----------------
 
     progress_map = {
         ShipmentStatus.CREATED: 10,
@@ -346,7 +349,19 @@ def track_shipment_public(tracking_id: str,
 
     progress = progress_map.get(shipment.status, 0)
 
-    # ------------------ TIMELINE ------------------
+    # ---------------- LIVE LOCATION ----------------
+
+    latest_tracking = db.query(TrackingUpdate)\
+        .filter(TrackingUpdate.shipment_id == shipment.id)\
+        .order_by(TrackingUpdate.timestamp.desc())\
+        .first()
+
+    current_location = {
+        "lat": latest_tracking.latitude,
+        "lng": latest_tracking.longitude
+    } if latest_tracking else None
+
+    # ---------------- TIMELINE ----------------
 
     logs = db.query(ShipmentStatusLog)\
         .filter(ShipmentStatusLog.shipment_id == shipment.id)\
@@ -362,41 +377,47 @@ def track_shipment_public(tracking_id: str,
         for log in logs
     ]
 
+    pickup_address = shipment.pickup_address
+    delivery_address = shipment.delivery_address
+
     return {
         "tracking_id": shipment.tracking_number,
         "status": shipment.status.value,
         "progress": progress,
+
+        "current_location": current_location,
+
         "pickup_coords": {
-        "lat": shipment.pickup_address.latitude,
-        "lng": shipment.pickup_address.longitude
-    },
-    "delivery_coords": {
-        "lat": shipment.delivery_address.latitude,
-        "lng": shipment.delivery_address.longitude
-    },
+            "lat": pickup_address.latitude if pickup_address else None,
+            "lng": pickup_address.longitude if pickup_address else None
+        },
+        "delivery_coords": {
+            "lat": delivery_address.latitude if delivery_address else None,
+            "lng": delivery_address.longitude if delivery_address else None
+        },
 
         "route": {
-            "origin": shipment.pickup_address.city,
-            "destination": shipment.delivery_address.city
+            "origin": pickup_address.city if pickup_address else None,
+            "destination": delivery_address.city if delivery_address else None
         },
-
 
         "pickup_address": {
-            "line1": shipment.pickup_address.line1,
-            "city": shipment.pickup_address.city
+            "line1": pickup_address.line1 if pickup_address else None,
+            "city": pickup_address.city if pickup_address else None
         },
         "delivery_address": {
-            "line1": shipment.delivery_address.line1,
-            "city": shipment.delivery_address.city
+            "line1": delivery_address.line1 if delivery_address else None,
+            "city": delivery_address.city if delivery_address else None
         },
 
         "receiver_name": shipment.receiver_name,
-        "receiver_phone": shipment.receiver_phone,
-        "receiver_email": shipment.receiver_email,
+        "receiver_phone": (
+            "****" + shipment.receiver_phone[-4:]
+            if shipment.receiver_phone else None
+        ),
 
         "weight": shipment.weight,
         "price": shipment.price,
-
         "created_at": shipment.created_at,
         "eta": shipment.eta_end_time,
 
@@ -407,6 +428,7 @@ def track_shipment_public(tracking_id: str,
 
         "timeline": timeline
     }
+
 @router.get("/shipments", status_code=200)
 def client_shipments(db: Session = Depends(get_db),
                      current_user: User = Depends(require_role(UserRole.BUSINESS_CLIENT))):
