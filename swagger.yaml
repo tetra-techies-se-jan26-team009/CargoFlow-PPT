@@ -465,3 +465,108 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+
+  schemas:
+
+    UserRegister:
+      type: object
+      required: [name, email, password, phone, city]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+        phone: { type: string }
+        city: { type: string }
+
+    UserLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    UserUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        password: { type: string }
+
+    DeliveryAgentCreate:
+      allOf:
+        - $ref: '#/components/schemas/UserRegister'
+
+    UpdateDeliveryAgent:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        city: { type: string }
+
+    UpdateClient:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        city: { type: string }
+
+    AdminShipmentCreate:
+      type: object
+      required: [sender_id, receiver_name, receiver_phone, receiver_email, weight, price]
+      properties:
+        sender_id: { type: integer }
+        receiver_name: { type: string }
+        receiver_phone: { type: string }
+        receiver_email: { type: string, format: email }
+        pickup_line1: { type: string }
+        pickup_city: { type: string }
+        pickup_state: { type: string }
+        pickup_pincode: { type: string }
+        delivery_line1: { type: string }
+        delivery_city: { type: string }
+        delivery_state: { type: string }
+        delivery_pincode: { type: string }
+        pickup_lat: { type: number }
+        pickup_lng: { type: number }
+        delivery_lat: { type: number }
+        delivery_lng: { type: number }
+        weight: { type: number }
+        price: { type: number }
+
+    ClientShipmentCreate:
+      allOf:
+        - $ref: '#/components/schemas/AdminShipmentCreate'
+
+    BusinessCreate:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string }
+
+    LocationUpdate:
+      type: object
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+        shipment_id: { type: integer }
+
+    AgentUpdateShipmentStatus:
+      type: object
+      properties:
+        status: { type: string }
+        remarks: { type: string }
+        payment_method: { type: string }
+
+    DutyStatusUpdate:
+      type: object
+      properties:
+        status: { type: string }
+
+    ChatRequest:
+      type: object
+      properties:
+        question: { type: string }
+        top_k: { type: integer }
