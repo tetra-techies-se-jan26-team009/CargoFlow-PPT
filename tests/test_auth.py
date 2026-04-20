@@ -53,11 +53,9 @@ def test_get_me(client):
     res = client.get("/api/auth/me")
     assert res.status_code in [200, 403]
 
-
-# def test_update_me(client):
-#     res = client.patch("/api/auth/me", json={"name": "New"})
-#     assert res.status_code in [200, 403, 500]
 def test_update_me(client):
+    import pytest
+
     with pytest.raises(Exception):
         client.patch("/api/auth/me", json={"name": "New"})
 

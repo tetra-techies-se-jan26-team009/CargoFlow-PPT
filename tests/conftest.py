@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.auth import get_current_user
 from app.models import UserRole
+from app.utils import email
 
 
 # ---------------- DUMMY USER ----------------
@@ -32,3 +33,9 @@ def client():
         yield c
 
     app.dependency_overrides.clear()
+
+@pytest.fixture(autouse=True)
+def mock_email(monkeypatch):
+    def fake_send_email(*args, **kwargs):
+        return True
+    monkeypatch.setattr(email, "send_email", fake_send_email)

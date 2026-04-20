@@ -30,6 +30,15 @@ class AgentDutyStatus(enum.Enum):
     ON_DUTY = "ON_DUTY"
     OFF_DUTY = "OFF_DUTY"
 
+class PaymentStatus(enum.Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    FAILED = "FAILED"
+
+class PaymentMethod(enum.Enum):
+    CASH = "CASH"
+    UPI = "UPI"
+    CARD = "CARD"
 
 # -------------------- Business --------------------
 
@@ -112,6 +121,8 @@ class Shipment(Base):
 
     weight = Column(Float, nullable=False)
     price = Column(Float, nullable=False)
+    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
+    payment_method = Column(Enum(PaymentMethod), nullable=True)
 
     status = Column(Enum(ShipmentStatus), default=ShipmentStatus.CREATED, nullable=False)
 

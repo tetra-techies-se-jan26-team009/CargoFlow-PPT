@@ -30,10 +30,8 @@ def agent_dashboard(db: Session = Depends(get_db),
         ])
     ).count()
 
-    earnings = db.query(func.sum(Shipment.price)).filter(
-        Shipment.assigned_agent_id == current_user.id,
-        Shipment.status == ShipmentStatus.DELIVERED
-    ).scalar() or 0
+    earnings = db.query(func.sum(Shipment.price)).filter(Shipment.assigned_agent_id == current_user.id,
+                                                         Shipment.payment_status == PaymentStatus.PAID).scalar() or 0
 
     active_shipment = db.query(Shipment).filter(
         Shipment.assigned_agent_id == current_user.id,
@@ -111,17 +109,21 @@ def agent_dashboard(db: Session = Depends(get_db),
 
 @router.patch("/shipments/{id}/status")
 def update_shipment_status(id: int,
-                  data: AgentUpdateShipmentStatus,
-                  db: Session = Depends(get_db),
-                  current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
+                           data: AgentUpdateShipmentStatus,
+                           db: Session = Depends(get_db),
+                           current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
     
     shipment = db.query(Shipment).filter(Shipment.id == id).first()
 
     if not shipment:
         raise HTTPException(status_code=404, detail="Shipment not found")
+
     if shipment.assigned_agent_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
-    
+
+    if shipment.status == ShipmentStatus.DELIVERED:
+        raise HTTPException(status_code=400, detail="Shipment already completed")
+
     VALID_TRANSITIONS = {
         ShipmentStatus.ASSIGNED: [ShipmentStatus.OUT_FOR_DELIVERY],
         ShipmentStatus.OUT_FOR_DELIVERY: [
@@ -129,17 +131,39 @@ def update_shipment_status(id: int,
             ShipmentStatus.FAILED
         ],
     }
+
     if shipment.status not in VALID_TRANSITIONS or data.status not in VALID_TRANSITIONS[shipment.status]:
         raise HTTPException(status_code=400, detail="Invalid status transition")
-    
+
+
     shipment.status = data.status
+
+    # ---------------- PAYMENT LOGIC ----------------
+
+    if data.status == ShipmentStatus.DELIVERED:
+        if shipment.payment_status == PaymentStatus.PAID:
+            raise HTTPException(status_code=400, detail="Payment already completed")
+
+        if not data.payment_method:
+            raise HTTPException(status_code=400, detail="Payment method required for delivered shipment")
+
+        shipment.payment_status = PaymentStatus.PAID
+        shipment.payment_method = data.payment_method
+
+    elif data.status == ShipmentStatus.FAILED:
+        shipment.payment_status = PaymentStatus.FAILED
+
+    # ---------------- STATUS LOG ----------------
 
     log = ShipmentStatusLog(
         shipment_id=shipment.id,
         status=data.status,
         updated_by=current_user.id,
-        remarks=data.remarks)
+        remarks=data.remarks
+    )
     db.add(log)
+
+    # ---------------- TRACKING ----------------
 
     if current_user.current_lat and current_user.current_lng:
         tracking = TrackingUpdate(
@@ -147,7 +171,8 @@ def update_shipment_status(id: int,
             agent_id=current_user.id,
             latitude=current_user.current_lat,
             longitude=current_user.current_lng,
-            status=data.status)
+            status=data.status
+        )
         db.add(tracking)
 
     db.commit()

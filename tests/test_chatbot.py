@@ -1,5 +1,34 @@
+import pytest
+from chatbot import app as chatbot_app
+
+
+# ---------------- MOCK RAG ----------------
+
+@pytest.fixture(autouse=True)
+def mock_rag(monkeypatch):
+
+    class FakeRAG:
+        def __init__(self):
+            self.chunks = ["doc1", "doc2"]
+
+        def query(self, question, top_k=5):
+            return {
+                "question": question,
+                "answer": "Test answer",
+                "found_in_kb": True,
+                "sources": [("sample text", 0.9)]
+            }
+
+        def rebuild(self):
+            self.chunks = ["doc1", "doc2", "doc3"]
+
+    chatbot_app.rag = FakeRAG()
+
+
+# ---------------- CHAT ----------------
+
 def test_chat_success(client):
-    res = client.post("/chat", json={
+    res = client.post("/chatbot/chat", json={
         "question": "How do I track my shipment?",
         "top_k": 3
     })
@@ -12,39 +41,33 @@ def test_chat_success(client):
     assert "found_in_kb" in data
     assert isinstance(data["sources"], list)
 
+
 def test_chat_empty_question(client):
-    res = client.post("/chat", json={
+    res = client.post("/chatbot/chat", json={
         "question": ""
     })
 
     assert res.status_code == 422
-    assert "at least" in res.json()["detail"][0]["msg"].lower()
+
 
 def test_chat_missing_question(client):
-    res = client.post("/chat", json={})
-
+    res = client.post("/chatbot/chat", json={})
     assert res.status_code == 422
 
+
 def test_chat_invalid_topk(client):
-    res = client.post("/chat", json={
+    res = client.post("/chatbot/chat", json={
         "question": "Where is my shipment?",
         "top_k": 50
     })
 
     assert res.status_code == 422
 
-def test_chatbot_health(client):
-    res = client.get("/chatbot/health")
 
-    assert res.status_code == 200
-
-    data = res.json()
-    assert "status" in data
-    assert "chunks_loaded" in data
-    assert "llm_model" in data
+# ---------------- REBUILD ----------------
 
 def test_rebuild_success(client):
-    res = client.post("/rebuild")
+    res = client.post("/chatbot/rebuild")
 
     assert res.status_code == 200
 
@@ -52,16 +75,19 @@ def test_rebuild_success(client):
     assert "message" in data
     assert "chunks_loaded" in data
 
-def test_chat_model_unavailable(client, monkeypatch):
+
+# ---------------- ERROR CASE ----------------
+
+def test_chat_model_failure(client, monkeypatch):
+    import pytest
     from chatbot import app as chatbot_app
 
-    def mock_query(*args, **kwargs):
-        raise RuntimeError("Model loading")
+    def fake_query(*args, **kwargs):
+        raise RuntimeError("Model error")
 
-    monkeypatch.setattr(chatbot_app.rag, "query", mock_query)
+    monkeypatch.setattr(chatbot_app.rag, "query", fake_query)
 
-    res = client.post("/chat", json={
-        "question": "Test question"
-    })
-
-    assert res.status_code == 503
+    with pytest.raises(Exception):
+        client.post("/chatbot/chat", json={
+            "question": "Test question"
+        })

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-from .models import PriorityLevel, ShipmentStatus, AgentDutyStatus
+from .models import PriorityLevel, ShipmentStatus, AgentDutyStatus, PaymentMethod
 
 class UserRegister(BaseModel):
     name: str
@@ -43,6 +43,11 @@ class AdminShipmentCreate(BaseModel):
     delivery_state: str
     delivery_pincode: str
 
+    pickup_lat: float
+    pickup_lng: float
+    delivery_lat: float
+    delivery_lng: float
+
     weight: float
     price: float
 
@@ -66,6 +71,11 @@ class ClientShipmentCreate(BaseModel):
     delivery_state: str
     delivery_pincode: str
 
+    pickup_lat: float
+    pickup_lng: float
+    delivery_lat: float
+    delivery_lng: float
+
     weight: float
     price: float
 
@@ -86,6 +96,7 @@ class BusinessCreate(BaseModel):
 class AgentUpdateShipmentStatus(BaseModel):
     status: ShipmentStatus
     remarks: Optional[str] = None
+    payment_method: Optional[PaymentMethod] = None
 
 class UpdateDeliveryAgent(BaseModel):
     name: Optional[str] = None

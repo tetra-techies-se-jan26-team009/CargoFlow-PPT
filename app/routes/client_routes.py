@@ -167,14 +167,18 @@ def create_shipment(data: ClientShipmentCreate,
         line1=data.pickup_line1,
         city=data.pickup_city,
         state=data.pickup_state,
-        pincode=data.pickup_pincode
+        pincode=data.pickup_pincode,
+        latitude=data.pickup_lat,
+        longitude=data.pickup_lng
     )
 
     delivery = Address(
         line1=data.delivery_line1,
         city=data.delivery_city,
         state=data.delivery_state,
-        pincode=data.delivery_pincode
+        pincode=data.delivery_pincode,
+        latitude=data.delivery_lat,
+        longitude=data.delivery_lng
     )
 
     db.add_all([pickup, delivery])
