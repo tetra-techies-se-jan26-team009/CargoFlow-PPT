@@ -82,14 +82,6 @@ python -m pytest -v
 
 ---
 
-## 8. Test Coverage
-
-```bash
-python -m pytest --cov=app --cov-report=term-missing
-```
-
----
-
 ## Roles in System
 
 | Role            | Permissions                        |
