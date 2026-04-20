@@ -145,6 +145,14 @@ class CargoFlowRAG:
 
         q = question.lower()
 
+        if any(word in q for word in ["hi", "hello", "hey", "hii", "helo"]):
+            return {
+                "question": question,
+                "answer": "Hello! How can I help you with your shipment today?",
+                "sources": [],
+                "found_in_kb": False
+            }
+
 
         tracking_id = extract_tracking_id(question)
         if tracking_id:
