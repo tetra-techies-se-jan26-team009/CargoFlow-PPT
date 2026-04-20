@@ -71,8 +71,12 @@ def test_create_shipment_missing_fields(client):
 # ---------------- TRACK ----------------
 
 def test_track_invalid(client):
-    res = client.get("/api/v1/client/track/INVALID")
+    res = client.get("/api/v1/client/track/CF-00000000-0000")
     assert res.status_code == 404
+
+def test_track_invalid_format(client):
+    res = client.get("/api/v1/client/track/INVALID")
+    assert res.status_code == 400
 
 
 # ---------------- BUSINESS ----------------
