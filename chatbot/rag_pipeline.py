@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
 from app.database import SessionLocal
-from app.models import Shipment
+from app.models import Shipment, TrackingUpdate
 
 from .embeddings import build_and_save, load, retrieve, get_model
 
@@ -56,10 +56,7 @@ def handle_tracking(tracking_id: str):
     db = SessionLocal()
 
     try:
-        shipment = db.query(Shipment).filter(
-            Shipment.tracking_number == tracking_id
-        ).first()
-
+        shipment = db.query(Shipment).filter(Shipment.tracking_number == tracking_id).first()
         if not shipment:
             return {
                 "answer": "Tracking ID not found",
@@ -79,13 +76,23 @@ def handle_tracking(tracking_id: str):
         pickup_city = shipment.pickup_address.city if shipment.pickup_address else "N/A"
         delivery_city = shipment.delivery_address.city if shipment.delivery_address else "N/A"
 
+        latest_tracking = db.query(TrackingUpdate)\
+            .filter(TrackingUpdate.shipment_id == shipment.id)\
+            .order_by(TrackingUpdate.timestamp.desc())\
+            .first()
+
+        lat = latest_tracking.latitude if latest_tracking else "N/A"
+        lng = latest_tracking.longitude if latest_tracking else "N/A"
+
         return {
             "answer": (
                 f"Tracking ID: {shipment.tracking_number}\n"
                 f"Status: {shipment.status.value}\n"
                 f"From: {pickup_city}\n"
                 f"To: {delivery_city}\n"
-                f"Progress: {progress}%"
+                f"Progress: {progress}%\n"
+                f"Current Location: ({lat}, {lng})\n"
+                f"Map: https://www.google.com/maps?q={lat},{lng}"
             ),
             "sources": [],
             "found_in_kb": False
