@@ -278,6 +278,22 @@ def admin_dashboard_shipments(db: Session = Depends(get_db),
 
     shipments_query = db.query(Shipment).order_by(Shipment.created_at.desc()).all()
 
+    total = db.query(Shipment).count()
+
+    delivered = db.query(Shipment).filter(
+        Shipment.status == ShipmentStatus.DELIVERED
+    ).count()
+
+    failed = db.query(Shipment).filter(
+        Shipment.status == ShipmentStatus.FAILED
+    ).count()
+
+    in_transit = db.query(Shipment).filter(
+        Shipment.status.in_([ShipmentStatus.ASSIGNED, ShipmentStatus.OUT_FOR_DELIVERY])
+    ).count()
+
+    performance = (delivered / total * 100) if total > 0 else 0
+
 
     shipments = [
         {
@@ -287,6 +303,14 @@ def admin_dashboard_shipments(db: Session = Depends(get_db),
             "agent": s.assigned_agent.name if s.assigned_agent else "Unassigned",
             "origin": s.pickup_address.city,
             "destination": s.delivery_address.city,
+            "pickup_coords": {
+            "lat": s.pickup_address.latitude,
+            "lng": s.pickup_address.longitude
+            },
+            "delivery_coords": {
+                "lat": s.delivery_address.latitude,
+                "lng": s.delivery_address.longitude
+            },
             "weight": s.weight,
             "price": s.price,
             "status": s.status.value,
@@ -308,7 +332,11 @@ def admin_dashboard_shipments(db: Session = Depends(get_db),
         "delivered": delivered,
         "delayed": delayed,
         "pending": pending,
-        "shipments": shipments
+        "shipments": shipments,
+        "performance": round(performance, 2),
+        "delivered": delivered,
+        "failed": failed,
+        "in_transit": in_transit,
     }
 
 @router.get("/dashboard/agents", status_code=200)
