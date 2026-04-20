@@ -11,9 +11,21 @@ from chatbot.app import router as chatbot_router
 import chatbot.app as chatbot_module
 from chatbot.rag_pipeline import CargoFlowRAG
 
+
+from fastapi.middleware.cors import CORSMiddleware
+
 load_dotenv()
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
