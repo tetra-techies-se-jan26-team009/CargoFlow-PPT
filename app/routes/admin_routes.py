@@ -292,7 +292,7 @@ def admin_dashboard_shipments(db: Session = Depends(get_db),
         Shipment.status.in_([ShipmentStatus.ASSIGNED, ShipmentStatus.OUT_FOR_DELIVERY])
     ).count()
 
-    performance = (delivered / total * 100) if total > 0 else 0
+    performance = ((delivered / total )* 100) if total > 0 else 0
 
 
     shipments = [
