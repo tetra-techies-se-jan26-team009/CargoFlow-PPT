@@ -101,11 +101,13 @@ export default function TrackingPage() {
         <section className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-6">
           {(data?.pickupCoords || data?.pickup_coords) &&
             (data?.deliveryCoords || data?.delivery_coords) ? (
-            <TrackingMap
-              pickup={data.pickupCoords || data.pickup_coords}
-              delivery={data.deliveryCoords || data.delivery_coords}
-              currentAgent={data.agentCoords}
-            />
+            <div className="w-full h-[400px]">
+              <TrackingMap
+                pickup={data.pickupCoords || data.pickup_coords}
+                delivery={data.deliveryCoords || data.delivery_coords}
+                currentAgent={data.agentCoords}
+              />
+            </div>
           ) : (
             <div className="text-sm text-gray-500">Location data not available</div>
           )}

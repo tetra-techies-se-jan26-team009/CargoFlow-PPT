@@ -161,6 +161,7 @@ export default function ShipmentsPage() {
         );
         const matchStatus = statusFilter === "All" || s.status === statusFilter;
         const matchRisk = riskFilter === "All" || s.risk === riskFilter;
+
         return matchStatus && matchRisk && matchSearch;
     });
 
