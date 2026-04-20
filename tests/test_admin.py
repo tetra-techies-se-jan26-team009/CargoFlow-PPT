@@ -23,14 +23,22 @@ def test_create_shipment_invalid_sender(client):
         "receiver_name": "R",
         "receiver_phone": "123",
         "receiver_email": "r@test.com",
+
         "pickup_line1": "A",
         "pickup_city": "C",
         "pickup_state": "S",
         "pickup_pincode": "1",
+
         "delivery_line1": "B",
         "delivery_city": "D",
         "delivery_state": "S",
         "delivery_pincode": "2",
+
+        "pickup_lat": 0.0,
+        "pickup_lng": 0.0,
+        "delivery_lat": 0.0,
+        "delivery_lng": 0.0,
+
         "weight": 1,
         "price": 10
     })
