@@ -372,16 +372,33 @@ def track_shipment_public(tracking_id: str,
             "destination": shipment.delivery_address.city
         },
 
+
+        "pickup_address": {
+            "line1": shipment.pickup_address.line1,
+            "city": shipment.pickup_address.city
+        },
+        "delivery_address": {
+            "line1": shipment.delivery_address.line1,
+            "city": shipment.delivery_address.city
+        },
+
+        "receiver_name": shipment.receiver_name,
+        "receiver_phone": shipment.receiver_phone,
+        "receiver_email": shipment.receiver_email,
+
+        "weight": shipment.weight,
+        "price": shipment.price,
+
+        "created_at": shipment.created_at,
+        "eta": shipment.eta_end_time,
+
         "agent": {
             "name": shipment.assigned_agent.name if shipment.assigned_agent else "Not Assigned",
             "phone": shipment.assigned_agent.phone if shipment.assigned_agent else None
         },
 
-        "eta": shipment.eta_end_time,
-
         "timeline": timeline
     }
-
 @router.get("/shipments", status_code=200)
 def client_shipments(db: Session = Depends(get_db),
                      current_user: User = Depends(require_role(UserRole.BUSINESS_CLIENT))):
