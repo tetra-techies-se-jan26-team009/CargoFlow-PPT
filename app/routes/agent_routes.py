@@ -97,11 +97,20 @@ def agent_dashboard(db: Session = Depends(get_db),
     shipment_list = []
     for s in shipments:
         shipment_list.append({
-            "id": s.id,
-            "tracking_number": s.tracking_number,
-            "receiver_name": s.receiver_name,
-            "status": s.status.value
-        })
+        "id": s.id,
+        "tracking_number": s.tracking_number,
+        "receiver_name": s.receiver_name,
+        "status": s.status.value,
+
+        "pickup_address": {
+            "latitude": s.pickup_address.latitude,
+            "longitude": s.pickup_address.longitude
+        },
+        "delivery_address": {
+            "latitude": s.delivery_address.latitude,
+            "longitude": s.delivery_address.longitude
+        }
+    })
 
     return {
         "summary": {
