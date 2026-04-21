@@ -18,16 +18,16 @@ LLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
 SYSTEM_PROMPT = """You are a smart logistics assistant for CargoFlow.
 
-Capabilities:
-- Answer from knowledge base
-- Track shipments using tracking ID
-- Calculate shipping cost (₹45 per kg)
+Only answer questions related to:
+- shipment tracking
+- delivery services
+- pricing
+- logistics
 
-Rules:
-- If tracking ID is given → track shipment
-- If weight is given → calculate price
-- Otherwise → answer from knowledge base
-- Be concise and helpful
+If the question is not related to CargoFlow, reply:
+"Sorry, I can only help with CargoFlow logistics queries."
+
+Be concise and helpful.
 """
 
 
@@ -46,23 +46,15 @@ def extract_weight(text: str):
 # ---------------- FEATURES ---------------- 
 
 def handle_tracking(tracking_id: str):
-    if not tracking_id:
-        return {
-            "answer": "Please provide a valid tracking ID",
-            "sources": [],
-            "found_in_kb": False
-        }
-
     db = SessionLocal()
 
     try:
-        shipment = db.query(Shipment).filter(Shipment.tracking_number == tracking_id).first()
+        shipment = db.query(Shipment).filter(
+            Shipment.tracking_number == tracking_id
+        ).first()
+
         if not shipment:
-            return {
-                "answer": "Tracking ID not found",
-                "sources": [],
-                "found_in_kb": False
-            }
+            return "Tracking ID not found"
 
         progress_map = {
             "CREATED": 10,
@@ -81,48 +73,29 @@ def handle_tracking(tracking_id: str):
             .order_by(TrackingUpdate.timestamp.desc())\
             .first()
 
-        if latest_tracking and latest_tracking.latitude and latest_tracking.longitude:
+        if latest_tracking:
             lat = latest_tracking.latitude
             lng = latest_tracking.longitude
             map_url = f"https://www.google.com/maps?q={lat},{lng}"
         else:
-            lat = "Not available"
-            lng = "Not available"
-            map_url = "Location not available"
+            lat, lng, map_url = "Not available", "Not available", "Location not available"
 
-        return {
-            "answer": (
-                f"Tracking ID: {shipment.tracking_number}\n"
-                f"Status: {shipment.status.value}\n"
-                f"From: {pickup_city}\n"
-                f"To: {delivery_city}\n"
-                f"Progress: {progress}%\n"
-                f"Current Location: {lat}, {lng}\n"
-                f"Map: {map_url}"
-            ),
-            "sources": [],
-            "found_in_kb": False
-        }
+        return (
+            f"Tracking ID: {shipment.tracking_number}\n"
+            f"Status: {shipment.status.value}\n"
+            f"From: {pickup_city}\n"
+            f"To: {delivery_city}\n"
+            f"Progress: {progress}%\n"
+            f"Current Location: {lat}, {lng}\n"
+            f"Map: {map_url}"
+        )
 
     finally:
         db.close()
 
 
 def handle_price(weight: int):
-    if not weight:
-        return {
-            "answer": "Please provide weight (e.g., cost for 5kg)",
-            "sources": [],
-            "found_in_kb": False
-        }
-
-    cost = weight * 45
-
-    return {
-        "answer": f"Estimated cost for {weight} kg is ₹{cost}",
-        "sources": [],
-        "found_in_kb": False
-    }
+    return f"Estimated cost for {weight} kg is ₹{weight * 45}"
 
 
 # ---------------- LLM ---------------- 
@@ -136,7 +109,7 @@ def call_llm(context: str, question: str):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"{context}\n\nQuestion: {question}"}
         ],
-        max_tokens=300,
+        max_tokens=200,
         temperature=0.2,
     )
 
@@ -158,34 +131,46 @@ class CargoFlowRAG:
 
         q = question.lower()
 
+        # Greeting
         if re.search(r"\b(hi|hello|hey|hii|helo)\b", q):
             return {
                 "question": question,
-                "answer": "Hello! 👋 I can help you with tracking shipments, pricing, and delivery info. What would you like to know?",
+                "answer": "Hello! 👋 I can help you with tracking shipments, pricing, and delivery info.",
                 "sources": [],
                 "found_in_kb": False
             }
 
-
+        # Tracking
         tracking_id = extract_tracking_id(question)
         if tracking_id:
-            result = handle_tracking(tracking_id)
-
             return {
                 "question": question,
-                "answer": result["answer"],
+                "answer": handle_tracking(tracking_id),
+                "sources": [],
+                "found_in_kb": False
+            }
+
+        # Pricing
+        weight = extract_weight(question)
+        if any(word in q for word in ["cost", "price", "charge", "fee"]) and weight:
+            return {
+                "question": question,
+                "answer": handle_price(weight),
                 "sources": [],
                 "found_in_kb": False
             }
 
 
-        weight = extract_weight(question)
-        if any(word in q for word in ["cost", "price", "charge", "fee"]) and weight:
-            result = handle_price(weight)
+        LOGISTICS_KEYWORDS = [
+            "shipment", "delivery", "track", "tracking", "parcel",
+            "logistics", "courier", "price", "cost", "kg",
+            "pickup", "cargo", "shipping"
+        ]
 
+        if not any(word in q for word in LOGISTICS_KEYWORDS):
             return {
                 "question": question,
-                "answer": result["answer"],
+                "answer": "Sorry, I can only help with CargoFlow logistics queries.",
                 "sources": [],
                 "found_in_kb": False
             }
@@ -196,16 +181,23 @@ class CargoFlowRAG:
         if not sources:
             return {
                 "question": question,
-                "answer": call_llm("", question),
+                "answer": "Sorry, I couldn’t find relevant information in CargoFlow knowledge base.",
                 "sources": [],
                 "found_in_kb": False
             }
 
-        context = "\n\n".join([c for c, _ in sources]) if sources else ""
+        context = "\n\n".join([c for c, _ in sources])
+
+
         if len(context) < 50:
-            answer = call_llm("", question)
-        else:
-            answer = call_llm(context, question)
+            return {
+                "question": question,
+                "answer": "Sorry, I can only answer based on CargoFlow knowledge base.",
+                "sources": [],
+                "found_in_kb": False
+            }
+
+        answer = call_llm(context, question)
 
         return {
             "question": question,
