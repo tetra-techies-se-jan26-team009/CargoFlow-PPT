@@ -16,8 +16,8 @@ PKL_PATH = os.path.join(VECTOR_STORE_DIR, "index.pkl")
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-CHUNK_SIZE = 80
-OVERLAP = 20
+CHUNK_SIZE = 150
+OVERLAP = 30
 
 
 def load_text(path: str = DATA_PATH) -> str:
@@ -96,7 +96,7 @@ def retrieve(query, index, chunks, model, top_k=5):
 
     results = []
     for s, i in zip(scores[0], idx[0]):
-        if i != -1 and s > 0.3:
+        if i != -1 and s > 0.2:
             results.append((chunks[i], float(s)))
 
     return results

@@ -152,10 +152,10 @@ class CargoFlowRAG:
 
         q = question.lower()
 
-        if any(word in q for word in ["hi", "hello", "hey", "hii", "helo"]):
+        if re.search(r"\b(hi|hello|hey|hii|helo)\b", q):
             return {
                 "question": question,
-                "answer": "Hello! How can I help you with your shipment today?",
+                "answer": "Hello! 👋 I can help you with tracking shipments, pricing, and delivery info. What would you like to know?",
                 "sources": [],
                 "found_in_kb": False
             }
@@ -190,13 +190,16 @@ class CargoFlowRAG:
         if not sources:
             return {
                 "question": question,
-                "answer": "Sorry, I don't have that information.",
+                "answer": call_llm("", question),
                 "sources": [],
                 "found_in_kb": False
             }
 
-        context = "\n\n".join([c for c, _ in sources])
-        answer = call_llm(context, question)
+        context = "\n\n".join([c for c, _ in sources]) if sources else ""
+        if len(context) < 50:
+            answer = call_llm("", question)
+        else:
+            answer = call_llm(context, question)
 
         return {
             "question": question,
