@@ -85,8 +85,7 @@ class ClientShipmentCreate(BaseModel):
     priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
 
 class LocationUpdate(BaseModel):
-    lat: float
-    lng: float
+    pincode: str
     shipment_id: Optional[int] = None
 
 class BusinessCreate(BaseModel):

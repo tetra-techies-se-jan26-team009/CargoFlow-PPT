@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
-
+import requests
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
@@ -192,14 +192,14 @@ def update_shipment_status(id: int,
 
     # -------- TRACKING --------
 
-    if current_user.current_lat and current_user.current_lng:
-        db.add(TrackingUpdate(
-            shipment_id=shipment.id,
-            agent_id=current_user.id,
-            latitude=current_user.current_lat,
-            longitude=current_user.current_lng,
-            status=data.status
-        ))
+    # if current_user.current_lat and current_user.current_lng:
+    #     db.add(TrackingUpdate(
+    #         shipment_id=shipment.id,
+    #         agent_id=current_user.id,
+    #         latitude=current_user.current_lat,
+    #         longitude=current_user.current_lng,
+    #         status=data.status
+    #     ))
 
     db.commit()
     db.refresh(shipment)
@@ -208,17 +208,51 @@ def update_shipment_status(id: int,
 
 
 # ---------------- UPDATE LOCATION ----------------
+def get_lat_lng_from_pincode(pincode: str):
+    url = "https://nominatim.openstreetmap.org/search"
+
+    params = {
+        "postalcode": pincode,
+        "countrycodes": "in",
+        "format": "json",
+        "addressdetails": 1
+    }
+
+    headers = {
+        "User-Agent": "CargoFlow-App"
+    }
+
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+    except Exception:
+        return None, None
+    
+    if not data:
+        return None, None
+
+    lat = float(data[0]["lat"])
+    lng = float(data[0]["lon"])
+
+    return lat, lng
+
 
 @router.post("/update/live-location")
 def update_location(data: LocationUpdate,
                     db: Session = Depends(get_db),
                     current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
 
-    current_user.current_lat = data.lat
-    current_user.current_lng = data.lng
+    lat, lng = get_lat_lng_from_pincode(data.pincode)
+
+    if lat is None or lng is None:
+        raise HTTPException(400, "Invalid pincode")
+
+    current_user.current_lat = lat
+    current_user.current_lng = lng
     current_user.last_location_update = datetime.now(timezone.utc)
 
-    if data.shipment_id:
+    if data.shipment_id is not None:
         shipment = db.query(Shipment).filter(Shipment.id == data.shipment_id).first()
 
         if not shipment:
@@ -230,14 +264,18 @@ def update_location(data: LocationUpdate,
         db.add(TrackingUpdate(
             shipment_id=data.shipment_id,
             agent_id=current_user.id,
-            latitude=data.lat,
-            longitude=data.lng,
+            latitude=lat,
+            longitude=lng,
             status=shipment.status
         ))
 
     db.commit()
 
-    return {"message": "Location updated"}
+    return {
+        "message": "Location updated via pincode",
+        "lat": lat,
+        "lng": lng
+    }
 
 
 # ---------------- DUTY STATUS ----------------
