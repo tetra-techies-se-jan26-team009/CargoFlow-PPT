@@ -33,37 +33,92 @@ function TypingIndicator() {
   );
 }
 
+// Tracking Card 
+function TrackingCard({ data }) {
+  // Parsing the raw string from your backend (if you don't change the API)
+  const lines = data.split('\n');
+  const details = {};
+  lines.forEach(line => {
+    const [key, ...val] = line.split(': ');
+    details[key.trim()] = val.join(': ').trim();
+  });
+
+  const progress = parseInt(details["Progress"]) || 0;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm my-2 max-w-sm">
+      <div className="bg-blue-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center gap-4">
+        <span className="text-xs font-bold text-blue-700">{details["Tracking ID"]} {"  "} </span>
+        <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase">
+          {details["Status"]?.replace(/_/g, ' ')}
+        </span>
+      </div>
+      
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-center">
+            <p className="text-[10px] text-gray-400 uppercase font-semibold">From</p>
+            <p className="text-sm font-bold text-gray-800">{details["From"]}</p>
+          </div>
+          <div className="flex-1 px-4 relative">
+             {/* Progress Line */}
+            <div className="h-1 bg-gray-100 w-full rounded-full">
+              <div className="h-1 bg-blue-500 rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="absolute top-[-4px] left-[45%] text-blue-500 bg-white rounded-full">
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] text-gray-400 uppercase font-semibold">To</p>
+            <p className="text-sm font-bold text-gray-800">{details["To"]}</p>
+          </div>
+        </div>
+
+        <a 
+          href={details["Map"]} 
+          target="_blank" 
+          rel="noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-2 bg-gray-50 hover:bg-gray-100 text-blue-600 text-xs font-medium rounded-lg border border-gray-200 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          View Live Location
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ─── Message Bubble ──────────────────────────────────────────────────────────
 function MessageBubble({ msg }) {
   const isUser = msg.role === "user";
-  const timeStr = msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const isTrackingInfo = !isUser && msg.text.includes("Tracking ID: CF-");
 
   return (
     <div className={cn("flex items-end gap-2 mb-4", isUser && "flex-row-reverse")}>
-      {/* Avatar */}
       {!isUser && (
         <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
           {BOT_NAME[0]}
         </div>
       )}
 
-      <div className={cn("flex flex-col gap-1 max-w-[78%]", isUser && "items-end")}>
-        <div
-          className={cn(
+      <div className={cn("flex flex-col gap-1 max-w-[85%]", isUser && "items-end")}>
+        {isTrackingInfo ? (
+          <TrackingCard data={msg.text} />
+        ) : (
+          <div className={cn(
             "px-4 py-2.5 text-sm leading-relaxed shadow-sm",
-            isUser
-              ? "bg-blue-600 text-white rounded-2xl rounded-br-sm"
-              : "bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-bl-sm"
-          )}
-        >
-          {msg.text}
-        </div>
-        <span className="text-[10px] text-gray-400 px-1">{timeStr}</span>
+            isUser ? "bg-blue-600 text-white rounded-2xl rounded-br-sm" : "bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-bl-sm"
+          )}>
+            {msg.text}
+          </div>
+        )}
+        <span className="text-[10px] text-gray-400 px-1">
+          {msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        </span>
       </div>
     </div>
   );
 }
-
 
 
 // ─── Chat Window ─────────────────────────────────────────────────────────────

@@ -1,25 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 //eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import {
-  Package, MapPin, Navigation, Clock, CheckCircle,
-  Scan, DollarSign, TrendingUp, Star, List,
-  BarChart3, MessageSquare, Route as RouteIcon,
-  Zap, Award, Target, Phone, ChevronRight,
-  ShieldCheck, AlertCircle, Search, Activity
-} from 'lucide-react';
+  Package,
+  MapPin,
+  Navigation,
+  Clock,
+  CheckCircle,
+  Scan,
+  DollarSign,
+  TrendingUp,
+  Star,
+  List,
+  BarChart3,
+  MessageSquare,
+  Route as RouteIcon,
+  Zap,
+  Award,
+  Target,
+  Phone,
+  ChevronRight,
+  ShieldCheck,
+  AlertCircle,
+  Search,
+  Activity,
+} from "lucide-react";
 
 // Hooks & API Utility
-import { useToast } from '../../hooks/useToast';
-import { getAgentDashboard, updateShipmentStatus } from '../../utils/agentAPI';
-import { useAuth } from '../../hooks/useAuth';
-
+import { useToast } from "../../hooks/useToast";
+import {
+  getAgentDashboard,
+  updateShipmentStatus,
+  updateLiveLocation,
+} from "../../utils/agentAPI";
+import { useAuth } from "../../hooks/useAuth";
+import { getCoordsFromPincode } from "../../utils/geocoding";
 // Components
-import ActiveDeliveryTracker from './ActiveDeliveryTracker';
-import DeliveryCard from './DeliveryCard';
-import ScannerModal from './ScannerModal';
-import DeliveryConfirmationModal from './DeliveryConfirmationModal';
-import AgentNavbar from '../../components/AgentNavbar';
+import ActiveDeliveryTracker from "./ActiveDeliveryTracker";
+import DeliveryCard from "./DeliveryCard";
+import DeliveryConfirmationModal from "./DeliveryConfirmationModal";
+import AgentNavbar from "../../components/AgentNavbar";
 import TrackingMap from "../../components/TrackingMap";
 
 export function AgentDashboard() {
@@ -27,31 +47,37 @@ export function AgentDashboard() {
   const { user, loading: authLoading } = useAuth();
   // UI States
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('active');
-  //eslint-disable-next-line no-unused-vars
-  const [showScanner, setShowScanner] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
 
   // Data States
-  const [stats, setStats] = useState({ completed: 0, pending: 0, total: 0, earnings: 0, distance: 0, rating: 0 });
+  const [stats, setStats] = useState({
+    completed: 0,
+    pending: 0,
+    total: 0,
+    earnings: 0,
+    distance: 0,
+    rating: 0,
+  });
   const [activeDelivery, setActiveDelivery] = useState(null);
   const [upcomingList, setUpcomingList] = useState([]);
   const [completedList, setCompletedList] = useState([]);
-
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [pincode, setPincode] = useState("");
 
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
 
     try {
-      setLoading(prev => (stats.total === 0 ? true : prev));
+      setLoading((prev) => (stats.total === 0 ? true : prev));
 
       const data = await getAgentDashboard();
 
       if (data) {
         setStats(data.summary);
         const activeShipment = data.shipments?.find(
-          s => s.tracking_number === data.active_delivery?.tracking_id
+          (s) => s.tracking_number === data.active_delivery?.tracking_id,
         );
 
         if (!activeShipment) {
@@ -64,28 +90,28 @@ export function AgentDashboard() {
             id: data.active_delivery.tracking_id,
             customer: data.active_delivery.customer?.name || "Customer",
             phone: data.active_delivery.customer?.phone || "",
-            address: `${data.active_delivery.delivery_address?.line || ''}, ${data.active_delivery.delivery_address?.city || ''}`,
+            address: `${data.active_delivery.delivery_address?.line || ""}, ${data.active_delivery.delivery_address?.city || ""}`,
             packageType: (data.active_delivery.package?.weight || 0) + " kg",
             codAmount: `₹${data.active_delivery.package?.price || 0}`,
             cod: (data.active_delivery.package?.price || 0) > 0,
             pickup_coords: activeShipment?.pickup_address?.latitude
               ? {
                 lat: activeShipment.pickup_address.latitude,
-                lng: activeShipment.pickup_address.longitude
+                lng: activeShipment.pickup_address.longitude,
               }
               : null,
 
             delivery_coords: activeShipment?.delivery_address?.latitude
               ? {
                 lat: activeShipment.delivery_address.latitude,
-                lng: activeShipment.delivery_address.longitude
+                lng: activeShipment.delivery_address.longitude,
               }
               : null,
           });
           console.log("ACTIVE DELIVERY FINAL:", {
             tracking: data.active_delivery?.tracking_id,
             dbId: activeShipment?.id,
-            shipmentMatch: activeShipment
+            shipmentMatch: activeShipment,
           });
         } else {
           setActiveDelivery(null);
@@ -94,26 +120,28 @@ export function AgentDashboard() {
         if (data.shipments) {
           setUpcomingList(
             data.shipments
-              .filter(s =>
-                s.status?.toLowerCase() !== 'delivered' &&
-                s.status?.toLowerCase() !== 'failed' &&
-                s.tracking_number !== data.active_delivery?.tracking_id
+              .filter(
+                (s) =>
+                  s.status?.toLowerCase() !== "delivered" &&
+                  s.status?.toLowerCase() !== "failed" &&
+                  s.tracking_number !== data.active_delivery?.tracking_id,
               )
-              .map(s => ({
+              .map((s) => ({
                 ...s,
                 dbId: s.id,
-              }))
+              })),
           );
           setCompletedList(
             data.shipments
-              .filter(s =>
-                s.status?.toLowerCase() === 'delivered' ||
-                s.status?.toLowerCase() === 'failed'
+              .filter(
+                (s) =>
+                  s.status?.toLowerCase() === "delivered" ||
+                  s.status?.toLowerCase() === "failed",
               )
-              .map(s => ({
+              .map((s) => ({
                 ...s,
                 dbId: s.id,
-              }))
+              })),
           );
         }
       }
@@ -133,6 +161,57 @@ export function AgentDashboard() {
     }
   }, [user, loadDashboardData]);
 
+  const handleLocationUpdate = async () => {
+    try {
+      if (!/^[1-9][0-9]{5}$/.test(pincode)) {
+        addToast("Enter valid Indian pincode (6 digits)", "error");
+        return;
+      }
+
+      // 🔹 Convert pincode → coordinates
+      const coords = await getCoordsFromPincode(pincode);
+
+      if (!coords) {
+        addToast("Invalid or unsupported pincode", "error");
+        return;
+      }
+
+      const { lat, lng } = coords;
+
+      // India approx bounding box
+      if (
+        lat < 6 ||
+        lat > 38 || // latitude range
+        lng < 68 ||
+        lng > 98 // longitude range
+      ) {
+        addToast("Pincode is outside India", "error");
+        return;
+      }
+
+      if (!coords) {
+        addToast("Could not find location for pincode", "error");
+        return;
+      }
+
+      console.log("Resolved coords:", coords);
+
+      // 🔹 Send to backend
+      await updateLiveLocation(coords.lat, coords.lng, activeDelivery?.dbId);
+
+      addToast(`Location updated: ${coords.city}`, "success");
+
+      setShowLocationModal(false);
+      setPincode("");
+
+      // optional refresh
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
+      addToast("Location update failed", "error");
+    }
+  };
+
   const handleConfirmDelivery = async (data) => {
     const targetId = data?.dbId;
 
@@ -142,30 +221,37 @@ export function AgentDashboard() {
     }
 
     try {
-      // 1. Prepare structured remarks for the Admin to see
-      const remarks = `Recipient: ${data.customerName}. Method: ${data.payment_method}. Notes: ${data.remarks}`;
+      const backendPaymentMethod = data.payment_method === 'digital' ? 'UPI' : 'CASH';
 
-      // 2. Call the API with the new financial fields allowed by your updated backend
+      const remarks = `Recipient: ${data.customerName || 'N/A'}. Method: ${backendPaymentMethod}. Note: ${data.notes || ''}`;
+
       await updateShipmentStatus(
         targetId,
         "DELIVERED",
         remarks,
-        data.payment_method // Send the method (CASH/UPI)
+        backendPaymentMethod // Now sends 'UPI' or 'CASH'
       );
 
+      // 2. Immediately trigger a data reload from the server
+      // We await this so the "Loading" state finishes before we close the modal logic
+      await loadDashboardData();
+
       addToast("Shipment finalized and recorded!", "success");
+
+      // 3. Clean up UI states
       setShowConfirmation(false);
       setSelectedDelivery(null);
 
-      // 3. Re-fetch data so it moves from 'Active' to 'Logs' instantly
-      await loadDashboardData();
+      // 4. Force switch to the 'completed' tab so the user sees the result
+      setActiveTab("completed");
+
     } catch (err) {
+      console.error("Delivery confirmation failed:", err);
       addToast(err?.response?.data?.detail || "Update failed", "error");
+      // IMPORTANT: Re-throw the error so the Modal's catch block can stop the "Success" animation
+      throw err;
     }
   };
-
-
-
 
   if (authLoading || (loading && !stats.total)) {
     return (
@@ -175,7 +261,7 @@ export function AgentDashboard() {
     );
   }
 
-  const agentFirstName = user?.name?.split(" ")[0] || 'Agent';
+  const agentFirstName = user?.name?.split(" ")[0] || "Agent";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-blue-100">
@@ -195,21 +281,47 @@ export function AgentDashboard() {
             </h1>
           </div>
           <button
-            onClick={() => setShowScanner(true)}
+            onClick={() => setShowLocationModal(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 text-white rounded-xl shadow-lg hover:bg-blue-600 transition-all"
           >
-            <Scan className="w-4 h-4" />
-            <span className="font-bold tracking-tight text-xs uppercase">Scan Unit</span>
+            <span className="font-bold tracking-tight text-xs uppercase">
+              Update Location
+            </span>
           </button>
         </header>
 
         {/* Stats Grid */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <MetricCard title="Gross Earnings" value={`₹${stats.earnings}`} icon={DollarSign} color="blue" />
-          <MetricCard title="Completed" value={stats.completed} icon={CheckCircle} color="emerald" />
-          <MetricCard title="Route" value={`${stats.distance}km`} icon={RouteIcon} color="slate" />
-          <MetricCard title="Rating" value={stats.rating} icon={Star} color="amber" />
-          <MetricCard title="Pending" value={stats.pending} icon={Package} color="blue" />
+          <MetricCard
+            title="Gross Earnings"
+            value={`₹${stats.earnings}`}
+            icon={DollarSign}
+            color="blue"
+          />
+          <MetricCard
+            title="Completed"
+            value={stats.completed}
+            icon={CheckCircle}
+            color="emerald"
+          />
+          <MetricCard
+            title="Route"
+            value={`${stats.distance}km`}
+            icon={RouteIcon}
+            color="slate"
+          />
+          <MetricCard
+            title="Rating"
+            value={stats.rating}
+            icon={Star}
+            color="amber"
+          />
+          <MetricCard
+            title="Pending"
+            value={stats.pending}
+            icon={Package}
+            color="blue"
+          />
         </section>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -228,18 +340,19 @@ export function AgentDashboard() {
                       onComplete={() => {
                         setSelectedDelivery({
                           ...activeDelivery,
-                          dbId: activeDelivery?.dbId
+                          dbId: activeDelivery?.dbId,
                         });
                         setShowConfirmation(true);
                       }}
                     />
                   </div>
-
                 </div>
               ) : (
                 <div className="h-48 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
                   <Package className="w-8 h-8 text-slate-200 mb-2" />
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Awaiting Dispatch</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                    Awaiting Dispatch
+                  </p>
                 </div>
               )}
             </section>
@@ -248,31 +361,75 @@ export function AgentDashboard() {
             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
                 <nav className="flex gap-1.5 bg-slate-200/50 p-1 rounded-lg">
-                  <TabButton active={activeTab === 'active'} onClick={() => setActiveTab('active')} label="Manifest" />
-                  <TabButton active={activeTab === 'completed'} onClick={() => setActiveTab('completed')} label="Logs" />
+                  <TabButton
+                    active={activeTab === "active"}
+                    onClick={() => setActiveTab("active")}
+                    label="Manifest"
+                  />
+                  <TabButton
+                    active={activeTab === "completed"}
+                    onClick={() => setActiveTab("completed")}
+                    label="Logs"
+                  />
                 </nav>
               </div>
               <div className="p-4 min-h-[300px]">
                 <AnimatePresence mode="wait">
-                  {activeTab === 'active' ? (
-                    <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                      {upcomingList.length > 0 ? upcomingList.map((d, i) => (
-                        <DeliveryCard key={d.id} delivery={d} index={i} onStart={() => loadDashboardData()} />
-                      )) : <p className="text-center py-10 text-[10px] text-slate-400 font-bold uppercase">No pending manifest</p>}
+                  {activeTab === "active" ? (
+                    <motion.div
+                      key="active"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-3"
+                    >
+                      {upcomingList.length > 0 ? (
+                        upcomingList.map((d, i) => (
+                          <DeliveryCard
+                            key={d.id}
+                            delivery={d}
+                            index={i}
+                            onStart={() => loadDashboardData()}
+                          />
+                        ))
+                      ) : (
+                        <p className="text-center py-10 text-[10px] text-slate-400 font-bold uppercase">
+                          No pending manifest
+                        </p>
+                      )}
                     </motion.div>
                   ) : (
-                    <motion.div key="completed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                      {completedList.length > 0 ? completedList.map((d) => (
-                        <div key={d.id} className="p-3 border border-slate-100 rounded-xl flex justify-between items-center bg-slate-50/50">
-                          <div>
-                            <p className="text-xs font-bold text-slate-900">{d.tracking_number}</p>
-                            <p className="text-[10px] text-slate-500">{d.receiver_name}</p>
+                    <motion.div
+                      key="completed"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-3"
+                    >
+                      {completedList.length > 0 ? (
+                        completedList.map((d) => (
+                          <div
+                            key={d.id}
+                            className="p-3 border border-slate-100 rounded-xl flex justify-between items-center bg-slate-50/50"
+                          >
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">
+                                {d.tracking_number}
+                              </p>
+                              <p className="text-[10px] text-slate-500">
+                                {d.receiver_name}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-[9px] font-black px-2 py-1 rounded-md uppercase ${d.status?.toLowerCase() === "delivered" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                            >
+                              {d.status}
+                            </span>
                           </div>
-                          <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase ${d.status?.toLowerCase() === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                            {d.status}
-                          </span>
-                        </div>
-                      )) : <p className="text-center py-10 text-[10px] text-slate-400 font-bold uppercase">No completed logs yet</p>}
+                        ))
+                      ) : (
+                        <p className="text-center py-10 text-[10px] text-slate-400 font-bold uppercase">
+                          No completed logs yet
+                        </p>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -285,11 +442,15 @@ export function AgentDashboard() {
             <div className="bg-slate-950 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl">
               <div className="relative z-10 space-y-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">Performance</span>
+                  <span className="text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">
+                    Performance
+                  </span>
                   <Target className="w-4 h-4 text-blue-400" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black tabular-nums">82<span className="text-xl text-white/30">%</span></span>
+                  <span className="text-4xl font-black tabular-nums">
+                    82<span className="text-xl text-white/30">%</span>
+                  </span>
                 </div>
                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 w-[82%]" />
@@ -297,23 +458,70 @@ export function AgentDashboard() {
               </div>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-              <h3 className="font-black text-slate-900 uppercase tracking-widest text-[10px]">Support</h3>
+              <h3 className="font-black text-slate-900 uppercase tracking-widest text-[10px]">
+                Support
+              </h3>
               <div className="space-y-2">
                 <SupportLink icon={Phone} title="Helpline" color="red" />
-                <SupportLink icon={MessageSquare} title="Dispatch" color="blue" />
+                <SupportLink
+                  icon={MessageSquare}
+                  title="Dispatch"
+                  color="blue"
+                />
               </div>
             </div>
           </aside>
         </div>
       </main>
 
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-[300px] space-y-4">
+            <h2 className="text-sm font-bold">Enter Pincode</h2>
+
+            <input
+              type="text"
+              value={pincode}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ""); // only digits
+                if (value.length <= 6) {
+                  setPincode(value);
+                }
+              }}
+              maxLength={6}
+              className="w-full border p-2 rounded"
+              placeholder="e.g. 800001"
+            />
+            <button
+              onClick={handleLocationUpdate}
+              className="w-full bg-blue-600 text-white py-2 rounded"
+            >
+              Update
+            </button>
+
+            <button
+              onClick={() => setShowLocationModal(false)}
+              className="w-full text-gray-500 text-xs"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {showConfirmation && selectedDelivery && (
         <DeliveryConfirmationModal
           delivery={selectedDelivery}
-          onConfirm={(data) => handleConfirmDelivery({
-            ...data,
-            dbId: selectedDelivery?.dbId
-          })}
+          onClose={() => {
+            setShowConfirmation(false);
+            setSelectedDelivery(null);
+          }}
+          onConfirm={(data) =>
+            handleConfirmDelivery({
+              ...data,
+              dbId: selectedDelivery?.dbId,
+            })
+          }
         />
       )}
     </div>
@@ -323,33 +531,56 @@ export function AgentDashboard() {
 // ── Shared UI Sub-components ──
 //eslint-disable-next-line no-unused-vars
 function MetricCard({ title, value, icon: Icon, color }) {
-  const accent = { blue: 'bg-blue-600', emerald: 'bg-emerald-600', slate: 'bg-slate-900', amber: 'bg-amber-500' };
+  const accent = {
+    blue: "bg-blue-600",
+    emerald: "bg-emerald-600",
+    slate: "bg-slate-900",
+    amber: "bg-amber-500",
+  };
   return (
     <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:-translate-y-0.5">
-      <div className={`w-9 h-9 rounded-xl ${accent[color]} flex items-center justify-center mb-4 shadow-md`}>
+      <div
+        className={`w-9 h-9 rounded-xl ${accent[color]} flex items-center justify-center mb-4 shadow-md`}
+      >
         <Icon className="w-4.5 h-4.5 text-white" />
       </div>
-      <div className="text-xl font-black text-slate-950 tracking-tight">{value}</div>
-      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{title}</div>
+      <div className="text-xl font-black text-slate-950 tracking-tight">
+        {value}
+      </div>
+      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
+        {title}
+      </div>
     </div>
   );
 }
 
 function TabButton({ active, onClick, label }) {
   return (
-    <button onClick={onClick} className={`px-5 py-1.5 rounded-md text-[9px] font-black tracking-widest transition-all ${active ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+    <button
+      onClick={onClick}
+      className={`px-5 py-1.5 rounded-md text-[9px] font-black tracking-widest transition-all ${active ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+    >
       {label}
     </button>
   );
 }
 //eslint-disable-next-line no-unused-vars
 function SupportLink({ icon: Icon, title, color }) {
-  const themes = { red: 'bg-red-50 text-red-600', blue: 'bg-blue-50 text-blue-600' };
+  const themes = {
+    red: "bg-red-50 text-red-600",
+    blue: "bg-blue-50 text-blue-600",
+  };
   return (
     <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
       <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg ${themes[color]} flex items-center justify-center`}><Icon className="w-4 h-4" /></div>
-        <p className="text-[9px] font-black text-slate-950 tracking-widest uppercase">{title}</p>
+        <div
+          className={`w-8 h-8 rounded-lg ${themes[color]} flex items-center justify-center`}
+        >
+          <Icon className="w-4 h-4" />
+        </div>
+        <p className="text-[9px] font-black text-slate-950 tracking-widest uppercase">
+          {title}
+        </p>
       </div>
       <ChevronRight className="w-3.5 h-3.5 text-slate-200" />
     </button>

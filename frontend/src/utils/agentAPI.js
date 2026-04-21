@@ -20,13 +20,16 @@ export const getAgentDashboard = async () => {
  * Updates the status of a specific shipment (e.g., to OUT_FOR_DELIVERY or DELIVERED).
  * Maps to PATCH /api/v1/agent/shipments/{id}/status
  */
-export const updateShipmentStatus = async (shipmentId, status, remarks = "") => {
+export const updateShipmentStatus = async (shipmentId, status, remarks = "", paymentMethod = null) => {
     try {
-        console.log("API CALLED:", shipmentId, status);
-        const res = await api.patch(`/api/v1/agent/shipments/${shipmentId}/status`, {
+        const payload = {
             status,
-            remarks
-        });
+            remarks,
+            payment_method: paymentMethod // This must be "CASH" or "DIGITAL"
+        };
+        console.log("SENDING PAYLOAD:", payload); // Debug this in your console!
+        
+        const res = await api.patch(`/api/v1/agent/shipments/${shipmentId}/status`, payload);
         return res.data;
     } catch (error) {
         console.error(`Failed to update shipment ${shipmentId} status:`, error);

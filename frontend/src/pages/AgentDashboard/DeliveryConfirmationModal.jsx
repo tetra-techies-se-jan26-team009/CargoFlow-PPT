@@ -68,15 +68,15 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
     else handleSubmit();
   };
 
-  const handleSubmit = () => {
+  // Change this function to async
+  const handleSubmit = async () => {
     setSubmitting(true);
 
     const backendPayload = {
       deliveryId: delivery.dbId || delivery.id,
       status: deliveryStatus.toUpperCase(),
-      // Add these fields so the Admin/Portal can see payment info
       payment_method: paymentMethod,
-      payment_status: codCollected ? 'paid' : 'pending',
+      payment_status: (delivery.cod && codCollected) ? 'paid' : 'pending',
       amount_collected: delivery.codAmount
         ? String(delivery.codAmount).replace('₹', '')
         : "0",
@@ -87,15 +87,22 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
       ].join(' | ')
     };
 
-    console.log("SENDING TO DASHBOARD:", backendPayload);
+    try {
+      // CRITICAL: You must await the parent function
+      // This assumes your onConfirm function in the parent component returns a Promise (e.g., a fetch call)
+      await onConfirm(backendPayload);
 
-    onConfirm(backendPayload);
-
-    setStep(4);
-
-    setTimeout(() => {
-      onClose();
-    }, 1500);
+      // Only move to success screen IF the backend call succeeded
+      setStep(4);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (error) {
+      console.error("Failed to update backend:", error);
+      alert("Could not update delivery status. Please check your connection.");
+    } finally {
+      setSubmitting(false);
+    }
   };
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
