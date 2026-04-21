@@ -81,8 +81,14 @@ def handle_tracking(tracking_id: str):
             .order_by(TrackingUpdate.timestamp.desc())\
             .first()
 
-        lat = latest_tracking.latitude if latest_tracking else "N/A"
-        lng = latest_tracking.longitude if latest_tracking else "N/A"
+        if latest_tracking and latest_tracking.latitude and latest_tracking.longitude:
+            lat = latest_tracking.latitude
+            lng = latest_tracking.longitude
+            map_url = f"https://www.google.com/maps?q={lat},{lng}"
+        else:
+            lat = "Not available"
+            lng = "Not available"
+            map_url = "Location not available"
 
         return {
             "answer": (
@@ -91,8 +97,8 @@ def handle_tracking(tracking_id: str):
                 f"From: {pickup_city}\n"
                 f"To: {delivery_city}\n"
                 f"Progress: {progress}%\n"
-                f"Current Location: ({lat}, {lng})\n"
-                f"Map: https://www.google.com/maps?q={lat},{lng}"
+                f"Current Location: {lat}, {lng}\n"
+                f"Map: {map_url}"
             ),
             "sources": [],
             "found_in_kb": False
