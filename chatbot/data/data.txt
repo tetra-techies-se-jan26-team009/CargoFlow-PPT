@@ -93,22 +93,6 @@ Common queries:
 
 ---
 
-## [Topic: International Shipping]
-
-CargoFlow provides international shipping to multiple countries.
-
-Delivery time: 7–21 business days.
-
-Includes customs clearance support.
-
-Common queries:
-
-* international delivery
-* global shipping
-* ship abroad
-
----
-
 ## [Topic: Pricing]
 
 CargoFlow pricing is simple and transparent.
@@ -127,7 +111,6 @@ Additional charges may apply for:
 
 * Express delivery
 * Same-day delivery
-* International shipping
 * Insurance
 
 Example queries:
