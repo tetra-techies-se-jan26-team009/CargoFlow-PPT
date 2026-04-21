@@ -56,9 +56,7 @@ def startup():
     finally:
         db.close()
 
-    # print("[main] Initializing CargoFlow chatbot...")
     chatbot_module.rag = CargoFlowRAG()
-    # print("[main] Chatbot ready.")
 
 @app.get("/health")
 def health():
