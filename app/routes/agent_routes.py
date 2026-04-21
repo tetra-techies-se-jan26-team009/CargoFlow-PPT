@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
+
 from ..database import get_db
 from ..models import *
 from ..auth import require_role
 from ..schemas import LocationUpdate, AgentUpdateShipmentStatus, DutyStatusUpdate
 
 router = APIRouter(prefix="/api/v1/agent", tags=["Agent Routes"])
+
+
+# ---------------- DASHBOARD ----------------
 
 @router.get("/dashboard", status_code=200)
 def agent_dashboard(db: Session = Depends(get_db),
@@ -30,8 +35,10 @@ def agent_dashboard(db: Session = Depends(get_db),
         ])
     ).count()
 
-    earnings = db.query(func.sum(Shipment.price)).filter(Shipment.assigned_agent_id == current_user.id,
-                                                         Shipment.payment_status == PaymentStatus.PAID).scalar() or 0
+    earnings = db.query(func.sum(Shipment.price)).filter(
+        Shipment.assigned_agent_id == current_user.id,
+        Shipment.payment_status == PaymentStatus.PAID
+    ).scalar() or 0
 
     active_shipment = db.query(Shipment).filter(
         Shipment.assigned_agent_id == current_user.id,
@@ -61,20 +68,21 @@ def agent_dashboard(db: Session = Depends(get_db),
                 "phone": active_shipment.receiver_phone
             },
 
+            "pickup_address": {
+                "line": active_shipment.pickup_address.line1 if active_shipment.pickup_address else None,
+                "city": active_shipment.pickup_address.city if active_shipment.pickup_address else None,
+                "pincode": active_shipment.pickup_address.pincode if active_shipment.pickup_address else None,
+                "latitude": active_shipment.pickup_address.latitude if active_shipment.pickup_address else None,
+                "longitude": active_shipment.pickup_address.longitude if active_shipment.pickup_address else None
+            },
+
             "delivery_address": {
-            "line": active_shipment.delivery_address.line1,
-            "city": active_shipment.delivery_address.city,
-            "pincode": active_shipment.delivery_address.pincode,
-            "latitude": active_shipment.delivery_address.latitude,
-            "longitude": active_shipment.delivery_address.longitude
-        },
-        "pickup_address": {
-            "line": active_shipment.pickup_address.line1,
-            "city": active_shipment.pickup_address.city,
-            "pincode": active_shipment.pickup_address.pincode,
-            "latitude": active_shipment.pickup_address.latitude,
-            "longitude": active_shipment.pickup_address.longitude
-        },
+                "line": active_shipment.delivery_address.line1 if active_shipment.delivery_address else None,
+                "city": active_shipment.delivery_address.city if active_shipment.delivery_address else None,
+                "pincode": active_shipment.delivery_address.pincode if active_shipment.delivery_address else None,
+                "latitude": active_shipment.delivery_address.latitude if active_shipment.delivery_address else None,
+                "longitude": active_shipment.delivery_address.longitude if active_shipment.delivery_address else None
+            },
 
             "package": {
                 "weight": active_shipment.weight,
@@ -84,33 +92,33 @@ def agent_dashboard(db: Session = Depends(get_db),
             "eta": active_shipment.eta_end_time
         }
 
-    # ------------------ OPTIONAL METRICS ------------------
+    # ---------------- METRICS ----------------
 
-    # (You can later replace with real GPS tracking)
-    total_distance = 0  # placeholder
-    rating = 4.8  # static for now
+    total_distance = 0
+    rating = 4.8
 
     shipments = db.query(Shipment).filter(
-    Shipment.assigned_agent_id == current_user.id
-).order_by(Shipment.updated_at.desc()).all()
+        Shipment.assigned_agent_id == current_user.id
+    ).order_by(Shipment.updated_at.desc()).all()
 
     shipment_list = []
+
     for s in shipments:
         shipment_list.append({
-        "id": s.id,
-        "tracking_number": s.tracking_number,
-        "receiver_name": s.receiver_name,
-        "status": s.status.value,
+            "id": s.id,
+            "tracking_number": s.tracking_number,
+            "receiver_name": s.receiver_name,
+            "status": s.status.value,
 
-        "pickup_address": {
-            "latitude": s.pickup_address.latitude,
-            "longitude": s.pickup_address.longitude
-        },
-        "delivery_address": {
-            "latitude": s.delivery_address.latitude,
-            "longitude": s.delivery_address.longitude
-        }
-    })
+            "pickup_address": {
+                "latitude": s.pickup_address.latitude if s.pickup_address else None,
+                "longitude": s.pickup_address.longitude if s.pickup_address else None
+            },
+            "delivery_address": {
+                "latitude": s.delivery_address.latitude if s.delivery_address else None,
+                "longitude": s.delivery_address.longitude if s.delivery_address else None
+            }
+        })
 
     return {
         "summary": {
@@ -122,25 +130,28 @@ def agent_dashboard(db: Session = Depends(get_db),
             "rating": rating
         },
         "active_delivery": active_delivery,
-        "shipments": shipment_list 
+        "shipments": shipment_list
     }
+
+
+# ---------------- UPDATE SHIPMENT STATUS ----------------
 
 @router.patch("/shipments/{id}/status")
 def update_shipment_status(id: int,
                            data: AgentUpdateShipmentStatus,
                            db: Session = Depends(get_db),
                            current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
-    
+
     shipment = db.query(Shipment).filter(Shipment.id == id).first()
 
     if not shipment:
-        raise HTTPException(status_code=404, detail="Shipment not found")
+        raise HTTPException(404, "Shipment not found")
 
     if shipment.assigned_agent_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not allowed")
+        raise HTTPException(403, "Not allowed")
 
     if shipment.status == ShipmentStatus.DELIVERED:
-        raise HTTPException(status_code=400, detail="Shipment already completed")
+        raise HTTPException(400, "Shipment already completed")
 
     VALID_TRANSITIONS = {
         ShipmentStatus.ASSIGNED: [ShipmentStatus.OUT_FOR_DELIVERY],
@@ -151,19 +162,18 @@ def update_shipment_status(id: int,
     }
 
     if shipment.status not in VALID_TRANSITIONS or data.status not in VALID_TRANSITIONS[shipment.status]:
-        raise HTTPException(status_code=400, detail="Invalid status transition")
-
+        raise HTTPException(400, "Invalid status transition")
 
     shipment.status = data.status
 
-    # ---------------- PAYMENT LOGIC ----------------
+    # -------- PAYMENT --------
 
     if data.status == ShipmentStatus.DELIVERED:
         if shipment.payment_status == PaymentStatus.PAID:
-            raise HTTPException(status_code=400, detail="Payment already completed")
+            raise HTTPException(400, "Payment already completed")
 
         if not data.payment_method:
-            raise HTTPException(status_code=400, detail="Payment method required for delivered shipment")
+            raise HTTPException(400, "Payment method required")
 
         shipment.payment_status = PaymentStatus.PAID
         shipment.payment_method = data.payment_method
@@ -171,61 +181,66 @@ def update_shipment_status(id: int,
     elif data.status == ShipmentStatus.FAILED:
         shipment.payment_status = PaymentStatus.FAILED
 
-    # ---------------- STATUS LOG ----------------
+    # -------- LOG --------
 
-    log = ShipmentStatusLog(
+    db.add(ShipmentStatusLog(
         shipment_id=shipment.id,
         status=data.status,
         updated_by=current_user.id,
         remarks=data.remarks
-    )
-    db.add(log)
+    ))
 
-    # ---------------- TRACKING ----------------
+    # -------- TRACKING --------
 
     if current_user.current_lat and current_user.current_lng:
-        tracking = TrackingUpdate(
+        db.add(TrackingUpdate(
             shipment_id=shipment.id,
             agent_id=current_user.id,
             latitude=current_user.current_lat,
             longitude=current_user.current_lng,
             status=data.status
-        )
-        db.add(tracking)
+        ))
 
     db.commit()
     db.refresh(shipment)
 
     return {"message": "Shipment Status updated successfully"}
 
+
+# ---------------- UPDATE LOCATION ----------------
+
 @router.post("/update/live-location")
-def update_location(data: LocationUpdate, 
-                    db: Session = Depends(get_db), 
+def update_location(data: LocationUpdate,
+                    db: Session = Depends(get_db),
                     current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
 
     current_user.current_lat = data.lat
     current_user.current_lng = data.lng
-    current_user.last_location_update = datetime.utcnow()
+    current_user.last_location_update = datetime.now(timezone.utc)
 
     if data.shipment_id:
         shipment = db.query(Shipment).filter(Shipment.id == data.shipment_id).first()
 
         if not shipment:
-            raise HTTPException(status_code=404, detail="Shipment not found")
+            raise HTTPException(404, "Shipment not found")
 
         if shipment.assigned_agent_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Not assigned to this shipment")
+            raise HTTPException(403, "Not assigned")
 
-        tracking = TrackingUpdate(
+        db.add(TrackingUpdate(
             shipment_id=data.shipment_id,
             agent_id=current_user.id,
             latitude=data.lat,
             longitude=data.lng,
-            status=ShipmentStatus.OUT_FOR_DELIVERY)
-        db.add(tracking)
+            status=shipment.status
+        ))
+
     db.commit()
 
     return {"message": "Location updated"}
+
+
+# ---------------- DUTY STATUS ----------------
 
 @router.patch("/update/duty-status", status_code=200)
 def update_duty_status(data: DutyStatusUpdate,
