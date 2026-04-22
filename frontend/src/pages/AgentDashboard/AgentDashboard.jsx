@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 //eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "motion/react";
+import Toast from "../../components/Toast";
 import {
   Package,
   MapPin,
@@ -43,7 +44,7 @@ import AgentNavbar from "../../components/AgentNavbar";
 import TrackingMap from "../../components/TrackingMap";
 
 export function AgentDashboard() {
-  const { showToast: addToast } = useToast();
+  const { toast, showToast: addToast, hideToast } = useToast();
   const { user, loading: authLoading } = useAuth();
   // UI States
   const [loading, setLoading] = useState(true);
@@ -163,6 +164,11 @@ export function AgentDashboard() {
 
   const handleLocationUpdate = async () => {
     try {
+      if (!activeDelivery?.dbId) {
+        addToast("No active delivery to update location", "error");
+        return;
+      }
+
       if (!/^[1-9][0-9]{5}$/.test(pincode)) {
         addToast("Enter valid Indian pincode (6 digits)", "error");
         return;
@@ -186,11 +192,6 @@ export function AgentDashboard() {
         lng > 98 // longitude range
       ) {
         addToast("Pincode is outside India", "error");
-        return;
-      }
-
-      if (!coords) {
-        addToast("Could not find location for pincode", "error");
         return;
       }
 
@@ -224,6 +225,7 @@ export function AgentDashboard() {
       const backendPaymentMethod = data.payment_method === 'digital' ? 'UPI' : 'CASH';
 
       const remarks = `Recipient: ${data.customerName || 'N/A'}. Method: ${backendPaymentMethod}. Note: ${data.notes || ''}`;
+      await updateShipmentStatus(targetId, "OUT_FOR_DELIVERY");
 
       await updateShipmentStatus(
         targetId,
@@ -281,8 +283,13 @@ export function AgentDashboard() {
             </h1>
           </div>
           <button
-            onClick={() => setShowLocationModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 text-white rounded-xl shadow-lg hover:bg-blue-600 transition-all"
+            onClick={() => {
+              if (!activeDelivery) {
+                addToast("No active delivery", "error");
+                return;
+              }
+              setShowLocationModal(true);
+            }} className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 text-white rounded-xl shadow-lg hover:bg-blue-600 transition-all"
           >
             <span className="font-bold tracking-tight text-xs uppercase">
               Update Location
@@ -524,6 +531,12 @@ export function AgentDashboard() {
           }
         />
       )}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        show={toast.show}
+        onClose={hideToast}
+      />
     </div>
   );
 }

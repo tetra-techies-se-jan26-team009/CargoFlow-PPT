@@ -118,7 +118,7 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
     <AnimatePresence>
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          onClick={onClose} className="absolute inset-0 z-[9998] bg-black/60 backdrop-blur-sm" />
+          onClick={onClose} className="absolute inset-0  bg-black/60 backdrop-blur-sm" />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
