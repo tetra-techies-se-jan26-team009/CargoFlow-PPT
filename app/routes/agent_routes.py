@@ -121,6 +121,12 @@ def agent_dashboard(db: Session = Depends(get_db),
         })
 
     return {
+        "agent": {
+            "name": current_user.name,
+            "phone": current_user.phone,
+            "duty_status": current_user.duty_status.value,
+            "pending_duty_status": current_user.pending_duty_status.value if current_user.pending_duty_status else None
+        },
         "summary": {
             "completed": completed,
             "pending": pending,
