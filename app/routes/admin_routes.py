@@ -366,6 +366,7 @@ def admin_dashboard_agents(db: Session = Depends(get_db),
             "name": agent.name,
             "city": agent.city,
             "status": "Active" if agent.is_active else "Block",
+            "duty_status": agent.duty_status.value,
             "today_deliveries": today_deliveries,
             "total_deliveries": total_deliveries,
             "email": agent.email,
@@ -404,6 +405,7 @@ def block_unblock_delivery_agent(agent_id: int,
                                  current_user = Depends(require_role(UserRole.ADMIN))):
     
     agent = db.query(User).filter(User.id == agent_id, User.role == UserRole.DELIVERY_AGENT).first()
+
     if not agent:
         raise HTTPException(status_code=404, detail="Delivery agent not found")
     else:
@@ -579,10 +581,11 @@ def assign_agent(shipment_id: int,
 
     agent = db.query(User).filter(User.id == agent_id,
                                   User.role == UserRole.DELIVERY_AGENT,
-                                  User.is_active == True).first()
+                                  User.is_active == True,
+                                  User.duty_status == AgentDutyStatus.ON_DUTY).first()
 
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found or inactive")
+        raise HTTPException(status_code=404, detail="Agent is either inactive, off-duty, or does not exist.")
 
 
     shipment.assigned_agent_id = agent.id
@@ -606,7 +609,7 @@ def assign_agent(shipment_id: int,
 def get_agents_location(db: Session = Depends(get_db),
                         current_user: User = Depends(require_role(UserRole.ADMIN))):
 
-    agents = db.query(User).filter(User.role == UserRole.DELIVERY_AGENT, User.is_active == True).all()
+    agents = db.query(User).filter(User.role == UserRole.DELIVERY_AGENT, User.is_active == True, User.duty_status == AgentDutyStatus.ON_DUTY).all()
 
     return [
         {
