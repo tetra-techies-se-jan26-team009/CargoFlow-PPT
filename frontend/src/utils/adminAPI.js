@@ -116,3 +116,7 @@ export const assignAgent = async (shipmentId, agentId) => {
         throw error;
     }
 };
+
+export const approveDuty = async (agentId) => {
+    return await api.patch(`/api/v1/admin/agents/${agentId}/approve-duty`);
+};

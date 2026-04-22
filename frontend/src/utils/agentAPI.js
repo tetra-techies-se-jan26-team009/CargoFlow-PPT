@@ -62,3 +62,20 @@ export const updateLiveLocation = async (lat, lng, shipmentId = null) => {
 export const updateAgentProfile = async (profileData) => {
     return await api.patch("/api/auth/me", profileData);
 };
+
+/**
+ * --- Duty Status Management ---
+ * Updates the agent's availability (ON_DUTY, OFF_DUTY).
+ * Maps to PATCH /api/v1/agent/update/duty-status
+ */
+export const updateDutyStatus = async (status) => {
+    try {
+        const res = await api.patch("/api/v1/agent/update/duty-status", {
+            status: status.toUpperCase() // Ensure it matches backend Enum (ON_DUTY / OFF_DUTY)
+        });
+        return res.data;
+    } catch (error) {
+        console.error("Failed to update duty status:", error);
+        throw error;
+    }
+};

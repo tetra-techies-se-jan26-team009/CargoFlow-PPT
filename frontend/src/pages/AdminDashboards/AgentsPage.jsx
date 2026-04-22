@@ -3,6 +3,7 @@ import DashboardNavbar from "../../components/DashboardNavbar";
 import { getAgents, updateAgent } from "../../utils/adminAPI";
 import { AddAgentModal } from "../../components/ui/Modals/AddAgentModal";
 import { AgentProfileModal } from "../../components/ui/Modals/AgentProfileModal";
+import { approveDuty } from "../../utils/adminAPI";
 
 const Icon = ({
     d,
@@ -42,17 +43,58 @@ const statusColor = { Active: "#22C55E", Block: "#FF0000", Off: "#9CA3AF" };
 const statusBg = { Active: "#D1FAE5", Block: "#FAD1D1", Off: "#F1F5F9" };
 const statusTxt = { Active: "#065F46", Idle: "#92400E", Off: "#64748B" };
 
+function ConfirmOffDutyModal({ agent, onConfirm, onCancel }) {
+    return (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}>
+            <div style={{ background: "white", padding: 24, borderRadius: 16, width: 400, textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}></div>
+                <h3 style={{ fontSize: 16, fontWeight: 700 }}>
+                    {agent.pending_duty_status === "OFF_DUTY"
+                        ? "Confirm Off-Duty?"
+                        : "Confirm On-Duty?"}
+                </h3>
+                <p style={{ fontSize: 13, color: "#64748B", marginBottom: 24 }}>
+                    Agent <b>{agent.name}</b> wants to go{" "}
+                    <b>{agent.pending_duty_status === "OFF_DUTY" ? "Off-Duty" : "On-Duty"}</b>.{agent.pending_duty_status === "OFF_DUTY"
+                        ? "They will no longer be visible for new shipment assignments."
+                        : "They will become available for new shipment assignments."}
+                </p>
+                <div style={{ display: "flex", gap: 12 }}>
+                    <button
+                        onClick={onCancel}
+                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", fontWeight: 600, cursor: "pointer" }}
+                    >
+                        {agent.pending_duty_status === "OFF_DUTY"
+                            ? "Keep On-Duty"
+                            : "Keep Off-Duty"}
+                    </button>
+                    <button
+                        onClick={() => onConfirm(agent.id)}
+                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#EF4444", color: "white", fontWeight: 600, cursor: "pointer" }}
+                    >
+                        {agent.pending_duty_status === "OFF_DUTY"
+                            ? "Confirm Off-Duty"
+                            : "Confirm On-Duty"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function AgentsPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
     const [modal, setModal] = useState(null);
     const [selectedAgent, setSelectedAgent] = useState(null);
 
+
     // Strict State Management Rule
     const [data, setData] = useState({ total_agents: 0, active_now: 0, blocked: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [agentList, setAgentList] = useState([]);
+    const [pendingOffDuty, setPendingOffDuty] = useState(null);
 
     const openModal = (key) => { setModal(key); };
     const closeModal = () => { setModal(null); };
@@ -71,7 +113,6 @@ export default function AgentsPage() {
                     active_now: agentsRes?.active_now || 0,
                     blocked: agentsRes?.blocked || 0
                 });
-
                 const mappedAgents = (agentsRes?.agents || []).map(a => ({
                     ...a,
                     id: a.agent_id,
@@ -79,6 +120,13 @@ export default function AgentsPage() {
                     deliveries: a.today_deliveries || 0,
                     completed: a.total_deliveries || 0,
                     rate: a.total_deliveries > 0 ? "98%" : "0%",
+                    duty_status: a.duty_status,
+                    status: a.status === "Block"
+                        ? "Block"
+                        : a.duty_status === "OFF_DUTY"
+                            ? "Off"
+                            : "Active",
+                    needs_approval: !!a.pending_duty_status
                 }));
                 setAgentList(mappedAgents);
                 setError(null);
@@ -158,6 +206,21 @@ export default function AgentsPage() {
             {modal === "viewProfile" && (
                 <AgentProfileModal agent={selectedAgent} onClose={closeModal} />
             )}
+            {pendingOffDuty && (
+                <ConfirmOffDutyModal
+                    agent={pendingOffDuty}
+                    onConfirm={async (id) => {
+                        try {
+                            await approveDuty(id.replace("AGT-", ""));
+                            setPendingOffDuty(null);
+                            window.location.reload();
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    }}
+                    onCancel={() => setPendingOffDuty(null)}
+                />
+            )}
             <div
                 style={{
                     display: "flex",
@@ -203,6 +266,7 @@ export default function AgentsPage() {
                                 {data.total_agents} delivery agents in your network
                             </p>
                         </div>
+
                         <button
                             style={{
                                 display: "flex",
@@ -408,11 +472,20 @@ export default function AgentsPage() {
                                                 fontWeight: 600,
                                                 padding: "3px 9px",
                                                 borderRadius: 20,
-                                                background: statusBg[agent.status],
-                                                color: statusTxt[agent.status],
+                                                background: agent.pending_duty_status && agent.status !== "Block"
+                                                    ? "#FEF3C7"
+                                                    : statusBg[agent.status],
+                                                color: agent.pending_duty_status && agent.status !== "Block" ? "#92400E"
+                                                    : statusTxt[agent.status],
                                                 display: "flex",
                                                 alignItems: "center",
                                                 gap: 5,
+                                                cursor: agent.pending_duty_status ? "pointer" : "default"
+                                            }}
+                                            onClick={() => {
+                                                if (agent.pending_duty_status) {
+                                                    setPendingOffDuty(agent);
+                                                }
                                             }}
                                         >
                                             <span
@@ -420,11 +493,15 @@ export default function AgentsPage() {
                                                     width: 6,
                                                     height: 6,
                                                     borderRadius: "50%",
-                                                    background: statusColor[agent.status],
-                                                    display: "inline-block",
+                                                    background: agent.duty_status === "OFF_DUTY"
+                                                        ? "#F59E0B"
+                                                        : statusColor[agent.status],
+                                                    display: "inline-block"
                                                 }}
                                             />
-                                            {agent.status}
+                                            {agent.pending_duty_status
+                                                ? `Approve ${agent.pending_duty_status === "OFF_DUTY" ? "Off-Duty" : "On-Duty"}`
+                                                : agent.status}
                                         </span>
                                     </div>
 

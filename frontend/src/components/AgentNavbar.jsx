@@ -1,25 +1,35 @@
+// All the Necessary Imports-----------------------------------------------------------------------------
 import { Bell, ChevronDown, MapPin, Phone, Star, LogOut, Settings, BarChart3, Search, X, Package } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth'; // Added to access dynamic user data
+import { useAuth } from '../hooks/useAuth';
+import { updateDutyStatus, getAgentDashboard } from '../utils/agentAPI';
+import { useToast } from '../hooks/useToast';
 
+
+// -------------------------------------------------------------------------------------------------------------
+//eslint-disable-next-line no-unused-vars
 export default function AgentNavbar({ agentStats }) {
-  const { user, logout } = useAuth(); // Access dynamic user data
-  const [showProfile,       setShowProfile]       = useState(false);
+  const { user, logout } = useAuth();
+  const [agentData, setAgentData] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const { showToast: addToast } = useToast();
+  const [pendingStatus, setPendingStatus] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [search,             setSearch]            = useState('');
+
+  const [search, setSearch] = useState('');
   const [notifs, setNotifs] = useState([
-    { id: 1, title: 'New Delivery Assigned', desc: 'SH-20250305 added to your route', time: '2m ago',  type: 'info',    read: false },
-    { id: 2, title: 'Payment Received',      desc: '₹2,840 credited to your account', time: '15m ago', type: 'success', read: false },
-    { id: 3, title: 'Route Updated',         desc: 'Optimized route saved 15 mins',   time: '1h ago',  type: 'info',    read: true  },
+    { id: 1, title: 'New Delivery Assigned', desc: 'SH-20250305 added to your route', time: '2m ago', type: 'info', read: false },
+    { id: 2, title: 'Payment Received', desc: '₹2,840 credited to your account', time: '15m ago', type: 'success', read: false },
+    { id: 3, title: 'Route Updated', desc: 'Optimized route saved 15 mins', time: '1h ago', type: 'info', read: true },
   ]);
-  const [dutyStatus, setDutyStatus] = useState('on');
 
   const navigate = useNavigate();
-  const notifRef   = useRef(null);
+
+  const notifRef = useRef(null);
+
   const profileRef = useRef(null);
 
-  // Dynamic Avatar Helper
   const getAvatar = (name) => {
     if (!name) return "AG";
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -27,27 +37,79 @@ export default function AgentNavbar({ agentStats }) {
 
   useEffect(() => {
     const handler = (e) => {
-      if (notifRef.current   && !notifRef.current.contains(e.target))   setShowNotifications(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const unreadCount  = notifs.filter(n => !n.read).length;
-  const markAllRead  = () => setNotifs(n => n.map(x => ({ ...x, read: true })));
-  const markRead     = (id) => setNotifs(n => n.map(x => x.id === id ? { ...x, read: true } : x));
+  const unreadCount = notifs.filter(n => !n.read).length;
+  const mapBackendToUI = (status) => {
+    if (status === "ON_DUTY") return "on";
+    if (status === "OFF_DUTY") return "off";
+    return "off";
+  };
+
+  const [dutyStatus, setDutyStatus] = useState(
+    mapBackendToUI(user?.duty_status)
+  );
+
+  const markAllRead = () => setNotifs(n => n.map(x => ({ ...x, read: true })));
+
+  const markRead = (id) => setNotifs(n => n.map(x => x.id === id ? { ...x, read: true } : x));
+
   const dismissNotif = (id) => setNotifs(n => n.filter(x => x.id !== id));
 
-  const dutyLabels  = { on: 'On Duty', off: 'Off Duty', break: 'On Break' };
-  const dutyColors  = { on: 'bg-green-50 text-green-700', off: 'bg-red-50 text-red-700', break: 'bg-amber-50 text-amber-700' };
-  const dutyDotClr  = { on: 'bg-green-500', off: 'bg-red-500', break: 'bg-amber-500' };
+  const dutyLabels = { on: 'On Duty', off: 'Off Duty', break: 'On Break' };
+
+  const dutyColors = { on: 'bg-green-50 text-green-700', off: 'bg-red-50 text-red-700', break: 'bg-amber-50 text-amber-700' };
+
+  const dutyDotClr = { on: 'bg-green-500', off: 'bg-red-500', break: 'bg-amber-500' };
+
   const dutyOptions = [
-    { key: 'on',    label: 'On Duty',  dot: 'bg-green-500' },
-    { key: 'off',   label: 'Off Duty', dot: 'bg-red-500'   },
+    { key: 'on', label: 'On Duty', dot: 'bg-green-500' },
+    { key: 'off', label: 'Off Duty', dot: 'bg-red-500' },
   ];
 
+  const handleDutyChange = async (newStatus) => {
+    try {
+      const statusMap = { on: 'ON_DUTY', off: 'OFF_DUTY' };
+      if (pendingStatus) {
+        addToast("Request already pending", "warning");
+        return;
+      }
+      await updateDutyStatus(statusMap[newStatus]);
+      setPendingStatus(statusMap[newStatus]);
+      addToast("Request sent to admin for approval", "info");
+    } catch (err) {
+      addToast("Failed to update status", "error");
+      console.error("Duty status update error:", err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const data = await getAgentDashboard();
+        setDutyStatus(mapBackendToUI(data?.agent?.duty_status));
+        setAgentData(data?.agent);
+        setPendingStatus(data?.agent?.pending_duty_status);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchDashboard();
+
+    const interval = setInterval(fetchDashboard, 10000); // every 10 sec
+
+    return () => clearInterval(interval);
+  }, []);
+
   const notifDotColor = { success: 'bg-green-500', info: 'bg-blue-500', warning: 'bg-amber-500' };
+
+  // -------------------------------------------------------------------------------------------------------------
 
   return (
     <nav className="bg-background/80 sticky top-0 z-50 backdrop-blur-xl border-b border-gray-200"
@@ -88,8 +150,8 @@ export default function AgentNavbar({ agentStats }) {
             dutyLabels={dutyLabels}
             dutyColors={dutyColors}
             dutyDotClr={dutyDotClr}
-            onChange={setDutyStatus}
-          />
+            onChange={handleDutyChange}
+            disabled={pendingStatus} />
         </div>
 
         {/* Bell */}
@@ -165,7 +227,7 @@ export default function AgentNavbar({ agentStats }) {
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center text-white font-semibold text-sm">
-              {getAvatar(user?.name?.split(" ")[0])} 
+              {getAvatar(user?.name?.split(" ")[0])}
             </div>
             <div className="hidden sm:block text-left">
               <div className="text-sm font-semibold text-gray-900 capitalize">{user?.name?.split(" ")[0] || "Agent"}</div>
@@ -189,16 +251,16 @@ export default function AgentNavbar({ agentStats }) {
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
                     <div className="flex items-center justify-center gap-1 text-xs font-semibold text-gray-900">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{agentStats?.rating || '0.0'}
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{agentData?.rating || '0.0'}
                     </div>
                     <div className="text-[10px] text-gray-500 mt-0.5">Rating</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs font-semibold text-gray-900">{agentStats?.completed || '0'}</div>
+                    <div className="text-xs font-semibold text-gray-900">{agentData?.completed || '0'}</div>
                     <div className="text-[10px] text-gray-500 mt-0.5">Deliveries</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs font-semibold text-gray-900 truncate">{(user?.phone || '—').slice(-4)}</div>
+                    <div className="text-xs font-semibold text-gray-900 truncate">{(agentData?.phone || '—')}</div>
                     <div className="text-[10px] text-gray-500 mt-0.5">Phone</div>
                   </div>
                 </div>
@@ -206,10 +268,10 @@ export default function AgentNavbar({ agentStats }) {
 
               <div className="p-2">
                 {[
-                  { icon: MapPin,    label: 'My Routes'   },
+                  { icon: MapPin, label: 'My Routes' },
                   { icon: BarChart3, label: 'Performance' },
-                  { icon: Phone,     label: 'Support'     },
-                // eslint-disable-next-line no-unused-vars
+                  { icon: Phone, label: 'Support' },
+                  // eslint-disable-next-line no-unused-vars
                 ].map(({ icon: Icon, label }) => (
                   <button key={label}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2">
@@ -231,7 +293,7 @@ export default function AgentNavbar({ agentStats }) {
   );
 }
 
-function DutyDropdown({ current, options, dutyLabels, dutyColors, dutyDotClr, onChange }) {
+function DutyDropdown({ current, options, dutyLabels, dutyColors, dutyDotClr, onChange, disabled }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -241,8 +303,11 @@ function DutyDropdown({ current, options, dutyLabels, dutyColors, dutyDotClr, on
   }, []);
   return (
     <div className="relative" ref={ref}>
-      <button onClick={() => setOpen(p => !p)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${dutyColors[current]}`}>
+      <button
+        onClick={() => !disabled && setOpen(p => !p)}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors 
+  ${dutyColors[current]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
         <span className={`w-2 h-2 rounded-full ${dutyDotClr[current]} ${current === 'on' ? 'animate-pulse' : ''}`} />
         {dutyLabels[current]}
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
