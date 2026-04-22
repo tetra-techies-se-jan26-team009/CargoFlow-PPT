@@ -280,18 +280,22 @@ def update_location(data: LocationUpdate,
 
 # ---------------- DUTY STATUS ----------------
 
-@router.patch("/update/duty-status", status_code=200)
-def update_duty_status(data: DutyStatusUpdate,
-                       db: Session = Depends(get_db),
-                       current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
+@router.patch("/update/duty-status")
+def request_duty_status_update(data: DutyStatusUpdate,
+                              db: Session = Depends(get_db),
+                              current_user: User = Depends(require_role(UserRole.DELIVERY_AGENT))):
 
-    current_user.duty_status = data.status
+    if current_user.pending_duty_status:
+        raise HTTPException(400, "Duty status request already pending")
+
+    if current_user.duty_status == data.status:
+        raise HTTPException(400, "Already in this duty status")
+
+    current_user.pending_duty_status = data.status
 
     db.commit()
-    db.refresh(current_user)
 
     return {
-        "message": "Duty status updated successfully",
-        "agent": current_user.name,
-        "status": current_user.duty_status.value
+        "message": "Duty status request sent for approval",
+        "requested_status": data.status.value
     }

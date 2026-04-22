@@ -86,6 +86,7 @@ class User(Base):
     current_lng = Column(Float, nullable=True)
     last_location_update = Column(DateTime, default=datetime.utcnow)
     duty_status = Column(Enum(AgentDutyStatus), default=AgentDutyStatus.ON_DUTY, nullable=True)
+    pending_duty_status = Column(Enum(AgentDutyStatus), nullable=True)
 
     business_id = Column(Integer, ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
     business = relationship("Business", foreign_keys=[business_id], back_populates="users")

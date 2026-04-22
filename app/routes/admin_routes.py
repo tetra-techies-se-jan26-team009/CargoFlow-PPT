@@ -618,3 +618,29 @@ def get_agents_location(db: Session = Depends(get_db),
         }
         for agent in agents if agent.current_lat is not None and agent.current_lng is not None
     ]
+
+@router.patch("/agents/{agent_id}/approve-duty")
+def approve_duty_status(agent_id: int,
+                        db: Session = Depends(get_db),
+                        current_user: User = Depends(require_role(UserRole.ADMIN))):
+
+    agent = db.query(User).filter(User.id == agent_id,
+                                  User.role == UserRole.DELIVERY_AGENT).first()
+
+    if not agent:
+        raise HTTPException(404, "Agent not found")
+
+    if not agent.pending_duty_status:
+        raise HTTPException(400, "No pending request")
+
+    agent.duty_status = agent.pending_duty_status
+    agent.pending_duty_status = None
+
+    db.commit()
+
+    return {
+        "message": "Duty status approved",
+        "agent_id": agent.id,
+        "agent": agent.name,
+        "new_status": agent.duty_status.value
+    }
