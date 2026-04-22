@@ -12,6 +12,7 @@ __pycache__/
 .venv/
 venv/
 env/
+**/.venv/
 
 # =========================
 # Secrets / Environment
@@ -52,17 +53,24 @@ dist/
 Thumbs.db
 
 # =========================
-# Package manager
-# =========================
-uv.lock
-
-# =========================
 # Pytest
 # =========================
 .pytest_cache/
+.pytest_cache/*
 
 # =========================
 # Coverage
 # =========================
 .coverage
 htmlcov/
+
+# =========================
+# ML / Vector Store
+# =========================
+chatbot/vector_store/
+
+# =========================
+# Cache
+# =========================
+.cache/
+.mypy_cache/
