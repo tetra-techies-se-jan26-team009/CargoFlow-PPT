@@ -18,7 +18,7 @@ import ClientInvoices from "./pages/ClientDashboard/Clientinvoices";
 import RequestPickup from "./pages/ClientDashboard/Requestpickup";
 import ClientSettings from "./pages/ClientDashboard/Clientsetting";
 
-import ChatbotWidget from "./components/ChatBotWidget";
+import ChatBotWidget from "./components/ChatBotWidget";
 
 import TrackingPage from './pages/TrackingPage';
 
@@ -40,7 +40,7 @@ const AgentRoute = ({ children }) => (
 export default function App() {
   return (
     <>
-      <ChatbotWidget />
+      <ChatBotWidget />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />

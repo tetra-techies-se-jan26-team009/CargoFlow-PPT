@@ -741,6 +741,7 @@ export default function ClientDashboard() {
 
   //eslint-disable-next-line no-unused-vars
   const [dashboardData, setDashboardData] = useState(null);
+  //eslint-disable-next-line no-unused-vars
   const [shipmentsData, setShipmentsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
