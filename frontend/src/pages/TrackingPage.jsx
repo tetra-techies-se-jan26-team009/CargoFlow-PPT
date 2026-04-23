@@ -9,6 +9,7 @@ export default function TrackingPage() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [etaMap, setEtaMap] = useState({});
 
   useEffect(() => {
     async function fetchDetails() {
@@ -26,22 +27,34 @@ export default function TrackingPage() {
     console.log("TRACKING DATA:", data);
   }, [trackingId]);
 
-  useEffect(() => {
-    console.log("TRACKING DATA UPDATED:", data);
-  }, [data]);
+  // useEffect(() => {
+  //   console.log("TRACKING DATA UPDATED:", data);
+  // }, [data]);
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const updated = await getTrackingInfo(trackingId);
-        setData(updated);
-      } catch (e) {
-        console.error("Polling error:", e);
+ useEffect(() => {
+  let isMounted = true;
+
+  const interval = setInterval(async () => {
+    try {
+      const updated = await getTrackingInfo(trackingId);
+      if (isMounted) {
+        setData(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(updated)) {
+            return updated;
+          }
+          return prev;
+        });
       }
-    }, 5000);
+    } catch (e) {
+      console.error("Polling error:", e);
+    }
+  }, 5000);
 
-    return () => clearInterval(interval);
-  }, [trackingId]);
+  return () => {
+    isMounted = false;
+    clearInterval(interval);
+  };
+}, [trackingId]);
 
   if (loading) return <div className="h-screen flex items-center justify-center">Locating Shipment...</div>;
   if (!data) return <div className="text-center py-20">Tracking ID not found.</div>;
@@ -106,6 +119,9 @@ export default function TrackingPage() {
                 pickup={data.pickupCoords || data.pickup_coords}
                 delivery={data.deliveryCoords || data.delivery_coords}
                 currentAgent={data.agentCoords}
+                shipmentId={data.id}
+                setEtaMap={setEtaMap}
+                hideInstructions={true}
               />
             </div>
           ) : (
@@ -145,8 +161,11 @@ export default function TrackingPage() {
 
             <div>
               <p className="text-slate-400 text-xs">ETA</p>
-              <p className="font-semibold">{data.eta}</p>
-            </div>
+              <p className="font-semibold">
+                {etaMap[data.id]
+                  ? `${etaMap[data.id].eta} mins (${etaMap[data.id].distance} km)`
+                  : "Calculating..."}
+              </p>            </div>
 
             <div>
               <p className="text-slate-400 text-xs">Created On</p>

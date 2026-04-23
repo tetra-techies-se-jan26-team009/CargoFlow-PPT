@@ -43,21 +43,18 @@ export const updateShipmentStatus = async (shipmentId, status, remarks = "", pay
  * Can optionally be linked to a specific shipment.
  * Maps to POST /api/v1/agent/update/live-location
  */
-export const updateLiveLocation = async (lat, lng, shipmentId = null) => {
+export const updateLiveLocation = async (pincode, shipmentId = null) => {
     try {
         const res = await api.post("/api/v1/agent/update/live-location", {
-            lat,
-            lng,
+            pincode,
             shipment_id: shipmentId
         });
         return res.data;
     } catch (error) {
-        // Log locally but avoid throwing to prevent breaking UI during background sync
         console.error("Failed to update live location:", error);
         return null;
     }
 };
-
 
 export const updateAgentProfile = async (profileData) => {
     return await api.patch("/api/auth/me", profileData);

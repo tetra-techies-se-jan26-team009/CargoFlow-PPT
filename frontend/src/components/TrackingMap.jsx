@@ -1,7 +1,9 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useEffect } from 'react';
 import L from 'leaflet';
-import { Polyline } from 'react-leaflet';
+import { useMap } from "react-leaflet";
+import "leaflet-routing-machine";
 
 // Standard Leaflet Icon fix for React
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -15,8 +17,69 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-export default function TrackingMap({ pickup, delivery, currentAgent }) {
-    // Center on agent if moving, otherwise pickup
+function Routing({ pickup, delivery, shipmentId, setEtaMap, hideInstructions = false }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!pickup || !delivery) return;
+
+        const routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(pickup.lat, pickup.lng),
+                L.latLng(delivery.lat, delivery.lng)
+            ],
+            router: L.Routing.osrmv1({
+                serviceUrl: "https://router.project-osrm.org/route/v1"
+            }),
+
+            lineOptions: {
+                styles: [
+                    { color: "#60a5fa", weight: 8, opacity: 0.6 },
+                    { color: "#2563eb", weight: 4 }
+                ]
+            },
+
+            show: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            routeWhileDragging: false,
+
+            createMarker: () => null,
+            itineraryFormatter: () => null,
+        }).addTo(map);
+
+        const container = routingControl.getContainer();
+
+        if (hideInstructions && container) {
+            container.style.display = "none";
+        }
+        routingControl.on("routesfound", function (e) {
+            const route = e.routes[0];
+
+            const minutes = Math.ceil(route.summary.totalTime / 60);
+            const km = (route.summary.totalDistance / 1000).toFixed(1);
+
+            setEtaMap(prev => ({
+                ...prev,
+                [shipmentId]: {
+                    eta: minutes,
+                    distance: km
+                }
+            }));
+
+            map.fitBounds(L.latLngBounds(route.coordinates));
+        });
+
+        return () => {
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+        };
+    }, [map, pickup, delivery, shipmentId, setEtaMap, hideInstructions]);
+}
+
+export default function TrackingMap({ pickup, delivery, currentAgent, shipmentId, setEtaMap, hideInstructions }) {
+
     const center =
         pickup && delivery
             ? [
@@ -41,15 +104,13 @@ export default function TrackingMap({ pickup, delivery, currentAgent }) {
 
                 {pickup && <Marker position={[pickup.lat, pickup.lng]}><Popup>Pickup Point</Popup></Marker>}
                 {delivery && <Marker position={[delivery.lat, delivery.lng]}><Popup>Destination</Popup></Marker>}
-                {pickup && delivery && (
-                    <Polyline
-                        positions={[
-                            [pickup.lat, pickup.lng],
-                            [delivery.lat, delivery.lng]
-                        ]}
-                        pathOptions={{ color: "blue", weight: 4 }}
-                    />
-                )}
+                <Routing
+                    pickup={pickup}
+                    delivery={delivery}
+                    shipmentId={shipmentId}
+                    setEtaMap={setEtaMap}
+                    hideInstructions={hideInstructions}
+                />
 
                 {/* The icon that will move during simulation */}
                 {currentAgent && (

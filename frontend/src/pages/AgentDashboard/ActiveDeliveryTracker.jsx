@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import TrackingMap from "../../components/TrackingMap";
 
-export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, onNavigate }) {
+export default function ActiveDeliveryTracker({ delivery, onComplete, onCall }) {
   const [progress, setProgress] = useState(65);
   // eslint-disable-next-line no-unused-vars
   const [etaMins, setEtaMins] = useState(15);
@@ -24,12 +24,15 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
   // Navigate
   const handleNav = () => {
     setNavActive(true);
-    if (onNavigate) onNavigate(delivery);
-    // Open Google Maps deep-link (silently, no redirect in web demo)
-    window.open(
-      `https://www.google.com/maps/dir/?api=1&destination=${delivery.destination.lat},${delivery.destination.lng}`,
-      '_blank'
-    );
+
+    const origin = delivery.pickup_coords;
+    const destination = delivery.delivery_coords;
+
+    if (!origin || !destination) return;
+
+    const url = `https://www.google.com/maps/dir/${origin.lat},${origin.lng}/${destination.lat},${destination.lng}/`;
+
+    window.open(url, "_blank");
   };
   const calculateDistance = (p1, p2) => {
     if (!p1 || !p2) return null;
@@ -184,11 +187,14 @@ export default function ActiveDeliveryTracker({ delivery, onComplete, onCall, on
       {/* Mini Map */}
       <div className="h-48 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 relative overflow-hidden">
         {/* REAL MAP REPLACEMENT */}
-        <div className="h-[250px] rounded-xl overflow-hidden">
+        <div className="h-[650px] rounded-xl overflow-hidden" onClick={handleNav}>
           {delivery?.pickup_coords && delivery?.delivery_coords ? (
             <TrackingMap
               pickup={delivery.pickup_coords}
               delivery={delivery.delivery_coords}
+              currentAgent={delivery.pickup_coords} // temporary fallback
+              shipmentId={delivery.dbId}
+              setEtaMap={() => { }} // safe placeholder
             />
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400">

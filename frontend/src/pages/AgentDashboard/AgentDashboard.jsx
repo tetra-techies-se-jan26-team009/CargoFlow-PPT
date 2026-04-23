@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 //eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "motion/react";
-import Toast from "../../components/Toast";
+import Toast from "../../components/ui/Toast";
 import {
   Package,
   MapPin,
@@ -182,23 +182,10 @@ export function AgentDashboard() {
         return;
       }
 
-      const { lat, lng } = coords;
-
-      // India approx bounding box
-      if (
-        lat < 6 ||
-        lat > 38 || // latitude range
-        lng < 68 ||
-        lng > 98 // longitude range
-      ) {
-        addToast("Pincode is outside India", "error");
-        return;
-      }
-
       console.log("Resolved coords:", coords);
 
       // 🔹 Send to backend
-      await updateLiveLocation(coords.lat, coords.lng, activeDelivery?.dbId);
+      await updateLiveLocation(String(pincode), activeDelivery?.dbId);
 
       addToast(`Location updated: ${coords.city}`, "success");
 
@@ -352,6 +339,7 @@ export function AgentDashboard() {
                         setShowConfirmation(true);
                       }}
                     />
+                    
                   </div>
                 </div>
               ) : (

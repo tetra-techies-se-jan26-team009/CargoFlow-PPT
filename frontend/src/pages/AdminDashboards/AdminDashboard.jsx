@@ -3,7 +3,7 @@ import { getCurrentUser } from "../../utils/auth";
 import { getDashboard, getShipments, getAgents } from "../../utils/adminAPI";
 import DashboardNavbar from "../../components/DashboardNavbar";
 import { Link } from "react-router-dom";
-import { statusMeta,BASE_RISK_ALERTS } from "../../utils/tempData";
+import { statusMeta, BASE_RISK_ALERTS } from "../../utils/tempData";
 import AddShipmentModal from "../../components/ui/Modals/AddShipments";
 import { AddClientModal } from "../../components/ui/Modals/AddClientModal";
 import { AIInsightsModal } from "../../components/ui/Modals/AIInsightsModal";
@@ -86,6 +86,7 @@ export default function AdminDashboard() {
     const [weather, setWeather] = useState(null);
     // ── Dynamic state ──
     const [shipments, setShipments] = useState([]);
+    const [etaMap, setEtaMap] = useState({});
     const [agentsList, setAgentsList] = useState([]);
     const [dashboardStats, setDashboardStats] = useState({
         active_shipments: 0,
@@ -412,6 +413,8 @@ export default function AdminDashboard() {
                                     pickup={selectedShipment?.pickup_coords || null}
                                     delivery={selectedShipment?.delivery_coords || null}
                                     currentAgent={null}
+                                    shipmentId={selectedShipment?.id}
+                                    setEtaMap={setEtaMap}
                                 />
                             </div>
                         </div>
@@ -624,7 +627,9 @@ export default function AdminDashboard() {
                                                     {s.status}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: "12px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{s.eta}</td>
+                                            <td style={{ padding: "12px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}> {etaMap[s.id]
+                                                ? `${etaMap[s.id].eta} mins`
+                                                : "—"} </td>
                                             <td style={{ padding: "12px 16px" }}>
                                                 <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: riskMeta[s.risk]?.bg, color: riskMeta[s.risk]?.color }}>
                                                     {s.risk}
