@@ -769,7 +769,20 @@ export default function ClientDashboard() {
       setShipmentsData(allShipments);
       setDashboardData(dashRes);
 
-      const derived = deriveClientDashboardStats(dashRes, allShipments);
+      let derived = deriveClientDashboardStats(dashRes, allShipments);
+
+      // 🔥 FIX: enrich active shipment with route from shipments list
+      if (derived.activeShipment?.id) {
+        const match = allShipments.find(
+          s => s.id === derived.activeShipment.id
+        );
+
+        if (match) {
+          derived.activeShipment.from = match.from;
+          derived.activeShipment.to = match.to;
+        }
+      }
+
       setStats(derived);
 
       const builtNotifs = buildClientNotifications(allShipments);

@@ -91,19 +91,123 @@ export const getShipmentProgress = (shipment) => {
     }
 };
 
+// export const normalizeClientShipment = (shipment = {}) => {
+//     const status = mapClientShipmentStatus(shipment.status);
+
+//     return {
+//         ...shipment,
+//         id: pick(shipment.tracking_id, shipment.id, shipment.shipment_id, "N/A"),
+//         from:
+//             shipment.route?.origin ||
+//             shipment.pickup_city ||
+//             shipment.pickup_address?.city ||
+//             "Not available",
+
+//         to:
+//             shipment.route?.destination ||
+//             shipment.delivery_city ||
+//             shipment.delivery_address?.city ||
+//             "Not available",
+
+//         status,
+//         progress: getShipmentProgress(shipment),
+//         pickupCoords: shipment.pickup_coords
+//             ? {
+//                 lat: shipment.pickup_coords.lat,
+//                 lng: shipment.pickup_coords.lng
+//             }
+//             : {
+//                 lat: shipment.pickup_address?.latitude,
+//                 lng: shipment.pickup_address?.longitude
+//             },
+
+//         deliveryCoords: shipment.delivery_coords
+//             ? {
+//                 lat: shipment.delivery_coords.lat,
+//                 lng: shipment.delivery_coords.lng
+//             }
+//             : {
+//                 lat: shipment.delivery_address?.latitude,
+//                 lng: shipment.delivery_address?.longitude
+//             },
+//         agentCoords: shipment.current_location
+//             ? {
+//                 lat: shipment.current_location.lat,
+//                 lng: shipment.current_location.lng
+//             }
+//             : null,
+//         agent: pick(
+//             shipment.agent_name,
+//             shipment.agent,
+//             shipment.assigned_agent_name,
+//             shipment.assigned_agent?.name,
+//             "Unassigned",
+//         ),
+
+//         eta: formatDateTime(
+//             pick(
+//                 shipment.eta,
+//                 shipment.estimated_delivery,
+//                 shipment.estimated_delivery_at,
+//                 shipment.expected_delivery_date,
+//             ),
+//         ),
+//         kg: getNumber(pick(shipment.weight, shipment.weight_kg), 0),
+//         price: getNumber(pick(shipment.price, shipment.amount, shipment.shipping_cost), 0),
+//         priceLabel: formatCurrency(pick(shipment.price, shipment.amount, shipment.shipping_cost)),
+//         date: formatDate(
+//             pick(
+//                 shipment.created_at,
+//                 shipment.created_on,
+//                 shipment.pickup_date,
+//                 shipment.updated_at,
+//             ),
+//         ),
+//         pickupLine1:
+//             shipment.pickup_address?.line1 ||
+//             shipment.route?.origin ||
+//             "Not available",
+
+//         deliveryLine1:
+//             shipment.delivery_address?.line1 ||
+//             shipment.route?.destination ||
+//             "Not available",
+//         receiverName: pick(shipment.receiver_name, shipment.receiver?.name, "Receiver"),
+//         receiverPhone: pick(shipment.receiver_phone, shipment.receiver?.phone, "Not available"),
+//         receiverEmail: pick(shipment.receiver_email, shipment.receiver?.email, "Not available"),
+//     };
+// };
+
+
 export const normalizeClientShipment = (shipment = {}) => {
     const status = mapClientShipmentStatus(shipment.status);
 
+    // ✅ move logic OUTSIDE return
+    const routeString = shipment.route;
+
+    let routeFrom = null;
+    let routeTo = null;
+
+    if (typeof routeString === "string" && routeString.includes("→")) {
+        const parts = routeString.split("→").map(v => v.trim());
+        routeFrom = parts[0];
+        routeTo = parts[1];
+    }
+
     return {
         ...shipment,
+
         id: pick(shipment.tracking_id, shipment.id, shipment.shipment_id, "N/A"),
+
         from:
+            routeFrom ||
             shipment.route?.origin ||
             shipment.pickup_city ||
             shipment.pickup_address?.city ||
             "Not available",
 
         to:
+            routeTo ||
             shipment.route?.destination ||
             shipment.delivery_city ||
             shipment.delivery_address?.city ||
@@ -111,6 +215,7 @@ export const normalizeClientShipment = (shipment = {}) => {
 
         status,
         progress: getShipmentProgress(shipment),
+
         pickupCoords: shipment.pickup_coords
             ? {
                 lat: shipment.pickup_coords.lat,
@@ -130,12 +235,14 @@ export const normalizeClientShipment = (shipment = {}) => {
                 lat: shipment.delivery_address?.latitude,
                 lng: shipment.delivery_address?.longitude
             },
+
         agentCoords: shipment.current_location
             ? {
                 lat: shipment.current_location.lat,
                 lng: shipment.current_location.lng
             }
             : null,
+
         agent: pick(
             shipment.agent_name,
             shipment.agent,
@@ -152,9 +259,13 @@ export const normalizeClientShipment = (shipment = {}) => {
                 shipment.expected_delivery_date,
             ),
         ),
+
         kg: getNumber(pick(shipment.weight, shipment.weight_kg), 0),
+
         price: getNumber(pick(shipment.price, shipment.amount, shipment.shipping_cost), 0),
+
         priceLabel: formatCurrency(pick(shipment.price, shipment.amount, shipment.shipping_cost)),
+
         date: formatDate(
             pick(
                 shipment.created_at,
@@ -163,6 +274,7 @@ export const normalizeClientShipment = (shipment = {}) => {
                 shipment.updated_at,
             ),
         ),
+
         pickupLine1:
             shipment.pickup_address?.line1 ||
             shipment.route?.origin ||
@@ -172,6 +284,7 @@ export const normalizeClientShipment = (shipment = {}) => {
             shipment.delivery_address?.line1 ||
             shipment.route?.destination ||
             "Not available",
+
         receiverName: pick(shipment.receiver_name, shipment.receiver?.name, "Receiver"),
         receiverPhone: pick(shipment.receiver_phone, shipment.receiver?.phone, "Not available"),
         receiverEmail: pick(shipment.receiver_email, shipment.receiver?.email, "Not available"),
