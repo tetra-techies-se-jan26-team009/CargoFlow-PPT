@@ -8,7 +8,7 @@ const extractLocation = (label) => {
     return match ? match[1].trim() : null;
 };
 
-const location = extractLocation(alert.label);
+// const location = extractLocation(alert.label);
 
 export function AlertModal({ alert, onClose }) {
 
