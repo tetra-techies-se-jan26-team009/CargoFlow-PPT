@@ -82,6 +82,7 @@ export default function AdminDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedShipment, setSelectedShipment] = useState(null);
+    const [dynamicAlerts, setDynamicAlerts] = useState([]);
     //eslint-disable-next-line
     const [weather, setWeather] = useState(null);
     // ── Dynamic state ──
@@ -142,6 +143,7 @@ export default function AdminDashboard() {
                     ...(dashRes || {}),
                     open_issues: (shipRes?.shipments || []).filter(s => ["High", "Medium"].includes(s.risk)).length
                 });
+
 
                 const mapStatus = (status) => {
                     if (status === "CREATED") return "Pending";
@@ -441,7 +443,44 @@ export default function AdminDashboard() {
                                                         s.delivery_coords.lat,
                                                         s.delivery_coords.lng
                                                     );
+
                                                     setWeather(data);
+
+                                                    // 🔥 Generate alerts
+                                                    if (data) {
+                                                        const alerts = [];
+
+                                                        if (data.temp > 38) {
+                                                            alerts.push({
+                                                                icon: "🌡",
+                                                                label: `High temperature near ${s.dest}`,
+                                                                border: "#FCA5A5"
+                                                            });
+                                                        }
+
+                                                        if (data.wind > 30) {
+                                                            alerts.push({
+                                                                icon: "💨",
+                                                                label: `Strong winds near ${s.dest}`,
+                                                                border: "#FCD34D"
+                                                            });
+                                                        }
+                                                        if (data.rain > 0) {
+                                                            alerts.push({
+                                                                icon: "🌧",
+                                                                label: `Rain may delay delivery`,
+                                                                border: "#60A5FA"
+                                                            });
+                                                        }
+                                                        if (s.price > 50000) {
+                                                            alerts.push({
+                                                                icon: "💰",
+                                                                label: `High value shipment`,
+                                                                border: "#F59E0B"
+                                                            });
+                                                        }
+                                                        setDynamicAlerts(alerts);
+                                                    }
                                                 }
                                             }}
                                             style={{
@@ -475,15 +514,17 @@ export default function AdminDashboard() {
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                                     <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#0F172A" }}>Risk Alerts</h3>
                                     <span style={{ background: "#FEE2E2", color: "#991B1B", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>
-                                        {BASE_RISK_ALERTS.length} Active
+                                        {dynamicAlerts.length + BASE_RISK_ALERTS.length} Active
                                     </span>
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                                    {BASE_RISK_ALERTS.map((a, i) => (
+                                    {[...dynamicAlerts, ...BASE_RISK_ALERTS].map((a, i) => (
                                         <button
                                             key={i}
-                                            onClick={() => openModal("alert", a)}
-                                            style={{
+                                            onClick={() => openModal("alert", {
+                                                ...a,
+                                                shipments
+                                            })} style={{
                                                 display: "flex", alignItems: "center", gap: 10,
                                                 padding: "9px 12px", background: "#F8FAFC", borderRadius: 8,
                                                 border: `1px solid ${a.border}`, cursor: "pointer", width: "100%",

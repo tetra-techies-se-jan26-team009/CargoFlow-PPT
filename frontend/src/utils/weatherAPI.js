@@ -1,22 +1,22 @@
 import axios from "axios";
 
-const API_KEY = "YOUR_API_KEY";
-
 export const getWeather = async (lat, lon) => {
   try {
     const res = await axios.get(
-      `https://api.openweathermap.org/data/2.5/weather`,
+      "https://api.open-meteo.com/v1/forecast",
       {
         params: {
-          lat,
-          lon,
-          appid: API_KEY,
-          units: "metric"
+          latitude: lat,
+          longitude: lon,
+          current_weather: true
         }
       }
     );
 
-    return res.data;
+    return {
+      temp: res.data.current_weather.temperature,
+      wind: res.data.current_weather.windspeed
+    };
   } catch (err) {
     console.error("Weather fetch failed:", err);
     return null;

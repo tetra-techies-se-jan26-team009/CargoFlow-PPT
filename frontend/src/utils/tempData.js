@@ -196,8 +196,7 @@ export const agents = [
     },
 ];
 export const BASE_RISK_ALERTS = [
-    { icon: "⚠️", label: "Route congestion — Chennai Port", border: "#FDE68A", type: "warning" },
-    { icon: "🌦️", label: "Weather delay — Mumbai region", border: "#BFDBFE", type: "info" },
+
     { icon: "", label: "3 clients with overdue invoices", border: "#FECACA", type: "danger" },
 ];
 
