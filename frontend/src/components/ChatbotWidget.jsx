@@ -242,7 +242,7 @@ const sendMessage = async () => {
       {/* ── Suggested prompts (only when no user messages) ── */}
       {messages.length === 1 && (
         <div className="flex gap-2 px-4 pb-2 flex-wrap">
-          {["What can you do?", "Talk to a human", "Pricing info"].map((prompt) => (
+          {["How to track shipment?", "How to schedule pickup?", "Pricing info"].map((prompt) => (
             <button
               key={prompt}
               onClick={() => setInput(prompt)}

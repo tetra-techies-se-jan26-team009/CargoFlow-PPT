@@ -536,7 +536,6 @@ export default function ShipmentsPage() {
                                         "Weight (Kg)",
                                         "Price",
                                         "Status",
-                                        "ETA",
                                         "Risk",
                                         "Actions",
                                     ].map((h) => (
@@ -668,16 +667,7 @@ export default function ShipmentsPage() {
                                                     {s.status}
                                                 </span>
                                             </td>
-                                            <td
-                                                style={{
-                                                    padding: "12px 14px",
-                                                    fontSize: 11,
-                                                    color: "#64748B",
-                                                    whiteSpace: "nowrap",
-                                                }}
-                                            >
-                                                {s.eta}
-                                            </td>
+                                            
                                             <td style={{ padding: "12px 14px" }}>
                                                 <span
                                                     style={{

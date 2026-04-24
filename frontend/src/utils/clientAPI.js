@@ -402,6 +402,7 @@ export const getClientShipments = async () => {
 
             progress: s.progress || 0,
             status: formatStatus(s.status),
+            client: s.client
         };
     });
 

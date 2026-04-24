@@ -2,11 +2,10 @@ export const getCoordsFromPincode = async (pincode) => {
   if (pincode.length !== 6) return null;
   
   try {
-    // Nominatim API specifically for Indian pincodes
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&countrycodes=in&format=json&addressdetails=1`,
       {
-        headers: { "User-Agent": "CargoFlow-App-MVP" } // Required by OSM policy
+        headers: { "User-Agent": "CargoFlow-App-MVP" } 
       }
     );
     const data = await response.json();
