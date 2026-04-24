@@ -30,8 +30,8 @@ def agent_dashboard(db: Session = Depends(get_db),
         Shipment.assigned_agent_id == current_user.id,
         Shipment.status.in_([
             ShipmentStatus.ASSIGNED,
-            ShipmentStatus.OUT_FOR_DELIVERY,
-            ShipmentStatus.CREATED
+            # ShipmentStatus.OUT_FOR_DELIVERY,
+            # ShipmentStatus.CREATED
         ])
     ).count()
 
@@ -40,13 +40,17 @@ def agent_dashboard(db: Session = Depends(get_db),
         Shipment.payment_status == PaymentStatus.PAID
     ).scalar() or 0
 
+    # active_shipment = db.query(Shipment).filter(
+    #     Shipment.assigned_agent_id == current_user.id,
+    #     Shipment.status.in_([
+    #         ShipmentStatus.ASSIGNED,
+    #         ShipmentStatus.OUT_FOR_DELIVERY
+    #     ])
+    # ).order_by(Shipment.updated_at.desc()).first()
     active_shipment = db.query(Shipment).filter(
-        Shipment.assigned_agent_id == current_user.id,
-        Shipment.status.in_([
-            ShipmentStatus.ASSIGNED,
-            ShipmentStatus.OUT_FOR_DELIVERY
-        ])
-    ).order_by(Shipment.updated_at.desc()).first()
+    Shipment.assigned_agent_id == current_user.id,
+    Shipment.status == ShipmentStatus.OUT_FOR_DELIVERY
+).first()
 
     active_delivery = None
 
@@ -104,21 +108,31 @@ def agent_dashboard(db: Session = Depends(get_db),
     shipment_list = []
 
     for s in shipments:
-        shipment_list.append({
-            "id": s.id,
-            "tracking_number": s.tracking_number,
-            "receiver_name": s.receiver_name,
-            "status": s.status.value,
+       shipment_list.append({
+    "id": s.id,
+    "tracking_number": s.tracking_number,
+    "receiver_name": s.receiver_name,
+    "receiver_phone": s.receiver_phone,
 
-            "pickup_address": {
-                "latitude": s.pickup_address.latitude if s.pickup_address else None,
-                "longitude": s.pickup_address.longitude if s.pickup_address else None
-            },
-            "delivery_address": {
-                "latitude": s.delivery_address.latitude if s.delivery_address else None,
-                "longitude": s.delivery_address.longitude if s.delivery_address else None
-            }
-        })
+    "status": s.status.value,
+
+    "weight": s.weight,
+    "price": s.price,
+
+    "pickup_address": {
+        "line": s.pickup_address.line1 if s.pickup_address else None,
+        "city": s.pickup_address.city if s.pickup_address else None,
+        "latitude": s.pickup_address.latitude if s.pickup_address else None,
+        "longitude": s.pickup_address.longitude if s.pickup_address else None
+    },
+
+    "delivery_address": {
+        "line": s.delivery_address.line1 if s.delivery_address else None,
+        "city": s.delivery_address.city if s.delivery_address else None,
+        "latitude": s.delivery_address.latitude if s.delivery_address else None,
+        "longitude": s.delivery_address.longitude if s.delivery_address else None
+    }
+})
 
     return {
         "agent": {
@@ -166,6 +180,14 @@ def update_shipment_status(id: int,
             ShipmentStatus.FAILED
         ],
     }
+    if data.status == ShipmentStatus.OUT_FOR_DELIVERY:
+        existing_active = db.query(Shipment).filter(
+            Shipment.assigned_agent_id == current_user.id,
+            Shipment.status == ShipmentStatus.OUT_FOR_DELIVERY
+        ).first()
+
+        if existing_active:
+            raise HTTPException(400, "Complete current delivery first")
 
     if shipment.status not in VALID_TRANSITIONS or data.status not in VALID_TRANSITIONS[shipment.status]:
         raise HTTPException(400, "Invalid status transition")

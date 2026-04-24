@@ -56,13 +56,44 @@ def admin_dashboard(db: Session = Depends(get_db),
         for s in today_shipments_query
     ]
 
+    alerts = []
+
+    # Check for agents needing duty approval
+    pending_agents = db.query(User).filter(
+        User.role == UserRole.DELIVERY_AGENT, 
+        User.pending_duty_status != None
+    ).all()
+    for agent in pending_agents:
+        alerts.append({
+            "id": f"duty-{agent.id}",
+            "type": "warning",
+            "title": "Duty Request",
+            "message": f"Agent {agent.name} is requesting to go {agent.pending_duty_status.value}",
+            "timestamp": "Action Required"
+        })
+
+    # Check for recent deliveries
+    recent_deliveries = db.query(Shipment).filter(
+        Shipment.status == ShipmentStatus.DELIVERED
+    ).order_by(Shipment.updated_at.desc()).limit(3).all()
+    
+    for s in recent_deliveries:
+        alerts.append({
+            "id": f"del-{s.id}",
+            "type": "success",
+            "title": "Delivery Complete",
+            "message": f"Shipment {s.tracking_number} was delivered by {s.assigned_agent.name if s.assigned_agent else 'Unknown'}",
+            "timestamp": s.updated_at.strftime("%I:%M %p")
+        })
+
     return {
         "active_shipments": active_shipments,
         "delivered_this_month": delivered_this_month,
         "active_agents": active_agents,
         "registered_clients": registered_clients,
         "recent_shipments": recent_shipments,
-        "today_shipments": today_shipments
+        "today_shipments": today_shipments,
+        "alerts": alerts
     }
 
 def generate_tracking_number(db: Session):
@@ -354,8 +385,15 @@ def admin_dashboard_agents(db: Session = Depends(get_db),
     agent_list = []
 
     for agent in agents:
-        total_deliveries = db.query(Shipment).filter(Shipment.assigned_agent_id == agent.id,
-                                                     Shipment.status == ShipmentStatus.DELIVERED).count()
+        total_deliveries = db.query(Shipment).filter(
+    Shipment.assigned_agent_id == agent.id,
+    Shipment.status.in_([
+        ShipmentStatus.DELIVERED,
+        ShipmentStatus.FAILED,
+        ShipmentStatus.ASSIGNED,
+        ShipmentStatus.OUT_FOR_DELIVERY
+    ])
+).count()
 
         today_deliveries = db.query(Shipment).filter(Shipment.assigned_agent_id == agent.id,
                                                      Shipment.status == ShipmentStatus.DELIVERED,

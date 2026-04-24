@@ -199,7 +199,7 @@ def create_shipment(data: ClientShipmentCreate,
         weight=data.weight,
         price=data.price,
 
-        category=data.category,
+        category=business.type,
         fragile=data.fragile,
         pickup_date=data.pickup_date,
         priority=data.priority,
