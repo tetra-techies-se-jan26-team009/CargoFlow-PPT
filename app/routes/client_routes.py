@@ -483,7 +483,8 @@ def client_shipments(db: Session = Depends(get_db),
             "price": s.price,
             "date": s.created_at,
             "progress": progress_map.get(s.status, 0),
-            "status": s.status.value
+            "status": s.status.value,
+            "client": s.sender.business.name if s.sender and s.sender.business else "Business Client"
         })
 
 

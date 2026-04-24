@@ -7,9 +7,9 @@ from .models import User, UserRole
 from .routes import auth_routes, admin_routes, client_routes, agent_routes
 from .auth import hash_password
 
-# from chatbot.app import router as chatbot_router
-# import chatbot.app as chatbot_module
-# from chatbot.rag_pipeline import CargoFlowRAG
+from chatbot.app import router as chatbot_router
+import chatbot.app as chatbot_module
+from chatbot.rag_pipeline import CargoFlowRAG
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,7 +35,7 @@ app.include_router(admin_routes.router)
 app.include_router(client_routes.router)
 app.include_router(agent_routes.router)
 
-# app.include_router(chatbot_router, prefix="/chatbot", tags=["Chatbot"])
+app.include_router(chatbot_router, prefix="/chatbot", tags=["Chatbot"])
 
 @app.on_event("startup")
 def startup():
@@ -59,7 +59,7 @@ def startup():
     finally:
         db.close()
 
-    # chatbot_module.rag = CargoFlowRAG()
+    chatbot_module.rag = CargoFlowRAG()
 
 @app.get("/health")
 def health():
