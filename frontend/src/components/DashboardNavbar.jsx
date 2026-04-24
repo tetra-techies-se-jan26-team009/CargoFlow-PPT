@@ -33,15 +33,18 @@ const navLinks = [
     { label: "Clients", path: "/admin/clients", },
 ];
 
-export default function DashboardNavbar() {
+export default function DashboardNavbar({ 
+    notifications = [], 
+    unreadCount = 0 
+}) {
     const [search, setSearch] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout } = useAuth();
     const [showProfile, setShowProfile] = useState(false);
-    const [showNotifications, setShowNotifications] = useState(false);
     const searchInputRef = useRef(null);
     const [displayName, setDisplayName] = useState(user?.name || "Admin");
+    const [showNotifications, setShowNotifications] = useState(false);
 
     useEffect(() => {
         // Listen for the custom event we created in Settings
@@ -59,11 +62,11 @@ export default function DashboardNavbar() {
         searchInputRef.current?.focus();
     };
 
-    const notifications = [
-        { id: 1, title: 'Shipment Delayed', desc: 'V1-20250303 is running 2 hours late', time: '5m ago', type: 'warning' },
-        { id: 2, title: 'Delivery Complete', desc: 'V1-20250302 delivered successfully', time: '15m ago', type: 'success' },
-        { id: 3, title: 'New Client Added', desc: 'BlueStar Exports joined', time: '1h ago', type: 'info' },
-    ];
+    // const notifications = [
+    //     { id: 1, title: 'Shipment Delayed', desc: 'V1-20250303 is running 2 hours late', time: '5m ago', type: 'warning' },
+    //     { id: 2, title: 'Delivery Complete', desc: 'V1-20250302 delivered successfully', time: '15m ago', type: 'success' },
+    //     { id: 3, title: 'New Client Added', desc: 'BlueStar Exports joined', time: '1h ago', type: 'info' },
+    // ];
 
 
     const handleLogout = () => {
@@ -195,41 +198,44 @@ export default function DashboardNavbar() {
                     </button>
                 </div>
 
-                <div className="relative">
+<div className="relative">
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
                         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <Bell className="w-5 h-5 text-gray-600" />
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+                        {/* THE DYNAMIC DOT */}
+                        {unreadCount > 0 && (
+                            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                        )}
                     </button>
 
                     {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
-                                    <span className="text-xs text-blue-600 font-medium cursor-pointer hover:text-blue-700">Mark all read</span>
-                                </div>
+                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[110]">
+                            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+                                {unreadCount > 0 && <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{unreadCount}</span>}
                             </div>
                             <div className="max-h-96 overflow-y-auto">
-                                {notifications.map((notif) => (
-                                    <div key={notif.id} className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors">
-                                        <div className="flex gap-3">
-                                            <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${notif.type === 'warning' ? 'bg-amber-500' :
-                                                notif.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                                {notifications.length > 0 ? (
+                                    notifications.map((notif) => (
+                                        <div key={notif.id} className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors">
+                                            <div className="flex gap-3">
+                                                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                                                    notif.type === 'warning' ? 'bg-amber-500' : 
+                                                    notif.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
                                                 }`}></div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900">{notif.title}</p>
-                                                <p className="text-xs text-gray-600 mt-0.5">{notif.desc}</p>
-                                                <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900">{notif.title}</p>
+                                                    <p className="text-xs text-gray-600 mt-0.5">{notif.desc}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-1">{notif.time}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-                                <button className="text-xs text-blue-600 font-medium hover:text-blue-700 w-full text-center">View all notifications</button>
+                                    ))
+                                ) : (
+                                    <div className="p-6 text-center text-gray-400 text-sm">All caught up!</div>
+                                )}
                             </div>
                         </div>
                     )}

@@ -57,7 +57,7 @@ const icons = {
 const statusMeta = {
     "In Transit": { bg: "#DBEAFE", color: "#1D4ED8" },
     Delivered: { bg: "#D1FAE5", color: "#065F46" },
-    Delayed: { bg: "#FEE2E2", color: "#991B1B" },
+    Failed: { bg: "#FEE2E2", color: "#991B1B" },
     Pending: { bg: "#FEF3C7", color: "#92400E" },
 };
 
@@ -77,7 +77,7 @@ export default function ShipmentsPage() {
     const [modal, setModal] = useState(null);
 
     // Strict State Management Rule
-    const [data, setData] = useState({ total: 0, in_transit: 0, delivered: 0, delayed: 0, pending: 0 });
+    const [data, setData] = useState({ total: 0, in_transit: 0, delivered: 0, failed: 0, pending: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [shipments, setShipments] = useState([]);
@@ -117,7 +117,7 @@ export default function ShipmentsPage() {
                     total: shipRes?.total || 0,
                     in_transit: shipRes?.in_transit || 0,
                     delivered: shipRes?.delivered || 0,
-                    delayed: shipRes?.delayed || 0,
+                    failed: shipRes?.failed || 0,
                     pending: shipRes?.pending || 0
                 });
 
@@ -125,7 +125,7 @@ export default function ShipmentsPage() {
                     if (status === "CREATED") return "Pending";
                     if (["ASSIGNED", "OUT_FOR_DELIVERY"].includes(status)) return "In Transit";
                     if (status === "DELIVERED") return "Delivered";
-                    if (["FAILED", "RETURN_TO_ORIGIN"].includes(status)) return "Delayed";
+                    if (["FAILED", "RETURN_TO_ORIGIN"].includes(status)) return "Failed";
                     return status;
                 };
 
@@ -340,8 +340,8 @@ export default function ShipmentsPage() {
                                 bg: "#D1FAE5",
                             },
                             {
-                                label: "Delayed",
-                                value: data.delayed,
+                                label: "Failed",
+                                value: data.failed,
                                 color: "#991B1B",
                                 bg: "#FEE2E2",
                             },
@@ -467,7 +467,7 @@ export default function ShipmentsPage() {
                                     outline: "none",
                                 }}
                             >
-                                {["All", "In Transit", "Delivered", "Delayed", "Pending"].map(
+                                {["All", "In Transit", "Delivered", "Failed", "Pending"].map(
                                     (s) => (
                                         <option key={s}>{s}</option>
                                     ),

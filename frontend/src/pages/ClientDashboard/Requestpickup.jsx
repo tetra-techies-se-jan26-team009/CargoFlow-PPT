@@ -4,6 +4,7 @@ import ClientNavbar from "../../components/ClientNavbar";
 import { createShipment } from "../../utils/clientAPI";
 import { MapPin, MapPinCheck, PhoneIncoming } from 'lucide-react';
 import { getCoordsFromPincode } from '../../utils/geocoding';
+import { getClientDashboard } from "../../utils/clientAPI";
 
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ const inputStyle = {
 };
 const inputErrStyle = { ...inputStyle, border: "1px solid #FCA5A5", background: "#FFF5F5" };
 const selectStyle = { ...inputStyle, cursor: "pointer", appearance: "none" };
-const selectErrStyle = { ...inputErrStyle, cursor: "pointer", appearance: "none" };
+// const selectErrStyle = { ...inputErrStyle, cursor: "pointer", appearance: "none" };
 
 const labelStyle = {
     fontSize: 11, fontWeight: 600, color: "#64748B", letterSpacing: "0.5px",
@@ -126,9 +127,14 @@ function validateStep(step, f) {
             errs.receiver_email = "Enter a valid email address";
     }
     if (step === 1) {
-        if (!f.weight) errs.weight = "Weight is required";
-        else if (isNaN(f.weight) || Number(f.weight) <= 0) errs.weight = "Enter a valid weight";
-        if (!f.category) errs.category = "Category is required";
+        if (!f.weight) {
+            errs.weight = "Weight is required";
+        } else if (isNaN(f.weight)) {
+            errs.weight = "Enter a valid weight";
+        } else if (Number(f.weight) < 100) {
+            errs.weight = "Minimum shipment weight is 100 kg";
+        }
+        // if (!f.category) errs.category = "Category is required";
     }
     if (step === 2) {
         if (!f.date) errs.date = "Pickup date is required";
@@ -160,6 +166,7 @@ export default function RequestPickup() {
     const [apiError, setApiError] = useState(null);
     const [result, setResult] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [businessType, setBusinessType] = useState("");
 
     // --- API Data States ---
     const [statesList, setStatesList] = useState([]);
@@ -181,6 +188,20 @@ export default function RequestPickup() {
     // 1. Initial Load: Fetch All States
     useEffect(() => {
         getStates().then(data => setStatesList(data || []));
+    }, []);
+
+    useEffect(() => {
+        getClientDashboard().then(res => {
+            if (res?.business?.type) {
+                setBusinessType(res.business.type);
+
+                // auto-fill category in form
+                setF(prev => ({
+                    ...prev,
+                    category: res.business.type
+                }));
+            }
+        });
     }, []);
 
     // 2. Handle Pickup State Selection
@@ -572,12 +593,12 @@ export default function RequestPickup() {
                                             style={errors.weight ? inputErrStyle : inputStyle}
                                             onFocus={onFocus} onBlur={onBlur} />
                                     </Field>
-                                    <Field label="Category" required error={errors.category}>
-                                        <select value={f.category} onChange={e => set("category", e.target.value)}
-                                            style={errors.category ? selectErrStyle : selectStyle}>
-                                            <option value="">Select category</option>
-                                            {["Electronics", "Clothing", "Documents", "Food & Perishables", "Machinery", "Pharmaceuticals", "Other"].map(c => <option key={c}>{c}</option>)}
-                                        </select>
+                                    <Field label="Category (Auto-filled)">
+                                        <input
+                                            value={businessType || "Loading..."}
+                                            disabled
+                                            style={inputStyle}
+                                        />
                                     </Field>
                                 </div>
                                 <div>

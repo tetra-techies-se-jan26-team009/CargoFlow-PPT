@@ -393,7 +393,13 @@ export default function AddShipmentModal({ onClose }) {
         if (!f.delivery_city) e.delivery_city = "Required";
         if (!f.delivery_pincode) e.delivery_pincode = "Required";
         else if (!/^\d{6}$/.test(f.delivery_pincode)) e.delivery_pincode = "Must be 6 digits";
-        if (!f.weight || isNaN(+f.weight) || +f.weight <= 0) e.weight = "Must be > 0";
+        if (!f.weight) {
+            errs.weight = "Weight is required";
+        } else if (isNaN(f.weight)) {
+            errs.weight = "Enter a valid weight";
+        } else if (Number(f.weight) < 100) {
+            errs.weight = "Minimum shipment weight is 100 kg";
+        }
         if (!f.price || isNaN(+f.price) || +f.price <= 0) e.price = "Must be > 0";
         if (f.pickup_date && new Date(f.pickup_date) < new Date()) e.pickup_date = "Cannot be in the past";
         return e;

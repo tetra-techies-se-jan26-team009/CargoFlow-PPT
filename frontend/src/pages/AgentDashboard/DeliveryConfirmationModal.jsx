@@ -20,8 +20,7 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [timeLeft, setTimeLeft] = useState(120);
 
-  const totalSteps = 3;
-
+  const totalSteps = deliveryStatus === 'failed' ? 1 : 3;
   const stepTitles = ['Delivery Details', 'Proof of Delivery', 'Rate Experience'];
 
   useEffect(() => {
@@ -64,6 +63,12 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
 
   const goNext = () => {
     if (step === 1 && !validateStep1()) return;
+
+    if (deliveryStatus === 'failed') {
+      handleSubmit(); // 🚀 directly submit
+      return;
+    }
+
     if (step < totalSteps) setStep(s => s + 1);
     else handleSubmit();
   };
@@ -203,7 +208,9 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
                 {/* Received by */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {deliveryStatus === 'delivered' ? 'Received By *' : 'Contact Person'}
+                    {deliveryStatus === 'delivered'
+                      ? 'Received By *'
+                      : 'Attempted Contact Person'}
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -317,7 +324,7 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
             )}
 
             {/* ── STEP 2: Proof of Delivery ────────────────────────────── */}
-            {step === 2 && (
+            {deliveryStatus === 'delivered' && step === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                 <h4 className="font-bold text-gray-900">Proof of Delivery</h4>
                 <p className="text-sm text-gray-600">Take a photo of the delivered package or customer signature</p>
@@ -350,7 +357,7 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
             )}
 
             {/* ── STEP 3: Rate Experience ──────────────────────────────── */}
-            {step === 3 && (
+            {deliveryStatus === 'delivered' && step === 3 && (
               <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                 <h4 className="font-bold text-gray-900">Rate Your Experience</h4>
                 <p className="text-sm text-gray-600">How was your delivery experience with {delivery.customer}?</p>
@@ -411,7 +418,11 @@ export default function DeliveryConfirmationModal({ delivery, onClose, onConfirm
                 >
                   {submitting ? (
                     <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Processing…</>
-                  ) : step === totalSteps ? 'Complete Delivery ✓' : 'Continue →'}
+                  ) : deliveryStatus === 'failed'
+                    ? 'Mark as Failed'
+                    : step === totalSteps
+                      ? 'Complete Delivery ✓'
+                      : 'Continue →'}
                 </button>
               </div>
             </div>

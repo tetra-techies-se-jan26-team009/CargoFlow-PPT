@@ -120,3 +120,18 @@ export const assignAgent = async (shipmentId, agentId) => {
 export const approveDuty = async (agentId) => {
     return await api.patch(`/api/v1/admin/agents/${agentId}/approve-duty`);
 };
+
+// ---Notifications-----------------------------------------------------------------------
+
+export const deriveAdminNotifications = (dashboardData) => {
+    const alerts = dashboardData?.alerts || [];
+    
+    return alerts.map(alert => ({
+        id: alert.id,
+        title: alert.title,
+        desc: alert.message,
+        time: alert.timestamp,
+        type: alert.type, // 'warning', 'success', 'info'
+        unread: true // In a real app, you'd compare with a 'lastSeen' timestamp in localStorage
+    }));
+};

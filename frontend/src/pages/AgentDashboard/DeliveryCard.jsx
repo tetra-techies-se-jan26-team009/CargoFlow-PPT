@@ -2,6 +2,7 @@ import { Package, MapPin, Phone, Navigation, Clock, DollarSign, ChevronDown, Che
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { updateShipmentStatus } from "../../utils/agentAPI";
 
 export default function DeliveryCard({ delivery, index, onStart, onNavigate, onCall }) {
   const [expanded, setExpanded] = useState(false);
@@ -33,11 +34,15 @@ export default function DeliveryCard({ delivery, index, onStart, onNavigate, onC
     );
   };
 
-  const handleStart = () => {
-    setStarted(true);
-    if (onStart) onStart(delivery);
-  };
+const handleStart = async () => {
+  try {
+    await updateShipmentStatus(delivery.dbId, "OUT_FOR_DELIVERY");
 
+    if (onStart) onStart(); // reload dashboard
+  } catch (err) {
+    console.error(err);
+  }
+};
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -155,7 +160,7 @@ export default function DeliveryCard({ delivery, index, onStart, onNavigate, onC
         </button>
         <button
           onClick={handleStart}
-          disabled={started}
+          disabled={delivery.status === "OUT_FOR_DELIVERY"}
           className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg transition-all shadow-md text-xs font-semibold ${
             started
               ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'

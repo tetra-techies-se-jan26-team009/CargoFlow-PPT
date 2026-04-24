@@ -96,7 +96,7 @@ export default function ClientShipments() {
         "In Transit": shipments.filter((row) => row.status === "In Transit").length,
         Delivered: shipments.filter((row) => row.status === "Delivered").length,
         Pending: shipments.filter((row) => row.status === "Pending").length,
-        Delayed: shipments.filter((row) => row.status === "Delayed").length,
+        Failed: shipments.filter((row) => row.status === "Failed").length,
     }), [shipments]);
 
     const rows = useMemo(() => shipments.filter((row) => {
@@ -142,7 +142,7 @@ export default function ClientShipments() {
                         { key: "In Transit", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
                         { key: "Delivered", color: "#065F46", bg: "#F0FDF4", border: "#A7F3D0" },
                         { key: "Pending", color: "#92400E", bg: "#FFFBEB", border: "#FDE68A" },
-                        { key: "Delayed", color: "#991B1B", bg: "#FFF5F5", border: "#FECACA" },
+                        { key: "Failed", color: "#991B1B", bg: "#FFF5F5", border: "#FECACA" },
                     ].map((card) => (
                         <button key={card.key} onClick={() => { setTab(card.key); setPage(1); }} style={{ padding: "14px 16px", background: tab === card.key ? card.bg : "white", border: `1.5px solid ${tab === card.key ? card.border : "#E2E8F0"}`, borderRadius: 12, cursor: "pointer", textAlign: "left" }}>
                             <div style={{ fontSize: 24, fontWeight: 900, color: tab === card.key ? card.color : "#0F172A" }}>{counts[card.key]}</div>

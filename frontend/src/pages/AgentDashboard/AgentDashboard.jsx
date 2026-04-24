@@ -130,6 +130,10 @@ export function AgentDashboard() {
               .map((s) => ({
                 ...s,
                 dbId: s.id,
+                phone: s.receiver_phone,
+                address: `${s.delivery_address?.line || ""}, ${s.delivery_address?.city || ""}`,
+                packageType: `${s.weight} kg`,
+                codAmount: `₹${s.price}`,
               })),
           );
           setCompletedList(
@@ -212,14 +216,22 @@ export function AgentDashboard() {
       const backendPaymentMethod = data.payment_method === 'digital' ? 'UPI' : 'CASH';
 
       const remarks = `Recipient: ${data.customerName || 'N/A'}. Method: ${backendPaymentMethod}. Note: ${data.notes || ''}`;
-      await updateShipmentStatus(targetId, "OUT_FOR_DELIVERY");
+      const finalStatus = data.status; // "DELIVERED" or "FAILED"
 
-      await updateShipmentStatus(
-        targetId,
-        "DELIVERED",
-        remarks,
-        backendPaymentMethod // Now sends 'UPI' or 'CASH'
-      );
+      // Always move to OUT_FOR_DELIVERY first (valid transition)
+      // await updateShipmentStatus(targetId, "OUT_FOR_DELIVERY");
+
+      // Apply final status correctly
+      if (finalStatus === "FAILED") {
+        await updateShipmentStatus(targetId, "FAILED", remarks);
+      } else {
+        await updateShipmentStatus(
+          targetId,
+          "DELIVERED",
+          remarks,
+          backendPaymentMethod
+        );
+      }
 
       // 2. Immediately trigger a data reload from the server
       // We await this so the "Loading" state finishes before we close the modal logic
@@ -339,7 +351,7 @@ export function AgentDashboard() {
                         setShowConfirmation(true);
                       }}
                     />
-                    
+
                   </div>
                 </div>
               ) : (

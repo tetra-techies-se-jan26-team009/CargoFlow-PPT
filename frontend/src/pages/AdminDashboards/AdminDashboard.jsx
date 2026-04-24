@@ -149,7 +149,7 @@ export default function AdminDashboard() {
                     if (status === "CREATED") return "Pending";
                     if (["ASSIGNED", "OUT_FOR_DELIVERY"].includes(status)) return "In Transit";
                     if (status === "DELIVERED") return "Delivered";
-                    if (["FAILED", "RETURN_TO_ORIGIN"].includes(status)) return "Delayed";
+                    if (["FAILED", "RETURN_TO_ORIGIN"].includes(status)) return "Failed";
                     return status;
                 };
 
@@ -194,12 +194,10 @@ export default function AdminDashboard() {
     const totalShipments = shipments.length;
 
     const deliveredCount = shipments.filter(s => s.status === "Delivered").length;
-    const delayedCount = shipments.filter(s => s.status === "Delayed").length;
-
-    // ✅ Performance formula
+    const failedCount = shipments.filter(s => s.status === "Failed").length;
     const performance =
         totalShipments > 0
-            ? ((deliveredCount - delayedCount * 0.5) / totalShipments) * 100
+            ? ((deliveredCount - failedCount * 0.5) / totalShipments) * 100
             : 0;
 
     const performanceValue = performance.toFixed(1);
@@ -411,13 +409,20 @@ export default function AdminDashboard() {
                                 </button>
                             </div>
                             <div style={{ height: 300 }}>
-                                <TrackingMap
-                                    pickup={selectedShipment?.pickup_coords || null}
-                                    delivery={selectedShipment?.delivery_coords || null}
-                                    currentAgent={null}
-                                    shipmentId={selectedShipment?.id}
-                                    setEtaMap={setEtaMap}
-                                />
+                                {selectedShipment?.status !== "Failed" && (
+                                    <TrackingMap
+                                        pickup={selectedShipment?.pickup_coords || null}
+                                        delivery={selectedShipment?.delivery_coords || null}
+                                        currentAgent={null}
+                                        shipmentId={selectedShipment?.id}
+                                        setEtaMap={setEtaMap}
+                                    />
+                                )}
+                                {selectedShipment?.status === "Failed" && (
+                                    <div style={{ textAlign: "center", padding: 40, color: "#EF4444" }}>
+                                        🚫 Delivery Failed — No active tracking available
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -492,8 +497,8 @@ export default function AdminDashboard() {
                                             onMouseEnter={e => e.currentTarget.style.background = "#EFF6FF"}
                                             onMouseLeave={e => e.currentTarget.style.background = "#F8FAFC"}
                                         >
-                                            <div style={{ width: 32, height: 32, background: s.status === "Delayed" ? "#FEE2E2" : "#EFF6FF", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                                <Icon d={icons.truck} size={14} stroke={s.status === "Delayed" ? "#EF4444" : "#2563EB"} />
+                                            <div style={{ width: 32, height: 32, background: s.status === "Failed" ? "#FEE2E2" : "#EFF6FF", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                                <Icon d={icons.truck} size={14} stroke={s.status === "Failed" ? "#EF4444" : "#2563EB"} />
                                             </div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ fontSize: 11, fontWeight: 700, color: "#0F172A" }}>{s.id}</div>
@@ -567,8 +572,8 @@ export default function AdminDashboard() {
                                         color: "#10B981"
                                     },
                                     {
-                                        label: "Delayed",
-                                        value: `${delayedCount} shipments`,
+                                        label: "Failed",
+                                        value: `${failedCount} shipments`,
                                         color: "#EF4444"
                                     },
                                     {
@@ -602,7 +607,7 @@ export default function AdminDashboard() {
                                         style={{ border: "1px solid #E2E8F0", borderRadius: 6, padding: "5px 10px", fontSize: 11, color: "#64748B", background: "white", cursor: "pointer", outline: "none" }}
                                     >
                                         <option>Status</option>
-                                        {["In Transit", "Delivered", "Delayed", "Pending"].map(s => <option key={s}>{s}</option>)}
+                                        {["In Transit", "Delivered", "Failed", "Pending"].map(s => <option key={s}>{s}</option>)}
                                     </select>
                                     {/* Agent filter */}
                                     <select
@@ -668,7 +673,7 @@ export default function AdminDashboard() {
                                                     {s.status}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: "12px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}> {etaMap[s.id]
+                                            <td style={{ padding: "12px 16px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}> {s.status === "In Transit" && etaMap[s.id]
                                                 ? `${etaMap[s.id].eta} mins`
                                                 : "—"} </td>
                                             <td style={{ padding: "12px 16px" }}>

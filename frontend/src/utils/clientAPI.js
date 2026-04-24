@@ -4,7 +4,7 @@ export const CLIENT_STATUS_META = {
     "In Transit": { bg: "#DBEAFE", color: "#1D4ED8", dot: "#3B82F6" },
     Delivered: { bg: "#D1FAE5", color: "#065F46", dot: "#10B981" },
     Pending: { bg: "#FEF3C7", color: "#92400E", dot: "#F59E0B" },
-    Delayed: { bg: "#FEE2E2", color: "#991B1B", dot: "#EF4444" },
+    Failed: { bg: "#FEE2E2", color: "#991B1B", dot: "#EF4444" },
 };
 
 const pick = (...values) => values.find((value) => value !== undefined && value !== null && value !== "");
@@ -27,7 +27,7 @@ export const mapClientShipmentStatus = (status) => {
         case "FAILED":
         case "RETURN_TO_ORIGIN":
         case "CANCELLED":
-            return "Delayed";
+            return "Failed";
         default:
             return status || "Pending";
     }
@@ -84,7 +84,7 @@ export const getShipmentProgress = (shipment) => {
             return 100;
         case "In Transit":
             return 65;
-        case "Delayed":
+        case "Failed":
             return 45;
         default:
             return 10;
@@ -297,7 +297,7 @@ export const buildClientNotifications = (shipments = []) =>
         icon:
             shipment.status === "Delivered"
                 ? "✅"
-                : shipment.status === "Delayed"
+                : shipment.status === "Failed"
                     ? "⚠️"
                     : shipment.status === "Pending"
                         ? "⏰"
@@ -305,7 +305,7 @@ export const buildClientNotifications = (shipments = []) =>
         bg:
             shipment.status === "Delivered"
                 ? "#D1FAE5"
-                : shipment.status === "Delayed"
+                : shipment.status === "Failed"
                     ? "#FEE2E2"
                     : shipment.status === "Pending"
                         ? "#FEF3C7"
@@ -418,7 +418,7 @@ const formatStatus = (status) => {
         ASSIGNED: "In Transit",
         OUT_FOR_DELIVERY: "In Transit",
         DELIVERED: "Delivered",
-        FAILED: "Delayed",
+        FAILED: "Failed",
     };
 
     return map[status] || status;

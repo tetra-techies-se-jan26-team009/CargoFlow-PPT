@@ -219,7 +219,7 @@ const TrackingTimeline = ({ shipment }) => {
     const progressMap = {
       Pending: 0,
       "In Transit": 2,
-      Delayed: 2,
+      Failed: 2,
       Delivered: 4,
     };
 
@@ -1264,15 +1264,6 @@ export default function ClientDashboard() {
                         }}
                       >
                         Delivery Progress
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: "#2563EB",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {activeShipment.progress}%
                       </span>
                     </div>
                     <div

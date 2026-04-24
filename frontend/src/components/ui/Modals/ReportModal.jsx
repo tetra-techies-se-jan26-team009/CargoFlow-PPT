@@ -29,7 +29,7 @@ export function ReportModal({ onClose, shipments }) {
                             {[
                                 ["Total Shipments", shipments.length],
                                 ["Delivered", shipments.filter(s => s.status === "Delivered").length],
-                                ["Delayed", shipments.filter(s => s.status === "Delayed").length],
+                                ["Failed", shipments.filter(s => s.status === "Failed").length],
                                 ["On-Time Rate", "96.4%"],
                                 ["Active Agents", agents.length],
                                 ["Clients", "67"],
