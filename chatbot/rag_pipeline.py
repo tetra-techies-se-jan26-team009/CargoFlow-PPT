@@ -16,18 +16,22 @@ HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 LLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
 
-SYSTEM_PROMPT = """You are a smart logistics assistant for CargoFlow.
+SYSTEM_PROMPT = """You are an AI logistics assistant for CargoFlow.
 
-Only answer questions related to:
+You must:
+- Answer only based on provided context
+- Be concise, clear, and professional
+- Use bullet points when helpful
+- If answer is not in context, say you don't know
+
+You can help with:
 - shipment tracking
 - delivery services
 - pricing
 - logistics
 
-If the question is not related to CargoFlow, reply:
+If the question is unrelated, reply:
 "Sorry, I can only help with CargoFlow logistics queries."
-
-Be concise and helpful.
 """
 
 
@@ -101,19 +105,23 @@ def handle_price(weight: int):
 # ---------------- LLM ---------------- 
 
 def call_llm(context: str, question: str):
-    client = InferenceClient(token=HF_API_TOKEN)
+    try:
+        client = InferenceClient(token=HF_API_TOKEN)
 
-    response = client.chat_completion(
-        model=LLM_MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"{context}\n\nQuestion: {question}"}
-        ],
-        max_tokens=200,
-        temperature=0.2,
-    )
+        response = client.chat_completion(
+            model=LLM_MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"{context}\n\nQuestion: {question}"}
+            ],
+            max_tokens=200,
+            temperature=0.2,
+        )
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+
+    except Exception:
+        return "Sorry, I'm unable to respond right now. Please try again later."
 
 
 # ---------------- MAIN CLASS ---------------- 
@@ -131,8 +139,20 @@ class CargoFlowRAG:
 
         q = question.lower()
 
+        if any(word in q for word in ["contact", "support", "helpline", "email", "customer care", "help", "call"]):
+            return {
+                "question": question,
+                "answer": (
+                    "You can contact CargoFlow support:\n\n"
+                    "Helpline: +91-9876543210\n"
+                    "Email: support@cargoflow.com"
+                ),
+                "sources": [],
+                "found_in_kb": False
+            }
+
         # Greeting
-        if re.search(r"\b(hi|hello|hey|hii|helo)\b", q):
+        if re.search(r"\b(hi|hello|hey|hii|helo|good morning|good evening)\b", q):
             return {
                 "question": question,
                 "answer": "Hello! 👋 I can help you with tracking shipments, pricing, and delivery info.",
@@ -164,7 +184,8 @@ class CargoFlowRAG:
         LOGISTICS_KEYWORDS = [
             "shipment", "delivery", "track", "tracking", "parcel",
             "logistics", "courier", "price", "cost", "kg",
-            "pickup", "cargo", "shipping"
+            "pickup", "cargo", "shipping",
+            "package", "delay", "delayed", "failed", "order"
         ]
 
         if not any(word in q for word in LOGISTICS_KEYWORDS):
