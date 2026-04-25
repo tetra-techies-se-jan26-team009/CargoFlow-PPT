@@ -139,7 +139,7 @@ class CargoFlowRAG:
 
         q = question.lower()
 
-        if any(word in q for word in ["contact", "support", "helpline", "email", "customer care", "help", "call"]):
+        if any(word in q for word in ["contact", "support", "helpline", "email", "customer care", "help", "call", "complain", "query", "complaint"]):
             return {
                 "question": question,
                 "answer": (
