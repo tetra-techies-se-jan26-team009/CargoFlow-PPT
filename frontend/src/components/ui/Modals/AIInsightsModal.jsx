@@ -11,7 +11,7 @@ export function AIInsightsModal({ onClose }) {
         { icon: "🚨", title: "Risk: Amit Kumar Verma", detail: "83.5% on-time rate — 12 pts below team average. Consider reassigning his 3 pending shipments." },
         { icon: "🗺️", title: "Darbhanga → Patna Congestion", detail: "Average transit time up 40 mins due to port congestion. Reroute via NH-48 to save ~35 mins." },
         { icon: "💰", title: "Invoice Recovery Opportunity", detail: "₹4,200 overdue 7+ days. Automated reminders could recover 78% based on historical data." },
-        { icon: "⭐", title: "Top Agent: Amit Kumar Verma", detail: "14 deliveries, 95.7% on-time this week. Recommend for bonus recognition." },
+        { icon: "⭐", title: "Top Agent: Soubhagya Nayak", detail: "14 deliveries, 95.7% on-time this week. Recommend for bonus recognition." },
     ];
     return (
         <Modal onClose={onClose} width={520}>
