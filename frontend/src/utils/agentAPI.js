@@ -76,3 +76,49 @@ export const updateDutyStatus = async (status) => {
         throw error;
     }
 };
+
+
+export const buildAgentNotifications = (shipments = [], agent = {}) => {
+  const notifications = [];
+
+  // 🔹 Assignment notifications
+  shipments
+    .filter(s => s.status === "ASSIGNED")
+    .slice(0, 3)
+    .forEach((s, index) => {
+      notifications.push({
+        id: s.id,
+        title: "New Delivery Assigned",
+        desc: `${s.tracking_number} assigned to you`,
+        time: "Just now",
+        type: "info",
+        read: index !== 0
+      });
+    });
+
+  // 🔹 Active delivery
+  const active = shipments.find(s => s.status === "OUT_FOR_DELIVERY");
+
+  if (active) {
+    notifications.unshift({
+      id: "active",
+      title: "Delivery In Progress",
+      desc: `${active.tracking_number} is out for delivery`,
+      type: "info",
+      read: false
+    });
+  }
+
+  // 🔹 Duty status
+  if (agent?.duty_status) {
+    notifications.unshift({
+      id: "duty",
+      title: "Duty Status",
+      desc: `You are ${agent.duty_status.replace("_", " ")}`,
+      type: "success",
+      read: false
+    });
+  }
+
+  return notifications;
+};

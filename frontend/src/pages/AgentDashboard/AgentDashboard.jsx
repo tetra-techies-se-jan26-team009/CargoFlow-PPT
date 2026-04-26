@@ -42,6 +42,7 @@ import DeliveryCard from "./DeliveryCard";
 import DeliveryConfirmationModal from "./DeliveryConfirmationModal";
 import AgentNavbar from "../../components/AgentNavbar";
 import TrackingMap from "../../components/TrackingMap";
+import { buildAgentNotifications } from "../../utils/agentAPI";
 
 export function AgentDashboard() {
   const { toast, showToast: addToast, hideToast } = useToast();
@@ -51,6 +52,7 @@ export function AgentDashboard() {
   const [activeTab, setActiveTab] = useState("active");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
+  const [notifs, setNotifs] = useState([]);
 
   // Data States
   const [stats, setStats] = useState({
@@ -117,6 +119,12 @@ export function AgentDashboard() {
         } else {
           setActiveDelivery(null);
         }
+        const notifications = buildAgentNotifications(
+          data.shipments,
+          data.agent
+        );
+
+        setNotifs(notifications);
 
         if (data.shipments) {
           setUpcomingList(
@@ -267,7 +275,8 @@ export function AgentDashboard() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-blue-100">
       <title>Dashboard | CargoFlow</title>
-      <AgentNavbar agent={{ name: agentFirstName, rating: stats.rating }} />
+      <AgentNavbar notifications={notifs}
+        unreadCount={notifs.filter(n => !n.read).length} agent={{ name: agentFirstName, rating: stats.rating }} />
 
       <main className="max-w-[1280px] mx-auto px-4 py-6 space-y-6">
         {/* Compact Header */}

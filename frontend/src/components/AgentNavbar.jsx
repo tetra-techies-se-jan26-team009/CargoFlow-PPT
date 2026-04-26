@@ -12,17 +12,19 @@ import { useToast } from '../hooks/useToast';
 export default function AgentNavbar({ agentStats }) {
   const { user, logout } = useAuth();
   const [agentData, setAgentData] = useState(null);
+  const [prevShipments, setPrevShipments] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const { showToast: addToast } = useToast();
   const [pendingStatus, setPendingStatus] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
 
   const [search, setSearch] = useState('');
-  const [notifs, setNotifs] = useState([
-    { id: 1, title: 'New Delivery Assigned', desc: 'SH-20250305 added to your route', time: '2m ago', type: 'info', read: false },
-    { id: 2, title: 'Payment Received', desc: '₹2,840 credited to your account', time: '15m ago', type: 'success', read: false },
-    { id: 3, title: 'Route Updated', desc: 'Optimized route saved 15 mins', time: '1h ago', type: 'info', read: true },
-  ]);
+  // const [notifs, setNotifs] = useState([
+  //   { id: 1, title: 'New Delivery Assigned', desc: 'SH-20250305 added to your route', time: '2m ago', type: 'info', read: false },
+  //   { id: 2, title: 'Payment Received', desc: '₹2,840 credited to your account', time: '15m ago', type: 'success', read: false },
+  //   { id: 3, title: 'Route Updated', desc: 'Optimized route saved 15 mins', time: '1h ago', type: 'info', read: true },
+  // ]);
+  const [notifs, setNotifs] = useState([]);
 
   const navigate = useNavigate();
 
@@ -88,24 +90,89 @@ export default function AgentNavbar({ agentStats }) {
     }
   };
 
+  // useEffect(() => {
+  //   const fetchDashboard = async () => {
+  //     try {
+  //       const data = await getAgentDashboard();
+
+
+  //       setDutyStatus(mapBackendToUI(data?.agent?.duty_status));
+  //       setAgentData(data?.agent);
+  //       setPendingStatus(data?.agent?.pending_duty_status);
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   };
+
+  //   fetchDashboard();
+
+  //   const interval = setInterval(fetchDashboard, 10000); // every 10 sec
+
+  //   return () => clearInterval(interval);
+  // }, []);
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         const data = await getAgentDashboard();
-        setDutyStatus(mapBackendToUI(data?.agent?.duty_status));
+
+        // 🔥 Detect new assigned shipments
+        const currentShipments = data?.shipments || [];
+
+        const newAssignments = currentShipments.filter(
+          s =>
+            s.status === "ASSIGNED" &&
+            !prevShipments.some(p => p.id === s.id)
+        );
+
+        if (newAssignments.length > 0) {
+          const newNotifs = newAssignments.map(s => ({
+            id: Date.now() + Math.random(),
+            title: "New Delivery Assigned",
+            desc: `${s.tracking_number} added to your route`,
+            time: "Just now",
+            type: "info",
+            read: false
+          }));
+
+          setNotifs(prev => [...newNotifs, ...prev]);
+        }
+
+        // 🔥 Duty status change detection
+        if (agentData && agentData.duty_status !== data?.agent?.duty_status) {
+          setNotifs(prev => [
+            {
+              id: Date.now(),
+              title: "Duty Status Updated",
+              desc: `You are now ${data.agent.duty_status.replace("_", " ")}`,
+              time: "Just now",
+              type: "success",
+              read: false
+            },
+            ...prev
+          ]);
+        }
+
+        // 🔥 Update states AFTER checks
+        setPrevShipments(currentShipments);
         setAgentData(data?.agent);
+        setDutyStatus(mapBackendToUI(data?.agent?.duty_status));
         setPendingStatus(data?.agent?.pending_duty_status);
+
       } catch (err) {
         console.error(err);
       }
     };
 
+    // Initial call
     fetchDashboard();
 
-    const interval = setInterval(fetchDashboard, 10000); // every 10 sec
+    // Polling
+    const interval = setInterval(fetchDashboard, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+
+  }, [prevShipments, agentData]);
 
   const notifDotColor = { success: 'bg-green-500', info: 'bg-blue-500', warning: 'bg-amber-500' };
 
