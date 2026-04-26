@@ -191,16 +191,16 @@ export default function AdminDashboard() {
         const mc = clientFilter === "Client" || s.client === clientFilter;
         return ms && ma && mc;
     });
-    const totalShipments = shipments.length;
+    // const totalShipments = shipments.length;
 
-    const deliveredCount = shipments.filter(s => s.status === "Delivered").length;
-    const failedCount = shipments.filter(s => s.status === "Failed").length;
-    const performance =
-        totalShipments > 0
-            ? ((deliveredCount - failedCount * 0.5) / totalShipments) * 100
-            : 0;
+    // const deliveredCount = shipments.filter(s => s.status === "Delivered").length;
+    // const failedCount = shipments.filter(s => s.status === "Failed").length;
+    // const performance =
+    //     totalShipments > 0
+    //         ? ((deliveredCount *0.5) / totalShipments) * 100
+    //         : 0;
 
-    const performanceValue = performance.toFixed(1);
+    // const performanceValue = performance.toFixed(1);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
     const pageSlice = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -549,7 +549,7 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* ── Performance Bar ── */}
-                    <div style={{ background: "white", borderRadius: 12, padding: "20px 28px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 48 }}>
+                    {/* <div style={{ background: "white", borderRadius: 12, padding: "20px 28px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 48 }}>
                         <div style={{ minWidth: 200 }}>
                             <div style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", letterSpacing: "0.5px", marginBottom: 4 }}>
                                 DELIVERY PERFORMANCE SCORE
@@ -588,7 +588,7 @@ export default function AdminDashboard() {
                                     ))}
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* ── Shipments Table + Agent Panel ── */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 270px", gap: 16 }}>
@@ -766,7 +766,7 @@ export default function AdminDashboard() {
                                         { label: "Assign Shipment to Agent", icon: icons.truck, fn: () => openModal("assign") },
                                         { label: "Generate Monthly Report", icon: icons.reports, fn: () => openModal("report") },
                                         { label: "Add New Client", icon: icons.plus, fn: () => openModal("addClient") },
-                                        { label: "View AI Insights", icon: icons.risk, fn: () => openModal("insights") },
+                                        { label: "View Insights", icon: icons.risk, fn: () => openModal("insights") },
                                     ].map(action => (
                                         <button
                                             key={action.label}

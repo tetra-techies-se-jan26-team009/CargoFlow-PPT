@@ -236,33 +236,35 @@ export default function RequestPickup() {
     const handlePincodeBlur = async (type) => {
         const pincode = type === "pickup" ? f.pickup_pincode : f.delivery_pincode;
 
-        if (pincode.length !== 6) return;
+        if (pincode.length !== 6) return null;
 
         const coords = await getCoordsFromPincode(pincode);
+
         console.log("GEOCODE RESULT:", coords);
 
         if (!coords) {
             console.warn("Invalid pincode:", pincode);
-            return;
+            return null;
         }
 
-        if (coords) {
-            if (type === "pickup") {
-                setF(prev => ({
-                    ...prev,
-                    pickup_lat: coords.lat,
-                    pickup_lng: coords.lng,
-                    pickup_city: prev.pickup_city || coords.city
-                }));
-            } else {
-                setF(prev => ({
-                    ...prev,
-                    delivery_lat: coords.lat,
-                    delivery_lng: coords.lng,
-                    delivery_city: prev.delivery_city || coords.city
-                }));
-            }
+        // still update UI state (for display)
+        if (type === "pickup") {
+            setF(prev => ({
+                ...prev,
+                pickup_lat: coords.lat,
+                pickup_lng: coords.lng,
+                pickup_city: prev.pickup_city || coords.city
+            }));
+        } else {
+            setF(prev => ({
+                ...prev,
+                delivery_lat: coords.lat,
+                delivery_lng: coords.lng,
+                delivery_city: prev.delivery_city || coords.city
+            }));
         }
+
+        return coords; // 🔥 IMPORTANT
     };
 
     // Till here 
@@ -291,8 +293,18 @@ export default function RequestPickup() {
 
     const handleSubmit = async () => {
         setApiError(null);
-        await handlePincodeBlur("pickup");
-        await handlePincodeBlur("delivery");
+        const pickupCoords = await handlePincodeBlur("pickup");
+        const deliveryCoords = await handlePincodeBlur("delivery");
+
+        if (!pickupCoords) {
+            alert("Pickup location not resolved.");
+            return;
+        }
+
+        if (!deliveryCoords) {
+            alert("Delivery location not resolved.");
+            return;
+        }
 
         // 🔥 STEP 2 — VALIDATE LAT/LNG
         if (!f.pickup_lat || !f.pickup_lng) {
